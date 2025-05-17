@@ -1,0 +1,195 @@
+import { PerfumeCategory, PerfumeCharacteristics } from '../types/perfume';
+import { PerfumePersona, TraitScores, ScentCategoryScores, ImageAnalysisResult } from '../types/perfume';
+import perfumePersonas from '../data/perfumePersonas';
+
+/**
+ * 향수 특성 점수에서 가장 높은 값을 가진 카테고리를 결정합니다.
+ * 동점인 경우 먼저 나오는 카테고리를 선택합니다.
+ */
+export function determinePerfumeCategory(characteristics: PerfumeCharacteristics): PerfumeCategory {
+  const entries = Object.entries(characteristics) as [PerfumeCategory, number][];
+  const maxEntry = entries.reduce((max, current) => 
+    current[1] > max[1] ? current : max, 
+    ['citrus', 0] as [PerfumeCategory, number]
+  );
+  
+  return maxEntry[0];
+}
+
+/**
+ * 카테고리별 한글 이름을 반환합니다.
+ */
+export function getCategoryKoreanName(category: PerfumeCategory): string {
+  const categoryNames: Record<PerfumeCategory, string> = {
+    citrus: '시트러스',
+    floral: '플로럴',
+    woody: '우디',
+    musky: '머스크',
+    fruity: '프루티',
+    spicy: '스파이시'
+  };
+  
+  return categoryNames[category];
+}
+
+/**
+ * 이미지 분석 결과와 향수 페르소나를 매칭하여 가장 적합한 향수 추천
+ */
+export async function findMatchingPerfumePersonas(analysisResult: ImageAnalysisResult) {
+  console.log('findMatchingPerfumePersonas 함수 시작');
+  // 기본값 설정 - 필수 속성이 없을 경우 대비
+  const defaultTraits = {
+    sexy: 5,
+    cute: 5,
+    charisma: 5,
+    darkness: 5,
+    freshness: 5,
+    elegance: 5,
+    freedom: 5,
+    luxury: 5,
+    purity: 5,
+    uniqueness: 5
+  };
+  
+  const defaultCategories = {
+    citrus: 5,
+    floral: 5,
+    woody: 5,
+    musky: 5,
+    fruity: 5,
+    spicy: 5
+  };
+  
+  // undefined 체크 후 기본값 사용
+  const traits = analysisResult.traits || defaultTraits;
+  const categories = analysisResult.scentCategories || defaultCategories;
+  
+  console.log('분석 특성 점수:', traits);
+  console.log('분석 향 카테고리 점수:', categories);
+  console.log('향수 페르소나 수:', perfumePersonas.personas.length);
+  
+  // 모든 향수 페르소나에 대해 유사도 점수 계산
+  const scoredPersonas = perfumePersonas.personas.map((persona: PerfumePersona) => {
+    const traitScore = calculateTraitSimilarity(traits, persona.traits);
+    const categoryScore = calculateCategorySimilarity(categories, persona.categories);
+    
+    // 특성 점수와 카테고리 점수 모두 사용 (70:30 비율)
+    const totalScore = (traitScore * 0.7) + (categoryScore * 0.3);
+    
+    console.log(`향수 ${persona.id} (${persona.name}) 매칭 점수: ${totalScore.toFixed(2)} (특성: ${traitScore.toFixed(2)}, 카테고리: ${categoryScore.toFixed(2)})`);
+    
+    return {
+      persona,
+      score: totalScore,
+      matchReason: generateMatchReason(analysisResult, persona)
+    };
+  });
+  
+  // 점수에 따라 내림차순 정렬하고 상위 3개 반환
+  const results = scoredPersonas
+    .sort((a: {score: number}, b: {score: number}) => b.score - a.score)
+    .slice(0, 3);
+  
+  console.log(`매칭 결과: ${results.length}개 향수 발견`);
+  results.forEach((result, idx) => {
+    console.log(`${idx+1}위: ${result.persona.id} (${result.persona.name}), 점수: ${result.score.toFixed(2)}`);
+  });
+  
+  return results;
+}
+
+/**
+ * 두 특성 점수 간의 유사도 계산 (코사인 유사도 사용)
+ */
+function calculateTraitSimilarity(traitsA: TraitScores, traitsB: TraitScores): number {
+  const keysA = Object.keys(traitsA) as Array<keyof TraitScores>;
+  
+  // 벡터의 내적 계산
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (const key of keysA) {
+    dotProduct += traitsA[key] * traitsB[key];
+    normA += traitsA[key] * traitsA[key];
+    normB += traitsB[key] * traitsB[key];
+  }
+  
+  // 코사인 유사도 계산
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+/**
+ * 향 카테고리 점수 간의 유사도 계산 (코사인 유사도 사용)
+ */
+function calculateCategorySimilarity(catA: ScentCategoryScores, catB: ScentCategoryScores): number {
+  const keysA = Object.keys(catA) as Array<keyof ScentCategoryScores>;
+  
+  // 벡터의 내적 계산
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (const key of keysA) {
+    dotProduct += catA[key] * catB[key];
+    normA += catA[key] * catA[key];
+    normB += catB[key] * catB[key];
+  }
+  
+  // 코사인 유사도 계산
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+/**
+ * 매칭 이유 생성 로직
+ */
+function generateMatchReason(analysisResult: ImageAnalysisResult, persona: PerfumePersona): string {
+  try {
+    // 가장 높은 특성 3가지 찾기
+    const topTraits = Object.entries(persona.traits)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([key]) => key);
+    
+    // 특성 이름을 한글로 변환
+    const traitNameMap: Record<string, string> = {
+      sexy: '섹시함',
+      cute: '귀여움',
+      charisma: '카리스마',
+      darkness: '다크함',
+      freshness: '청량함',
+      elegance: '우아함',
+      freedom: '자유로움',
+      luxury: '럭셔리함',
+      purity: '순수함',
+      uniqueness: '독특함'
+    };
+    
+    // 키워드 활용
+    const keywords = persona.keywords.slice(0, 3).join(', ');
+    
+    // 매칭 이유 생성 (향 카테고리와 키워드 모두 포함)
+    const result = `${persona.name}은(는) ${topTraits.map(t => traitNameMap[t] || t).join(', ')}의 특성이 돋보이며, ${keywords} 키워드와 함께 당신의 이미지와 아이돌의 매력을 완벽하게 표현해줍니다.`;
+    
+    console.log(`매칭 이유 생성: ${result}`);
+    return result;
+  } catch (error) {
+    // 오류 발생 시 기본 메시지 반환
+    console.error('매칭 이유 생성 오류:', error);
+    return `${persona.name}은(는) 당신의 이미지와 아이돌 성향에 잘 어울리는 향수입니다.`;
+  }
+}
+
+/**
+ * 커스텀 향수 이름 생성 (사용자와 아이돌 이름을 조합)
+ */
+export function generateCustomPerfumeName(userName: string, idolName: string, perfumeBase: string): string {
+  // 두 이름의 첫 글자 추출
+  const userInitial = userName.charAt(0).toUpperCase();
+  const idolInitial = idolName.charAt(0).toUpperCase();
+  
+  // 향수 베이스에서 일부 글자 추출
+  const baseName = perfumeBase.substring(0, 4);
+  
+  return `${userInitial}${idolInitial}-${baseName}`;
+} 

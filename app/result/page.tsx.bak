@@ -1,0 +1,624 @@
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import PerfumeRecommendation from '@/components/PerfumeRecommendation';
+import KeywordCloud from '@/components/KeywordCloud';
+import PersonalColorDisplay from '@/components/PersonalColorDisplay';
+import { ImageAnalysisResult, PerfumePersona, TraitScores, ScentCategoryScores } from '@/app/types/perfume';
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Radar } from 'react-chartjs-2';
+
+// Chart.js 컴포넌트 등록
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+);
+
+// 분석 결과 및 커스텀 향수 정보 타입 
+interface AnalysisResultWithCustomPerfume extends ImageAnalysisResult {
+  customPerfume?: {
+    name: string;
+    basedOn: string;
+    description: string;
+  };
+}
+
+export default function ResultPage() {
+  const router = useRouter();
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResultWithCustomPerfume | null>(null);
+  const [idolImagePreview, setIdolImagePreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      // 로컬 스토리지에서 분석 결과 불러오기
+      const storedResult = localStorage.getItem('analysisResult');
+      const storedImage = localStorage.getItem('idolImagePreview');
+      
+      if (!storedResult) {
+        console.error('로컬 스토리지에서 분석 결과를 찾을 수 없습니다.');
+        setError('분석 결과를 찾을 수 없습니다. 다시 분석을 시도해주세요.');
+        setLoading(false);
+        return;
+      }
+      
+      // 분석 결과 파싱
+      console.log('저장된 분석 결과:', storedResult.substring(0, 200) + '...');
+      
+      let parsedResult;
+      try {
+        parsedResult = JSON.parse(storedResult);
+        console.log('분석 결과 구조:', Object.keys(parsedResult).join(', '));
+      } catch (parseError) {
+        console.error('JSON 파싱 오류:', parseError);
+        // 파싱 실패 시 다시 시도 (기본적인 정리 후)
+        try {
+          const cleanedResult = storedResult.trim()
+            .replace(/\\n/g, ' ')
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\');
+          
+          parsedResult = JSON.parse(cleanedResult);
+          console.log('두 번째 시도로 JSON 파싱 성공');
+        } catch (secondError) {
+          console.error('두 번째 JSON 파싱 시도도 실패:', secondError);
+          setError('분석 결과 형식이 올바르지 않습니다. 다시 분석을 시도해주세요.');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // matchingPerfumes 확인 (더 자세한 로깅 추가)
+      console.log('==== 결과 페이지 - 저장된 분석 결과 상세 ====');
+      if (parsedResult.traits) {
+        console.log('traits:', JSON.stringify(parsedResult.traits, null, 2));
+      } else {
+        console.error('traits가 없습니다!');
+        // traits가 없으면 기본값 추가
+        parsedResult.traits = {
+          sexy: 5, cute: 5, charisma: 5, darkness: 5,
+          freshness: 5, elegance: 5, freedom: 5, 
+          luxury: 5, purity: 5, uniqueness: 5
+        };
+        console.log('기본 traits 추가됨');
+      }
+      
+      if (parsedResult.scentCategories) {
+        console.log('scentCategories:', JSON.stringify(parsedResult.scentCategories, null, 2));
+      } else {
+        console.error('scentCategories가 없습니다!');
+        // scentCategories가 없으면 기본값 추가
+        parsedResult.scentCategories = {
+          citrus: 5, floral: 5, woody: 5,
+          musky: 5, fruity: 5, spicy: 5
+        };
+        console.log('기본 scentCategories 추가됨');
+      }
+      
+      if (!parsedResult.matchingPerfumes) {
+        console.warn('매칭된 향수 정보가 없습니다. 빈 배열로 초기화합니다.');
+        parsedResult.matchingPerfumes = [];
+      } else if (!Array.isArray(parsedResult.matchingPerfumes)) {
+        console.error('matchingPerfumes가 배열이 아닙니다!');
+        parsedResult.matchingPerfumes = [];
+        console.log('matchingPerfumes를 빈 배열로 재설정함');
+      } else {
+        console.log(`매칭된 향수 수: ${parsedResult.matchingPerfumes.length}`);
+        // 향수 정보 상세 로깅 및 유효성 검사
+        for (let i = 0; i < parsedResult.matchingPerfumes.length; i++) {
+          try {
+            const perfume = parsedResult.matchingPerfumes[i];
+            if (!perfume) {
+              console.warn(`향수 #${i+1} - 데이터 없음`);
+              continue;
+            }
+            
+            console.log(`향수 #${i+1} - perfumeId: ${perfume.perfumeId}, score: ${perfume.score}`);
+            console.log(`향수 #${i+1} - matchReason: ${perfume.matchReason || '없음'}`);
+            console.log(`향수 #${i+1} - persona 존재 여부: ${perfume.persona ? '있음' : '없음'}`);
+            
+            // persona가 없으면 API로 가져오기 시도
+            if (!perfume.persona && perfume.perfumeId) {
+              console.log(`향수 #${i+1} - perfumeId ${perfume.perfumeId}로 향수 정보 API 호출 시도`);
+              // 비동기 작업이지만 여기서는 즉시 페이지 표시를 위해 이후에 별도로 처리
+              // 향수 정보 API 호출 결과는 나중에 업데이트될 것이므로 지금은 빈 객체로 두기
+              perfume.persona = {}; 
+              
+              // 향수 정보 API 호출을 위한 함수 즉시 실행 (async IIFE)
+              (async (perfume, index) => {
+                try {
+                  const response = await fetch(`/api/perfume?id=${perfume.perfumeId}`);
+                  if (response.ok) {
+                    const data = await response.json();
+                    if (data.perfume && data.perfume.persona) {
+                      console.log(`향수 #${index+1} - API에서 persona 정보 가져옴`);
+                      // 상태 업데이트 전 복사본 만들기
+                      setAnalysisResult(prev => {
+                        if (!prev || !prev.matchingPerfumes) return prev;
+                        const updated = {...prev};
+                        if (updated.matchingPerfumes[index]) {
+                          updated.matchingPerfumes[index].persona = data.perfume.persona;
+                        }
+                        return updated;
+                      });
+                    }
+                  }
+                } catch (apiError) {
+                  console.error(`향수 #${index+1} - API 호출 오류:`, apiError);
+                }
+              })(perfume, i);
+            } else if (perfume.persona) {
+              console.log(`향수 #${i+1} - persona 정보:`, {
+                id: perfume.persona.id,
+                name: perfume.persona.name,
+                traits: perfume.persona.traits ? '있음' : '없음',
+                keywords: perfume.persona.keywords ? perfume.persona.keywords.join(', ') : '없음'
+              });
+            }
+          } catch (perfumeError) {
+            console.error(`향수 #${i+1} - 처리 중 오류:`, perfumeError);
+          }
+        }
+      }
+      
+      // 필수 속성 확인
+      if (!parsedResult.personalColor) {
+        console.warn('personalColor 정보가 없습니다. 기본값을 추가합니다.');
+        parsedResult.personalColor = {
+          season: 'spring',
+          tone: 'bright',
+          palette: ['#FFD700', '#FFA500', '#FF4500'],
+          description: '밝고 따뜻한 느낌의 봄 타입 컬러'
+        };
+      }
+      
+      if (!parsedResult.dominantColors || !Array.isArray(parsedResult.dominantColors)) {
+        console.warn('dominantColors 정보가 없거나 배열이 아닙니다. 기본값을 추가합니다.');
+        parsedResult.dominantColors = ['#FFFFFF', '#000000', '#808080'];
+      }
+      
+      if (!parsedResult.analysis) {
+        console.warn('analysis 정보가 없습니다. 기본값을 추가합니다.');
+        parsedResult.analysis = {
+          mood: '매력적인 분위기',
+          style: '트렌디한 스타일',
+          expression: '자신감 있는 표현',
+          concept: '개성'
+        };
+      }
+      
+      if (!parsedResult.matchingKeywords || !Array.isArray(parsedResult.matchingKeywords) || parsedResult.matchingKeywords.length === 0) {
+        console.warn('matchingKeywords 정보가 없거나 비어있습니다. 기본값을 추가합니다.');
+        parsedResult.matchingKeywords = [
+          '매력적', '트렌디', '개성적', '스타일리시', '자신감',
+          '센스있는', '독특함', '감각적', '세련된', '현대적'
+        ];
+      }
+      
+      console.log('==== 결과 페이지 - 저장된 분석 결과 상세 끝 ====');
+      
+      setAnalysisResult(parsedResult);
+      
+      // 이미지 미리보기 설정
+      if (storedImage) {
+        setIdolImagePreview(storedImage);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('결과 로딩 오류:', err);
+      setError('결과를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setLoading(false);
+    }
+  }, []);
+
+  // 향수 피드백 페이지로 이동
+  const handleContinue = () => {
+    router.push('/feedback');
+  };
+
+  // 처음으로 돌아가기
+  const handleRestart = () => {
+    router.push('/');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center flex-col p-4">
+        <div className="flex justify-center items-center mb-4">
+          <div className="animate-bounce bg-yellow-400 rounded-full h-4 w-4 mr-1"></div>
+          <div className="animate-bounce bg-yellow-300 rounded-full h-4 w-4 mr-1" style={{ animationDelay: '0.2s' }}></div>
+          <div className="animate-bounce bg-yellow-200 rounded-full h-4 w-4" style={{ animationDelay: '0.4s' }}></div>
+        </div>
+        <p className="text-yellow-800 font-medium">분석 결과를 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (error || !analysisResult) {
+    return (
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center flex-col p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md">
+          <h2 className="text-xl font-bold text-red-500 mb-4">오류 발생</h2>
+          <p className="text-gray-700 mb-6">{error || '분석 결과를 불러올 수 없습니다. 다시 시도해주세요.'}</p>
+          <button
+            onClick={handleRestart}
+            className="w-full bg-yellow-400 text-gray-800 font-bold py-3 px-6 rounded-full shadow-md hover:bg-yellow-500 transition-colors"
+          >
+            처음으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 페르소나가 있는 첫 번째 매칭 향수 찾기
+  const topPerfume = analysisResult.matchingPerfumes && analysisResult.matchingPerfumes.length > 0 
+    ? (analysisResult.matchingPerfumes.find(p => p.persona)?.persona || null)
+    : null;
+  
+  if (!topPerfume && analysisResult.matchingPerfumes && analysisResult.matchingPerfumes.length > 0) {
+    console.warn('매칭된 향수는 있지만 persona가 없습니다.');
+    console.log('매칭된 향수 정보:', JSON.stringify(analysisResult.matchingPerfumes[0]));
+  }
+  
+  // 분석 키워드 추출 (없으면 빈 배열)
+  const keywords = analysisResult.matchingKeywords || [];
+
+  return (
+    <div className="min-h-screen bg-amber-50 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* 헤더 영역 */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <span className="bg-yellow-300 px-2 py-1">이미지 분석 결과</span>
+          </h1>
+          <p className="text-gray-600">
+            최애 아이돌의 이미지 분석 결과와 향수 추천을 확인해보세요.
+          </p>
+        </div>
+
+        {/* 이미지와 분석 결과 영역 */}
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+          <div className="md:flex">
+            {/* 이미지 영역 */}
+            {idolImagePreview && (
+              <div className="md:w-1/3 bg-gray-100">
+                <div className="relative h-full">
+                  <img 
+                    src={idolImagePreview} 
+                    alt="아이돌 이미지" 
+                    className="w-full h-full object-cover"
+                    style={{ maxHeight: '400px' }}
+                  />
+                </div>
+              </div>
+            )}
+            
+            {/* 분석 결과 영역 - 키워드 클라우드 추가 */}
+            <div className={`p-6 ${idolImagePreview ? 'md:w-2/3' : 'w-full'}`}>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">이미지 분석 결과</h2>
+              
+              {/* 분석 키워드 */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-3">분석 키워드</h3>
+                <KeywordCloud keywords={keywords.length > 0 ? keywords : ['분석', '이미지', '아이돌']} />
+              </div>
+              
+              {/* 퍼스널 컬러 */}
+              {analysisResult.personalColor && (
+                <div className="mb-6">
+                  <PersonalColorDisplay personalColor={analysisResult.personalColor} />
+                </div>
+              )}
+              
+              {/* 분석 내용 */}
+              {analysisResult.analysis && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-3">이미지 인상</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    {analysisResult.analysis.mood && (
+                      <div className="mb-2">
+                        <span className="font-medium text-gray-700">분위기:</span>{' '}
+                        <span className="text-gray-600">{analysisResult.analysis.mood}</span>
+                      </div>
+                    )}
+                    {analysisResult.analysis.style && (
+                      <div className="mb-2">
+                        <span className="font-medium text-gray-700">스타일:</span>{' '}
+                        <span className="text-gray-600">{analysisResult.analysis.style}</span>
+                      </div>
+                    )}
+                    {analysisResult.analysis.expression && (
+                      <div className="mb-2">
+                        <span className="font-medium text-gray-700">표현:</span>{' '}
+                        <span className="text-gray-600">{analysisResult.analysis.expression}</span>
+                      </div>
+                    )}
+                    {analysisResult.analysis.concept && (
+                      <div className="mb-2">
+                        <span className="font-medium text-gray-700">컨셉:</span>{' '}
+                        <span className="text-gray-600">{analysisResult.analysis.concept}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* 특성 및 향 카테고리 시각화 */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* 특성 점수 레이더 차트 */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-3 text-center">주요 특성 점수</h3>
+            {analysisResult.traits && (
+              <div className="rounded-xl overflow-hidden bg-gradient-to-br from-yellow-50 to-pink-50 p-2">
+                {/* 특성 레이더 차트 */}
+                <div className="w-full h-60">
+                  <RadarChartTraits traits={analysisResult.traits} />
+                </div>
+                
+                {/* 특성 점수 바 차트 */}
+                <div className="grid grid-cols-2 gap-3 mt-4 p-2">
+                  {Object.entries(analysisResult.traits).map(([trait, score]) => (
+                    <div key={trait} className="flex items-center">
+                      <span className="w-24 text-gray-700">{getTraitName(trait)}:</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-yellow-400 h-2.5 rounded-full" 
+                          style={{ width: `${score * 10}%` }}
+                        ></div>
+                      </div>
+                      <span className="ml-2 text-sm text-gray-600 w-8 text-right">{score}/10</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* 향 카테고리 레이더 차트 */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-3 text-center">향 카테고리 적합도</h3>
+            {analysisResult.scentCategories && (
+              <div className="rounded-xl overflow-hidden bg-gradient-to-br from-pink-50 to-purple-50 p-2">
+                {/* 카테고리 레이더 차트 */}
+                <div className="w-full h-60">
+                  <RadarChartScents categories={analysisResult.scentCategories} />
+                </div>
+                
+                {/* 카테고리 점수 바 차트 */}
+                <div className="grid grid-cols-2 gap-3 mt-4 p-2">
+                  {Object.entries(analysisResult.scentCategories).map(([category, score]) => (
+                    <div key={category} className="flex items-center">
+                      <span className="w-24 text-gray-700">{getCategoryName(category)}:</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-pink-400 h-2.5 rounded-full" 
+                          style={{ width: `${score * 10}%` }}
+                        ></div>
+                      </div>
+                      <span className="ml-2 text-sm text-gray-600 w-8 text-right">{score}/10</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* 커스텀 향수 정보 */}
+        {analysisResult.customPerfume && (
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">맞춤 향수</h2>
+            <div className="flex flex-col md:flex-row md:items-center">
+              <div className="md:w-1/4 mb-4 md:mb-0">
+                <div className="w-24 h-24 mx-auto bg-gradient-to-r from-yellow-300 to-pink-300 rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-white">AC</span>
+                </div>
+              </div>
+              <div className="md:w-3/4">
+                <h3 className="text-xl font-bold text-gray-800">{analysisResult.customPerfume.name}</h3>
+                <p className="text-gray-500 mb-2">베이스 향수: {analysisResult.customPerfume.basedOn}</p>
+                <p className="text-gray-700">{analysisResult.customPerfume.description}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* 추천 향수 영역 - 기존 PerfumeRecommendation 컴포넌트 사용 */}
+        {topPerfume && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">추천 향수</h2>
+            <PerfumeRecommendation 
+              recommendation={`추천 향수: ${topPerfume.id} ${topPerfume.name}`} 
+            />
+            
+            {/* 추가 추천 향수 정보 */}
+            <div className="grid md:grid-cols-3 gap-4 mt-6">
+              {analysisResult.matchingPerfumes.slice(0, 3).map((match, index) => (
+                match.persona && (
+                  <div key={index} className="bg-white rounded-xl shadow p-4 border border-pink-100">
+                    <div className="flex items-center mb-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold mr-3">
+                        {match.persona.id.split('-')[0]}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-800">{match.persona.name}</h4>
+                        <p className="text-xs text-gray-500">{match.score.toFixed(2)} 매칭 점수</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-3">{match.matchReason}</p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {match.persona.keywords.slice(0, 3).map((keyword, idx) => (
+                        <span key={idx} className="text-xs bg-pink-100 text-pink-800 px-2 py-0.5 rounded-full">
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* 버튼 영역 */}
+        <div className="flex flex-col md:flex-row justify-center gap-4 mt-10">
+          <button
+            onClick={handleRestart}
+            className="bg-white border-2 border-gray-800 text-gray-800 font-bold py-3 px-8 rounded-full shadow-md hover:bg-gray-100 transition-colors"
+          >
+            처음으로 돌아가기
+          </button>
+          <button
+            onClick={handleContinue}
+            className="bg-yellow-400 text-gray-800 font-bold py-3 px-8 rounded-full shadow-md hover:bg-yellow-500 transition-colors"
+          >
+            향수 피드백 입력하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 특성 이름 한글 변환 함수
+function getTraitName(trait: string): string {
+  const traitNames: Record<string, string> = {
+    sexy: '섹시함',
+    cute: '귀여움',
+    charisma: '카리스마',
+    darkness: '다크함',
+    freshness: '청량함',
+    elegance: '우아함', 
+    freedom: '자유로움',
+    luxury: '럭셔리함',
+    purity: '순수함',
+    uniqueness: '독특함'
+  };
+  return traitNames[trait] || trait;
+}
+
+// 카테고리 이름 한글 변환 함수
+function getCategoryName(category: string): string {
+  const categoryNames: Record<string, string> = {
+    citrus: '시트러스',
+    floral: '플로럴',
+    woody: '우디',
+    musky: '머스크',
+    fruity: '프루티',
+    spicy: '스파이시'
+  };
+  return categoryNames[category] || category;
+}
+
+// 평균 계산 안전하게 수정
+function calculateAverage(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+// 특성 레이더 차트 컴포넌트
+function RadarChartTraits({ traits }: { traits: TraitScores }) {
+  // 특성 데이터 레이더 차트용으로 변환
+  const data = {
+    labels: Object.keys(traits).map(trait => getTraitName(trait)),
+    datasets: [
+      {
+        label: '특성 점수',
+        data: Object.values(traits),
+        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+        borderColor: 'rgba(255, 206, 86, 1)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(255, 206, 86, 1)',
+      }
+    ]
+  };
+  
+  const options = {
+    scales: {
+      r: {
+        angleLines: {
+          display: true,
+        },
+        suggestedMin: 0,
+        suggestedMax: 10,
+      },
+    },
+    maintainAspectRatio: false,
+  };
+  
+  // 평균 계산 부분 수정
+  const average = calculateAverage(Object.values(traits));
+  
+  return (
+    <div className="w-full h-full">
+      <Radar data={data} options={options} />
+      <div className="text-center text-yellow-600 mt-2">
+        <span className="text-sm font-medium">평균 점수:</span>{' '}
+        <span className="font-bold">{average.toFixed(1)}</span>
+      </div>
+    </div>
+  );
+}
+
+// 향 카테고리 레이더 차트 컴포넌트
+function RadarChartScents({ categories }: { categories: ScentCategoryScores }) {
+  // 카테고리 데이터 레이더 차트용으로 변환
+  const data = {
+    labels: Object.keys(categories).map(cat => getCategoryName(cat)),
+    datasets: [
+      {
+        label: '향 적합도',
+        data: Object.values(categories),
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+      }
+    ]
+  };
+  
+  const options = {
+    scales: {
+      r: {
+        angleLines: {
+          display: true,
+        },
+        suggestedMin: 0,
+        suggestedMax: 10,
+      },
+    },
+    maintainAspectRatio: false,
+  };
+  
+  // 평균 계산 부분 수정
+  const average = calculateAverage(Object.values(categories));
+  
+  return (
+    <div className="w-full h-full">
+      <Radar data={data} options={options} />
+      <div className="text-center text-pink-600 mt-2">
+        <span className="text-sm font-medium">평균 적합도:</span>{' '}
+        <span className="font-bold">{average.toFixed(1)}</span>
+      </div>
+    </div>
+  );
+} 
