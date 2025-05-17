@@ -90,7 +90,23 @@ export async function POST(request: NextRequest) {
     }
     
     // 분석 결과를 바탕으로 향수 매칭 (상위 1개만)
-    const matchingPerfumes = findMatchingPerfumes(analysisResult, 1);
+    const matchingPerfumes = findMatchingPerfumes(analysisResult, 1, {
+      // 중요 특성에 더 높은 가중치 부여
+      weights: { 
+        cute: 2.0,    // 귀여움 가중치 2배 증가 (가장 중요)
+        sexy: 1.5,    // 섹시함 가중치 50% 증가
+        charisma: 1.3 // 카리스마 가중치 30% 증가
+      },
+      // 임계값 초과 시 패널티 부여할 특성
+      thresholds: { 
+        cute: 2.5,    // 귀여움 차이 2.5점 이상이면 패널티 (더 엄격한 기준)
+        sexy: 3.0,    // 섹시함 차이 3점 이상이면 패널티
+        charisma: 3.0, // 카리스마 차이 3점 이상이면 패널티
+        purity: 3.0   // 순수함 차이 3점 이상이면 패널티
+      },
+      // 하이브리드 접근법 사용 (코사인 유사도 + 유클리드 거리)
+      useHybrid: true
+    });
     
     // matchingPerfumes 유효성 확인
     if (!matchingPerfumes || matchingPerfumes.length === 0) {

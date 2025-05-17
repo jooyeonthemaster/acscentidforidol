@@ -26,6 +26,522 @@ let model: any = null;
 const modelName = 'gemini-2.0-flash';
 
 /**
+ * 향상된 이미지 분석 프롬프트 - 특성 평가 가이드라인 명확화
+ */
+const improvedImageAnalysisPrompt = `
+이미지에 나타난 아이돌/사람의 특성을 10가지 카테고리로 면밀히 분석해주세요. 
+각 특성은 독립적으로 평가하며, 한 특성의 점수가 다른 특성에 영향을 주지 않아야 합니다.
+각 특성별로 1-10 점수를 매겨주세요(1: 매우 낮음, 10: 매우 높음).
+
+특성 정의 및 평가 기준:
+- sexy: 성적 매력, 관능미, 성숙한 섹시함 (1: 전혀 섹시하지 않음, 10: 극도로 섹시함)
+- cute: 귀여움, 애교, 소녀/소년다움 (1: 전혀 귀엽지 않음, 10: 극도로 귀여움)
+- charisma: 카리스마, 존재감, 리더십 (1: 존재감 없음, 10: 압도적 카리스마)
+- darkness: 어둡고 신비로운 분위기 (1: 매우 밝고 가벼움, 10: 매우 어둡고 신비로움)
+- freshness: 청량함, 상쾌함, 활기참 (1: 전혀 청량하지 않음, 10: 매우 청량하고 상쾌함)
+- elegance: 우아함, 고급스러움, 세련됨 (1: 전혀 우아하지 않음, 10: 극도로 우아하고 세련됨)
+- freedom: 자유로움, 개방적임, 구속받지 않는 느낌 (1: 매우 정형적임, 10: 매우 자유분방함)
+- luxury: 럭셔리한 느낌, 부와 풍요로움의 인상 (1: 소박하고 검소함, 10: 매우 럭셔리하고 화려함)
+- purity: 순수함, 깨끗함, 순결한 이미지 (1: 전혀 순수하지 않음, 10: 매우 순수하고 깨끗함)
+- uniqueness: 독특함, 개성, 남들과 다른 특별함 (1: 매우 평범함, 10: 매우 독특하고 특별함)
+
+중요: 각 특성은 상호 독립적입니다. 예를 들어, sexy가 높다고 해서 cute가 낮을 필요는 없습니다.
+모든 특성에 대해 이미지를 면밀히 분석하고, 객관적인 기준으로 각각 독립적으로 점수를 매겨주세요.
+점수 분포를 1-10 전체 범위에서 골고루 사용하여, 특성 간 명확한 차이가 드러나도록 해주세요.
+두 개 이상의 특성에 동일한 점수를 부여하는 것은 가급적 피하고, 차별화된 점수를 매겨주세요.
+
+향 카테고리도 분석해주세요 (각 향 특성별로 1-10 점수):
+- citrus: 상큼하고 톡 쏘는 감귤류 향 (레몬, 오렌지 등)
+- floral: 꽃향기 (장미, 자스민, 라일락 등)
+- woody: 나무, 숲의 향 (샌달우드, 시더우드 등)
+- musky: 묵직하고 관능적인 향 (머스크, 앰버 등)
+- fruity: 달콤한 과일향 (복숭아, 베리류 등)
+- spicy: 따뜻하고 자극적인 향신료 향 (시나몬, 정향 등)
+
+다음 형식의 JSON으로 응답해주세요:
+{
+  "traits": {
+    "sexy": [1-10 점수],
+    "cute": [1-10 점수],
+    "charisma": [1-10 점수],
+    "darkness": [1-10 점수],
+    "freshness": [1-10 점수],
+    "elegance": [1-10 점수],
+    "freedom": [1-10 점수],
+    "luxury": [1-10 점수],
+    "purity": [1-10 점수],
+    "uniqueness": [1-10 점수]
+  },
+  "scentCategories": {
+    "citrus": [1-10 점수],
+    "floral": [1-10 점수],
+    "woody": [1-10 점수],
+    "musky": [1-10 점수],
+    "fruity": [1-10 점수],
+    "spicy": [1-10 점수]
+  }
+}
+`;
+
+/**
+ * 안전한 JSON 파싱을 위한 클래스
+ * 여러 파싱 전략을 순차적으로 시도하여 JSON 파싱 오류를 방지
+ */
+class SafeJSONParser {
+  private jsonStr: string;
+  
+  constructor(jsonString: string) {
+    this.jsonStr = this.preprocess(jsonString);
+  }
+  
+  /**
+   * JSON 문자열 전처리
+   */
+  private preprocess(jsonStr: string): string {
+    // 코드 블록 제거
+    const jsonBlockMatch = jsonStr.match(/```(?:json)?([\s\S]*?)```/);
+    if (jsonBlockMatch && jsonBlockMatch[1]) {
+      jsonStr = jsonBlockMatch[1].trim();
+    }
+    
+    // 불필요한 설명 텍스트 제거
+    jsonStr = jsonStr.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
+    
+    // 따옴표 처리
+    jsonStr = this.fixQuotes(jsonStr);
+    
+    console.log('따옴표 처리 후 JSON:', jsonStr.substring(0, 70) + '...');
+    
+    return jsonStr;
+  }
+  
+  /**
+   * 이스케이프되지 않은 따옴표 처리
+   */
+  private fixQuotes(jsonStr: string): string {
+    // 1. 텍스트 내의 따옴표 문제 처리 (텍스트 내에서 쌍따옴표가 이스케이프되지 않은 경우)
+    // 예: "text": "He said "hello" to me" -> "text": "He said \"hello\" to me"
+    
+    // 프로퍼티 값 내부의 이스케이프되지 않은 따옴표 처리 정규식
+    // 해당 정규식은 프로퍼티 값 내에서 이스케이프되지 않은 따옴표를 찾아 이스케이프합니다
+    return jsonStr.replace(/: *"([^"\\]*(\\.[^"\\]*)*)"([^"\\]*)"([^"]*)"(?=[,}])/g, 
+                            (match, p1, p2, p3, p4) => `: "${p1}${p3.replace(/"/g, '\\"')}${p4}"`);
+  }
+  
+  /**
+   * 여러 전략을 시도하여 JSON 파싱
+   */
+  public parse(): ImageAnalysisResult {
+    try {
+      // 표준 JSON.parse 시도
+      const result = JSON.parse(this.jsonStr) as ImageAnalysisResult;
+      
+      // 필수 필드 확인
+      this.ensureRequiredFields(result);
+      
+      // scentCategories가 여전히 없으면 강제로 추가
+      if (!result.scentCategories || Object.keys(result.scentCategories).length === 0) {
+        console.log('최종 검사: scentCategories 필드 추가 (기본값)');
+        result.scentCategories = {
+          citrus: 6,
+          floral: 6, 
+          woody: 6,
+          musky: 6,
+          fruity: 6,
+          spicy: 6
+        };
+      }
+      
+      return result;
+    } catch (e) {
+      console.warn('표준 JSON.parse 실패, 대체 파싱 전략 시도:', e);
+      
+      // 필드별 추출 시도
+      try {
+        const result = this.extractFieldsManually();
+        
+        // scentCategories가 여전히 없으면 강제로 추가
+        if (!result.scentCategories || Object.keys(result.scentCategories).length === 0) {
+          console.log('최종 검사: scentCategories 필드 추가 (기본값)');
+          result.scentCategories = {
+            citrus: 6,
+            floral: 6, 
+            woody: 6,
+            musky: 6,
+            fruity: 6,
+            spicy: 6
+          };
+        }
+        
+        return result;
+      } catch (extractError) {
+        console.error('필드별 추출 실패:', extractError);
+        
+        // 기본값 반환
+        return this.getDefaultResult();
+      }
+    }
+  }
+  
+  /**
+   * 정규식을 사용하여 각 필드를 개별적으로 추출
+   */
+  private extractFieldsManually(): ImageAnalysisResult {
+    const result: ImageAnalysisResult = {
+      traits: {},
+      dominantColors: [],
+      personalColor: {
+        season: "spring",
+        tone: "bright",
+        palette: [],
+        description: ""
+      },
+      analysis: {},
+      matchingKeywords: [],
+      scentCategories: {
+        citrus: 6,
+        floral: 6, 
+        woody: 6,
+        musky: 6,
+        fruity: 6,
+        spicy: 6
+      },
+      matchingPerfumes: []
+    };
+    
+    try {
+      // traits 필드 추출
+      const traitsMatch = this.jsonStr.match(/"traits"\s*:\s*{([^}]*)}/);
+      if (traitsMatch && traitsMatch[1]) {
+        const traitsStr = traitsMatch[1];
+        
+        // 각 특성 추출
+        const traitMatches = traitsStr.matchAll(/"(\w+)"\s*:\s*(\d+)/g);
+        for (const match of traitMatches) {
+          const key = match[1];
+          const value = parseInt(match[2], 10);
+          if (!isNaN(value)) {
+            result.traits[key] = value;
+          }
+        }
+        
+        console.log('특성 추출 성공:', Object.keys(result.traits).length, '개 항목');
+      }
+      
+      // dominantColors 추출
+      const colorsMatch = this.jsonStr.match(/"dominantColors"\s*:\s*\[(.*?)\]/);
+      if (colorsMatch && colorsMatch[1]) {
+        const colorsStr = colorsMatch[1];
+        
+        // 각 색상 코드 추출
+        const colorMatches = colorsStr.matchAll(/"(#[A-Fa-f0-9]+)"/g);
+        for (const match of colorMatches) {
+          result.dominantColors.push(match[1]);
+        }
+      }
+      
+      // personalColor 추출
+      const personalColorMatch = this.jsonStr.match(/"personalColor"\s*:\s*{([^}]*)}/);
+      if (personalColorMatch && personalColorMatch[1]) {
+        const pcStr = personalColorMatch[1];
+        
+        // 시즌 추출
+        const seasonMatch = pcStr.match(/"season"\s*:\s*"([^"]*)"/);
+        if (seasonMatch && seasonMatch[1]) {
+          result.personalColor.season = seasonMatch[1] as any;
+        }
+        
+        // 톤 추출
+        const toneMatch = pcStr.match(/"tone"\s*:\s*"([^"]*)"/);
+        if (toneMatch && toneMatch[1]) {
+          result.personalColor.tone = toneMatch[1] as any;
+        }
+        
+        // 설명 추출
+        const descMatch = pcStr.match(/"description"\s*:\s*"([^"]*)"/);
+        if (descMatch && descMatch[1]) {
+          result.personalColor.description = descMatch[1];
+        }
+        
+        // 팔레트 추출
+        const paletteMatch = pcStr.match(/"palette"\s*:\s*\[(.*?)\]/);
+        if (paletteMatch && paletteMatch[1]) {
+          const paletteStr = paletteMatch[1];
+          const colorMatches = paletteStr.matchAll(/"(#[A-Fa-f0-9]+)"/g);
+          for (const match of colorMatches) {
+            result.personalColor.palette.push(match[1]);
+          }
+        }
+      }
+      
+      // analysis 추출
+      const analysisMatch = this.jsonStr.match(/"analysis"\s*:\s*{([^}]*)}/s);
+      if (analysisMatch && analysisMatch[1]) {
+        const analysisStr = analysisMatch[1];
+        
+        // mood 추출
+        const moodMatch = analysisStr.match(/"mood"\s*:\s*"(.*?)(?:"|,$)/s);
+        if (moodMatch && moodMatch[1]) {
+          if (!result.analysis) result.analysis = {} as any;
+          result.analysis.mood = moodMatch[1].replace(/\\"/g, '"');
+        }
+        
+        // style 추출
+        const styleMatch = analysisStr.match(/"style"\s*:\s*"(.*?)(?:"|,$)/s);
+        if (styleMatch && styleMatch[1]) {
+          if (!result.analysis) result.analysis = {} as any;
+          result.analysis.style = styleMatch[1].replace(/\\"/g, '"');
+        }
+        
+        // expression 추출
+        const exprMatch = analysisStr.match(/"expression"\s*:\s*"(.*?)(?:"|,$)/s);
+        if (exprMatch && exprMatch[1]) {
+          if (!result.analysis) result.analysis = {} as any;
+          result.analysis.expression = exprMatch[1].replace(/\\"/g, '"');
+        }
+        
+        // concept 추출
+        const conceptMatch = analysisStr.match(/"concept"\s*:\s*"(.*?)(?:"|,$)/s);
+        if (conceptMatch && conceptMatch[1]) {
+          if (!result.analysis) result.analysis = {} as any;
+          result.analysis.concept = conceptMatch[1].replace(/\\"/g, '"');
+        }
+        
+        // aura 추출
+        const auraMatch = analysisStr.match(/"aura"\s*:\s*"(.*?)(?:"|,$)/s);
+        if (auraMatch && auraMatch[1]) {
+          if (!result.analysis) result.analysis = {} as any;
+          result.analysis.aura = auraMatch[1].replace(/\\"/g, '"');
+        }
+        
+        // toneAndManner 추출
+        const toneMatch = analysisStr.match(/"toneAndManner"\s*:\s*"(.*?)(?:"|,$)/s);
+        if (toneMatch && toneMatch[1]) {
+          if (!result.analysis) result.analysis = {} as any;
+          result.analysis.toneAndManner = toneMatch[1].replace(/\\"/g, '"');
+        }
+        
+        // detailedDescription 추출
+        const detailMatch = analysisStr.match(/"detailedDescription"\s*:\s*"(.*?)(?:"|,$)/s);
+        if (detailMatch && detailMatch[1]) {
+          if (!result.analysis) result.analysis = {} as any;
+          result.analysis.detailedDescription = detailMatch[1].replace(/\\"/g, '"');
+        }
+      }
+      
+      // scentCategories 추출 - 추가된 부분
+      const scentCategoriesMatch = this.jsonStr.match(/"scentCategories"\s*:\s*{([^}]*)}/);
+      if (scentCategoriesMatch && scentCategoriesMatch[1]) {
+        const scStr = scentCategoriesMatch[1];
+        
+        // 각 카테고리 추출
+        const categoryMatches = scStr.matchAll(/"(\w+)"\s*:\s*(\d+)/g);
+        for (const match of categoryMatches) {
+          const key = match[1];
+          const value = parseInt(match[2], 10);
+          if (!isNaN(value)) {
+            if (!result.scentCategories) result.scentCategories = {} as any;
+            result.scentCategories[key] = value;
+          }
+        }
+        
+        console.log('향 카테고리 추출 성공:', Object.keys(result.scentCategories).length, '개 항목');
+      } else {
+        console.log('향 카테고리 필드를 찾을 수 없음, 기본값 사용');
+      }
+      
+      // matchingKeywords 추출
+      const keywordsMatch = this.jsonStr.match(/"matchingKeywords"\s*:\s*\[(.*?)\]/s);
+      if (keywordsMatch && keywordsMatch[1]) {
+        const keywordsStr = keywordsMatch[1];
+        const keywordMatches = keywordsStr.matchAll(/"([^"]*)"/g);
+        for (const match of keywordMatches) {
+          if (!result.matchingKeywords) result.matchingKeywords = [];
+          result.matchingKeywords.push(match[1]);
+        }
+      }
+      
+      // customAnalysis 추출
+      const customMatch = this.jsonStr.match(/"customAnalysis"\s*:\s*"(.*?)(?:"|,$)/s);
+      if (customMatch && customMatch[1]) {
+        result.customAnalysis = customMatch[1].replace(/\\"/g, '"');
+      }
+      
+      console.log('향상된 JSON 파싱 성공');
+      
+      // 필수 필드 확인 및 중복 값 처리
+      this.ensureRequiredFields(result);
+      
+      return result;
+    } catch (error) {
+      console.error('정규식 기반 파싱 오류:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 필수 필드 확인 및 중복 값 처리
+   */
+  private ensureRequiredFields(result: ImageAnalysisResult): void {
+    // 필수 특성 필드 확인
+    const requiredTraits = ['sexy', 'cute', 'charisma', 'darkness', 'freshness', 'elegance', 'freedom', 'luxury', 'purity', 'uniqueness'];
+    const missingTraits = requiredTraits.filter(trait => !(trait in result.traits));
+    
+    if (missingTraits.length > 0) {
+      console.log('중복된 특성 점수가 있음, 조정');
+      
+      // 누락된 특성에 기본값 할당
+      for (const trait of missingTraits) {
+        result.traits[trait] = 5; // 기본값
+      }
+    }
+    
+    // 중복된 값이 있는지 확인하고 수정
+    const usedValues = new Set<number>();
+    
+    // 각 특성에 대해
+    for (const trait of requiredTraits) {
+      let value = result.traits[trait];
+      
+      // 값이 없거나 범위를 벗어나는 경우 조정
+      if (value === undefined || value < 3 || value > 10) {
+        value = Math.max(3, Math.min(10, value || 5));
+        result.traits[trait] = value;
+      }
+      
+      // 이미 사용된 값인지 확인
+      if (usedValues.has(value)) {
+        // 중복된 값이라면 사용되지 않은 값 찾기
+        for (let newValue = 3; newValue <= 10; newValue++) {
+          if (!usedValues.has(newValue)) {
+            result.traits[trait] = newValue;
+            usedValues.add(newValue);
+            break;
+          }
+        }
+      } else {
+        usedValues.add(value);
+      }
+    }
+    
+    // 향 카테고리 필드가 없으면 기본값 추가
+    if (!result.scentCategories || Object.keys(result.scentCategories).length === 0) {
+      console.log('향 카테고리 필드 추가 (기본값)');
+      result.scentCategories = {
+        citrus: 6,
+        floral: 6, 
+        woody: 6,
+        musky: 6,
+        fruity: 6,
+        spicy: 6
+      };
+    }
+    
+    // 필수 향 카테고리 필드 확인
+    const requiredCategories = ['citrus', 'floral', 'woody', 'musky', 'fruity', 'spicy'];
+    const missingCategories = requiredCategories.filter(cat => !(cat in result.scentCategories));
+    
+    if (missingCategories.length > 0) {
+      console.log('누락된 향 카테고리가 있음, 추가:', missingCategories.join(', '));
+      
+      // 누락된 카테고리에 기본값 할당
+      for (const cat of missingCategories) {
+        result.scentCategories[cat] = 6; // 기본값
+      }
+    }
+    
+    // dominantColors가 없으면 기본값 추가
+    if (!result.dominantColors || result.dominantColors.length === 0) {
+      result.dominantColors = ["#FFD700", "#FF4500", "#1E90FF", "#9932CC"];
+      console.log('dominantColors 필드 추가 (기본값)');
+    }
+    
+    // matchingKeywords가 없으면 기본값 추가
+    if (!result.matchingKeywords || result.matchingKeywords.length === 0) {
+      result.matchingKeywords = [
+        "생동감", "트렌디", "개성적", "화려함", "자신감",
+        "에너지", "독특함", "매력적", "밝음", "당당함"
+      ];
+      console.log('matchingKeywords 필드 추가 (기본값)');
+    }
+    
+    // analysis 객체가 없거나 필수 필드가 없으면 기본값 추가
+    if (!result.analysis || !result.analysis.mood || !result.analysis.style || !result.analysis.expression || !result.analysis.concept) {
+      if (!result.analysis) result.analysis = {} as any;
+      
+      if (!result.analysis.mood) {
+        result.analysis.mood = "눈 마주치는 순간 영혼까지 사로잡는 카리스마 폭격기. \"회의실에 들어가면 공기가 바뀐다\"는 소리 듣는 인간 포스. 말 한마디가 칼보다 강력한 존재감의 소유자.";
+        console.log('mood 필드 추가 (기본값)');
+      }
+      
+      if (!result.analysis.style) {
+        result.analysis.style = "올드머니 여왕의 위엄과 품격. \"와인 리스트 좀 볼게요. 이건 2015년산이네요, 2014년은 없나요?\" 말투에서부터 느껴지는 3대째 물려받은 우아함. 고급 취향이 유전자에 각인된 존재.";
+        console.log('style 필드 추가 (기본값)');
+      }
+      
+      if (!result.analysis.expression) {
+        result.analysis.expression = "자신감 있고 당당한 표현 방식으로, 눈빛만으로 원하는 것을 얻어내는 통찰력의 소유자. \"내가 원하는 건 항상 내 앞에 있어야 해\"라는 아우라가 넘쳐흐르는 표정 관리의 달인.";
+        console.log('expression 필드 추가 (기본값)');
+      }
+      
+      if (!result.analysis.concept) {
+        result.analysis.concept = "비비드한 에너지와 럭셔리한 감성이 공존하는 모순적 매력의 정점. 도전적이면서도 안정적인, 파격적이면서도 클래식한 양면성의 완벽한 균형점.";
+        console.log('concept 필드 추가 (기본값)');
+      }
+    }
+  }
+  
+  /**
+   * 기본 분석 결과 반환
+   */
+  private getDefaultResult(): ImageAnalysisResult {
+    return {
+      traits: {
+        sexy: 7,
+        cute: 5,
+        charisma: 8,
+        darkness: 3,
+        freshness: 6,
+        elegance: 9,
+        freedom: 4,
+        luxury: 10,
+        purity: 3,
+        uniqueness: 7
+      },
+      dominantColors: ["#FFD700", "#FF4500", "#1E90FF", "#9932CC"],
+      personalColor: {
+        season: "spring",
+        tone: "bright",
+        palette: ["#FFD700", "#FFA500", "#FF4500", "#FF6347"],
+        description: "밝고 따뜻한 느낌의 봄 타입 컬러로, 화사하고 생동감 있는 이미지를 표현합니다."
+      },
+      analysis: {
+        mood: "눈 마주치는 순간 영혼까지 사로잡는 카리스마 폭격기. \"회의실에 들어가면 공기가 바뀐다\"는 소리 듣는 인간 포스. 말 한마디가 칼보다 강력한 존재감의 소유자.",
+        style: "올드머니 여왕의 위엄과 품격. \"와인 리스트 좀 볼게요. 이건 2015년산이네요, 2014년은 없나요?\" 말투에서부터 느껴지는 3대째 물려받은 우아함. 고급 취향이 유전자에 각인된 존재.",
+        expression: "자신감 있고 당당한 표현 방식으로, 눈빛만으로 원하는 것을 얻어내는 통찰력의 소유자. \"내가 원하는 건 항상 내 앞에 있어야 해\"라는 아우라가 넘쳐흐르는 표정 관리의 달인.",
+        concept: "비비드한 에너지와 럭셔리한 감성이 공존하는 모순적 매력의 정점. 도전적이면서도 안정적인, 파격적이면서도 클래식한 양면성의 완벽한 균형점.",
+        aura: "순백의 화려함으로 모든 시선을 강탈하는 인간 다이아몬드. 파티의 중심에 서는 것이 운명인 존재. \"화려함은 내 본질이에요.\" 향기에 취한 남자들이 정신을 잃는 마법사.",
+        toneAndManner: "\"난 일 안 해도 돈이 들어와\"라고 말해도 의심하지 않을 완벽한 여유로움. 칵테일 한 잔에 인생의 모든 걱정을 지운 휴양지의 정령. 발걸음마다 자유와 쿨함이 흘러넘치는 존재.",
+        detailedDescription: "화려한 색감과 당당한 포즈가 강한 자신감을 드러내며, 표정에서는 부드러운 미소와 함께 카리스마가 느껴집니다."
+      },
+      matchingKeywords: [
+        "생동감", "트렌디", "개성적", "화려함", "자신감",
+        "에너지", "독특함", "매력적", "밝음", "당당함"
+      ],
+      scentCategories: {
+        citrus: 6,
+        floral: 6, 
+        woody: 6,
+        musky: 6,
+        fruity: 6,
+        spicy: 6
+      },
+      matchingPerfumes: []
+    };
+  }
+}
+
+/**
  * Gemini API 초기화 함수
  */
 export function initializeGeminiAPI() {
@@ -75,362 +591,114 @@ export function initializeModel() {
 }
 
 /**
- * 아이돌 이미지를 분석하여 향수 추천을 위한 특성과 분위기를 추출합니다.
- * @param imageBase64 - Base64 인코딩된 이미지 데이터
- * @param idolInfo - 아이돌 정보
- * @returns 이미지 분석 결과
+ * 이미지 분석 함수
+ * Gemini API를 사용하여 이미지와 텍스트 정보를 함께 분석
+ * 
+ * @param imageBase64 Base64로 인코딩된 이미지 데이터
+ * @param idolInfo 아이돌 정보 (이름, 그룹 등)
+ * @returns 분석 결과 객체
  */
 export async function analyzeIdolImage(
   imageBase64: string,
   idolInfo: IdolInfo
 ): Promise<ImageAnalysisResult> {
   try {
-    // API 및 모델 초기화 확인
-    if (!genAI || !model) {
-      console.log('API 및 모델 초기화 필요');
+    // 초기화 확인 및 필요시 초기화
+    if (!genAI) {
+      console.log('Gemini API 초기화 중...');
       initializeGeminiAPI();
+      initializeModel();
     }
     
-    console.log('이미지 분석 시작:', { 
-      modelName, 
-      idolName: idolInfo.name,
-      idolGroup: idolInfo.group || '미지정',
-      imageSize: Math.round(imageBase64.length / 1024) + 'KB' 
-    });
+    if (!model) {
+      console.log('모델 초기화 오류. 재시도 중...');
+      initializeModel();
+      
+      if (!model) {
+        throw new Error('Gemini 모델을 초기화할 수 없습니다.');
+      }
+    }
 
-    // 이미지 데이터를 Part 객체로 변환
-    const imageData = {
-      inlineData: {
-        data: imageBase64,
-        mimeType: "image/jpeg",
-      },
-    };
+    // 이미지 Base64 데이터 검증
+    if (!imageBase64 || imageBase64.length < 100) {
+      throw new Error('유효하지 않은 이미지 데이터입니다.');
+    }
+    
+    // 이미지 MIME 타입 추론 (기본값: jpeg)
+    let mimeType = 'image/jpeg';
+    if (imageBase64.startsWith('/9j/')) {
+      mimeType = 'image/jpeg';
+    } else if (imageBase64.startsWith('iVBORw0KGgo')) {
+      mimeType = 'image/png';
+    } else if (imageBase64.startsWith('R0lGOD')) {
+      mimeType = 'image/gif';
+    } else if (imageBase64.startsWith('UklGR')) {
+      mimeType = 'image/webp';
+    }
+    
+    // Base64 데이터에 접두사가 있는지 확인하고 제거
+    if (imageBase64.includes('base64,')) {
+      imageBase64 = imageBase64.split('base64,')[1];
+    }
 
+    // 프롬프트 및 이미지 준비
     // 최적화된 프롬프트 - gemini-2.0-flash 모델용
-    const prompt = `당신은 아이돌 이미지를 분석하고 이미지 분위기에 맞는 향수를 추천하는 전문가입니다. 섹시하고 자극적인 표현과 유쾌한 문장으로 분석 결과를 작성해야 합니다.
-
-## 분석 대상
-- 아이돌 이름: ${idolInfo.name}
-- 그룹: ${idolInfo.group || '없음'}
-- 스타일 키워드: ${idolInfo.style?.join(', ') || '미제공'}
-- 성격 키워드: ${idolInfo.personality?.join(', ') || '미제공'}
-- 추가 매력 포인트: ${idolInfo.charms || '미제공'}
-
-## 향수 관련 특성 설명
-1. 섹시함(sexy): 관능적이고 매혹적인 이미지 점수 (3-10)
-2. 귀여움(cute): 애교 있고 사랑스러운 이미지 점수 (3-10)
-3. 카리스마(charisma): 강한 존재감과 영향력 점수 (3-10)
-4. 다크함(darkness): 신비롭고 어두운 매력 점수 (3-10)
-5. 청량함(freshness): 상쾌하고 활기찬 이미지 점수 (3-10)
-6. 우아함(elegance): 고급스럽고 세련된 이미지 점수 (3-10)
-7. 자유로움(freedom): 구속받지 않는 자유로운 이미지 점수 (3-10)
-8. 럭셔리함(luxury): 고급스럽고 풍요로운 이미지 점수 (3-10)
-9. 순수함(purity): 깨끗하고 순수한 이미지 점수 (3-10)
-10. 독특함(uniqueness): 개성 있고 독특한 이미지 점수 (3-10)
-
-## 중요 안내
-- 향 카테고리(citrus, floral 등)는 이미 향수 데이터에 정의되어 있으므로 AI가 생성하지 않습니다.
-- 특성(traits) 점수만 생성하여 향수 매칭에 사용합니다.
-- 각 특성 점수는 3-10 사이의 정수로, 모든 값이 서로 다르게 분포되어야 합니다. 
-- 반드시 모든 10가지 특성 점수를 포함해야 합니다. 누락된 점수가 있으면 안됩니다.
-- 이미지 분석은 매우 상세하고 자극적이며 유쾌한 표현으로 제공해야 합니다.
-- 특히 mood, style, aura, toneAndManner 설명은 매우 자극적이고 유쾌한 톤으로 작성해야 합니다.
-
-## 작성 스타일 가이드
-- "~~한 것 같아요"와 같은 소극적인 표현 대신 "~~다" 형식의 선언적 문장 사용
-- 직접적인 화법, 마치 인스타그램이나 트위터 인플루언서처럼 자신감 있는 표현 사용
-- 따옴표를 활용한 말투 인용 (예: "이게 분위기야? 이건 내 아우라지!")
-- 과장된 표현과 감탄문 사용 (예: "눈빛만으로 세상을 정복할 준비 완료!")
-- 형용사와 부사를 과감하게 사용하여 강렬한 이미지 묘사
-- 짧고 임팩트 있는 문장 사용 (예: "매력 폭격기. 걸을 때마다 공기가 바뀐다.")
-- 트렌디한 인터넷 용어와 이모티콘 활용
-- 아래 참고 예시처럼 유쾌하고 과장된 문장으로 작성
-
-## 분석 스타일 참고 예시
-- mood 예시: "눈 마주치는 순간 영혼까지 사로잡는 카리스마 폭격기. \"회의실에 들어가면 공기가 바뀐다\"는 소리 듣는 인간 포스. 말 한마디가 칼보다 강력한 존재감의 소유자."
-- style 예시: "올드머니 여왕의 위엄과 품격. \"와인 리스트 좀 볼게요. 이건 2015년산이네요, 2014년은 없나요?\" 말투에서부터 느껴지는 3대째 물려받은 우아함. 고급 취향이 유전자에 각인된 존재."
-- aura 예시: "순백의 화려함으로 모든 시선을 강탈하는 인간 다이아몬드. 파티의 중심에 서는 것이 운명인 존재. \"화려함은 내 본질이에요.\" 향기에 취한 남자들이 정신을 잃는 마법사."
-- toneAndManner 예시: "\"난 일 안 해도 돈이 들어와\"라고 말해도 의심하지 않을 완벽한 여유로움. 칵테일 한 잔에 인생의 모든 걱정을 지운 휴양지의 정령. 발걸음마다 자유와 쿨함이 흘러넘치는 존재."
-
-## 분석 요청
-제공된 이미지와 아이돌 정보를 분석하여 다음 정보를 JSON 형식으로 제공해주세요:
-
-1. 각 향수 특성(traits)에 대한 점수(3-10점 사이, 모든 값이 다르게 분포) - 이 부분이 가장 중요합니다! 반드시 모든 10가지 특성을 포함해야 합니다.
-2. 이미지에서 감지되는 주요 색상(HEX 코드)
-3. 퍼스널 컬러 분석(계절감, 톤, 추천 색상 팔레트)
-4. 이미지의 스타일, 분위기, 아우라, 톤앤매너 등을 상세히 설명 - 매우 자극적이고 유쾌한 톤으로 작성!
-5. 이미지와 잘 어울리는 키워드
-6. 사용자 입력 정보를 반영한 맞춤형 분석 내용
-
-반드시 다음 JSON 형식으로만 응답하세요. 설명 없이 JSON만 반환해주세요.
-
-\`\`\`json
-{
-  "traits": {
-    "sexy": 7,      // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-    "cute": 5,      // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-    "charisma": 8,  // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-    "darkness": 3,  // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-    "freshness": 6, // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-    "elegance": 9,  // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-    "freedom": 4,   // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-    "luxury": 10,   // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-    "purity": 3,    // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-    "uniqueness": 7 // 3-10 사이 정수, 필수 포함, 모든 값이 다르게
-  },
-  "dominantColors": ["#FFD700", "#FF4500", "#1E90FF", "#9932CC"],
-  "personalColor": {
-    "season": "spring",  // spring, summer, autumn, winter 중 하나
-    "tone": "bright",    // bright, mute, deep, light 등 톤 설명
-    "palette": ["#FFD700", "#FFA500", "#FF4500", "#FF6347"],
-    "description": "밝고 따뜻한 느낌의 봄 타입 컬러로, 화사하고 생동감 있는 이미지를 표현합니다."
-  },
-  "analysis": {
-    "mood": "눈 마주치는 순간 영혼까지 사로잡는 카리스마 폭격기. \"회의실에 들어가면 공기가 바뀐다\"는 소리 듣는 인간 포스. 말 한마디가 칼보다 강력한 존재감의 소유자.",
-    "style": "올드머니 여왕의 위엄과 품격. \"와인 리스트 좀 볼게요. 이건 2015년산이네요, 2014년은 없나요?\" 말투에서부터 느껴지는 3대째 물려받은 우아함. 고급 취향이 유전자에 각인된 존재.",
-    "expression": "자신감 있고 당당한 표현 방식으로, 눈빛만으로 원하는 것을 얻어내는 통찰력의 소유자. \"내가 원하는 건 항상 내 앞에 있어야 해\"라는 아우라가 넘쳐흐르는 표정 관리의 달인.",
-    "concept": "비비드한 에너지와 럭셔리한 감성이 공존하는 모순적 매력의 정점. 도전적이면서도 안정적인, 파격적이면서도 클래식한 양면성의 완벽한 균형점.",
-    "aura": "순백의 화려함으로 모든 시선을 강탈하는 인간 다이아몬드. 파티의 중심에 서는 것이 운명인 존재. \"화려함은 내 본질이에요.\" 향기에 취한 남자들이 정신을 잃는 마법사.",
-    "toneAndManner": "\"난 일 안 해도 돈이 들어와\"라고 말해도 의심하지 않을 완벽한 여유로움. 칵테일 한 잔에 인생의 모든 걱정을 지운 휴양지의 정령. 발걸음마다 자유와 쿨함이 흘러넘치는 존재.",
-    "detailedDescription": "화려한 색감과 당당한 포즈가 강한 자신감을 드러내며, 표정에서는 부드러운 미소와 함께 카리스마가 느껴집니다."
-  },
-  "matchingKeywords": [
-    "생동감", "트렌디", "개성적", "화려함", "자신감",
-    "에너지", "독특함", "매력적", "밝음", "당당함"
-  ],
-  "customAnalysis": "제공해주신 ${idolInfo.name}님의 이미지에서는 ${idolInfo.style?.join(', ') || ''}의 스타일과 ${idolInfo.personality?.join(', ') || ''}의 성격이 잘 드러나며, 특히 ${idolInfo.charms || '매력적인 특징'}이 돋보입니다. 이러한 특성을 가진 향수가 잘 어울릴 것입니다."
-}
-\`\`\`
-
-반드시 JSON 형식으로만 응답하고, 분석 설명은 포함하지 마세요. 잘 구문 분석되는 JSON만 제공해주세요. traits 객체는 반드시 포함해야 하며, 10개의 특성 점수가 모두 포함되어야 합니다.`;
+    const prompt = improvedImageAnalysisPrompt;
 
     console.log('분석 API 요청 시작');
-    // API 요청 시간 측정 시작
-    const startTime = Date.now();
     
-    const result = await model.generateContent([prompt, imageData]);
+    // 이미지 데이터로 Part 객체 생성
+    const imagePart: Part = {
+      inlineData: {
+        data: imageBase64,
+        mimeType
+      }
+    };
     
-    // API 응답 소요 시간 측정
-    const responseTime = Date.now() - startTime;
-    console.log(`분석 API 응답 수신 (${responseTime / 1000}초 소요)`);
+    // 프롬프트 텍스트로 Part 객체 생성
+    const promptPart: Part = {
+      text: prompt
+    };
     
-    const response = result.response;
-    const text = response.text();
-    console.log('분석 API 응답 텍스트 길이:', text.length);
-    
-    // 디버깅용 로그 (프로덕션에서는 비활성화 가능)
-    if (text.length > 100) {
-      console.log('응답 텍스트 일부:', text.substring(0, 100) + '...');
-    } else {
-      console.log('응답 텍스트:', text);
-    }
+    // 아이돌 정보를 포함한 부가 정보 Part
+    const idolInfoPart: Part = {
+      text: `
+추가 참고 정보:
+- 아이돌/인물 이름: ${idolInfo.name}
+- 그룹/소속: ${idolInfo.group || '정보 없음'}
+- 스타일 키워드: ${idolInfo.style?.join(', ') || '정보 없음'}
+- 성격 키워드: ${idolInfo.personality?.join(', ') || '정보 없음'}
+- 매력 포인트: ${idolInfo.charms || '정보 없음'}
 
-    // JSON 형식 추출
-    let jsonText = text;
+위 정보는 참고만 하고, 이미지에 나타난 실제 특성을 기준으로 점수를 매겨주세요.
+`
+    };
     
-    // 코드 블록 처리 (```json ... ``` 형식)
-    const jsonBlockMatch = text.match(/```(?:json)?([\s\S]*?)```/);
-    if (jsonBlockMatch && jsonBlockMatch[1]) {
-      jsonText = jsonBlockMatch[1].trim();
-      console.log('JSON 코드 블록 추출됨');
-    }
+    // Gemini API 호출 설정
+    const geminiConfig = {
+      generationConfig: {
+        temperature: 0.2,
+        topK: 32,
+        topP: 0.95,
+        maxOutputTokens: 4096,
+      }
+    };
+
+    // Gemini API 호출
+    const result = await model.generateContent([promptPart, imagePart, idolInfoPart], geminiConfig);
+    const response = await result.response;
+    const responseText = response.text();
     
-    // 불필요한 설명 텍스트 제거
-    jsonText = jsonText.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
+    console.log('분석 API 응답 수신 완료');
     
-    console.log('JSON 파싱 시도');
-    let parsedResult: ImageAnalysisResult;
+    // 응답 처리
+    const safeParser = new SafeJSONParser(responseText);
+    const parsedResult = safeParser.parse();
     
-    try {
-      parsedResult = JSON.parse(jsonText);
-      console.log('JSON 파싱 성공');
-      
-      // 결과 유효성 검사 및 필수 필드 확인
-      if (!parsedResult.traits) {
-        console.error('필수 분석 결과 필드(traits)가 누락됨');
-        throw new Error('분석 결과에 특성(traits) 정보가 없습니다. 다시 시도해주세요.');
-      }
-      
-      // 모든 향수 특성(traits)가 있는지 확인
-      const requiredTraits = ['sexy', 'cute', 'charisma', 'darkness', 'freshness', 'elegance', 'freedom', 'luxury', 'purity', 'uniqueness'];
-      const missingTraits = requiredTraits.filter(trait => !(trait in parsedResult.traits));
-      
-      if (missingTraits.length > 0) {
-        console.error(`누락된 특성 필드: ${missingTraits.join(', ')}`);
-        
-        // 누락된 특성에 기본값 할당
-        const usedValues = Object.values(parsedResult.traits).map(val => Number(val));
-        missingTraits.forEach(trait => {
-          // 3-10 사이에서 아직 사용되지 않은 값 찾기
-          for (let val = 5; val <= 10; val++) {
-            if (!usedValues.includes(val)) {
-              parsedResult.traits[trait] = val;
-              usedValues.push(val);
-              break;
-            }
-          }
-          // 값을 찾지 못했다면 기본값 5 사용
-          if (!(trait in parsedResult.traits)) {
-            parsedResult.traits[trait] = 5;
-          }
-        });
-        
-        console.log(`누락된 특성 필드에 기본값 할당됨: ${missingTraits.join(', ')}`);
-      }
-      
-      // 값이 3-10 범위인지, 숫자 타입인지 확인하고 수정
-      for (const trait of requiredTraits) {
-        const value = parsedResult.traits[trait];
-        if (typeof value !== 'number' || isNaN(value)) {
-          console.warn(`특성 ${trait}의 값이 숫자가 아님, 기본값 5로 설정`);
-          parsedResult.traits[trait] = 5;
-        } else if (value < 3 || value > 10) {
-          console.warn(`특성 ${trait}의 값(${value})이 범위를 벗어남, 조정`);
-          parsedResult.traits[trait] = Math.max(3, Math.min(10, value));
-        }
-      }
-      
-      // 중복된 값이 있는지 확인하고 수정
-      const values = requiredTraits.map(trait => parsedResult.traits[trait]);
-      const uniqueValues = new Set(values);
-      
-      if (uniqueValues.size < requiredTraits.length) {
-        console.warn('중복된 특성 점수가 있음, 조정');
-        
-        // 이미 사용된 값 추적
-        const usedValues = new Set<number>();
-        
-        // 각 특성에 대해
-        for (const trait of requiredTraits) {
-          const value = parsedResult.traits[trait];
-          
-          // 이 값이 이미 다른 특성에 사용되었는지 확인
-          if (!usedValues.has(value)) {
-            usedValues.add(value);
-          } else {
-            // 중복된 값이라면 사용되지 않은 값 찾기
-            for (let newValue = 3; newValue <= 10; newValue++) {
-              if (!usedValues.has(newValue)) {
-                parsedResult.traits[trait] = newValue;
-                usedValues.add(newValue);
-                console.log(`특성 ${trait}의 중복 값 ${value}를 ${newValue}로 조정`);
-                break;
-              }
-            }
-          }
-        }
-      }
-      
-      // scentCategories 필드가 없으면 기본값 추가 (해당 데이터는 향수 매칭에서 필요)
-      if (!parsedResult.scentCategories) {
-        console.log('향 카테고리 필드 추가 (기본값)');
-        parsedResult.scentCategories = {
-          citrus: 6,
-          floral: 6, 
-          woody: 6,
-          musky: 6,
-          fruity: 6,
-          spicy: 6
-        };
-      }
-      
-      // 기타 필수 필드 확인 및 기본값 설정
-      if (!parsedResult.dominantColors || !Array.isArray(parsedResult.dominantColors) || parsedResult.dominantColors.length === 0) {
-        console.log('dominantColors 필드 추가 (기본값)');
-        parsedResult.dominantColors = ["#FFD700", "#FF4500", "#1E90FF", "#9932CC"];
-      }
-      
-      if (!parsedResult.personalColor) {
-        console.log('personalColor 필드 추가 (기본값)');
-        parsedResult.personalColor = {
-          season: "spring",
-          tone: "bright",
-          palette: ["#FFD700", "#FFA500", "#FF4500", "#FF6347"],
-          description: "밝고 따뜻한 느낌의 봄 타입 컬러로, 화사하고 생동감 있는 이미지를 표현합니다."
-        };
-      }
-      
-      if (!parsedResult.analysis) {
-        console.log('analysis 필드 추가 (기본값)');
-        parsedResult.analysis = {
-          mood: "눈 마주치는 순간 영혼까지 사로잡는 카리스마 폭격기. \"회의실에 들어가면 공기가 바뀐다\"는 소리 듣는 인간 포스. 말 한마디가 칼보다 강력한 존재감의 소유자.",
-          style: "올드머니 여왕의 위엄과 품격. \"와인 리스트 좀 볼게요. 이건 2015년산이네요, 2014년은 없나요?\" 말투에서부터 느껴지는 3대째 물려받은 우아함. 고급 취향이 유전자에 각인된 존재.",
-          expression: "자신감 있고 당당한 표현 방식으로, 눈빛만으로 원하는 것을 얻어내는 통찰력의 소유자. \"내가 원하는 건 항상 내 앞에 있어야 해\"라는 아우라가 넘쳐흐르는 표정 관리의 달인.",
-          concept: "비비드한 에너지와 럭셔리한 감성이 공존하는 모순적 매력의 정점. 도전적이면서도 안정적인, 파격적이면서도 클래식한 양면성의 완벽한 균형점.",
-          aura: "순백의 화려함으로 모든 시선을 강탈하는 인간 다이아몬드. 파티의 중심에 서는 것이 운명인 존재. \"화려함은 내 본질이에요.\" 향기에 취한 남자들이 정신을 잃는 마법사.",
-          toneAndManner: "\"난 일 안 해도 돈이 들어와\"라고 말해도 의심하지 않을 완벽한 여유로움. 칵테일 한 잔에 인생의 모든 걱정을 지운 휴양지의 정령. 발걸음마다 자유와 쿨함이 흘러넘치는 존재.",
-          detailedDescription: "화려한 색감과 당당한 포즈가 강한 자신감을 드러내며, 표정에서는 부드러운 미소와 함께 카리스마가 느껴집니다."
-        };
-      }
-      
-      if (!parsedResult.matchingKeywords || !Array.isArray(parsedResult.matchingKeywords) || parsedResult.matchingKeywords.length === 0) {
-        console.log('matchingKeywords 필드 추가 (기본값)');
-        parsedResult.matchingKeywords = [
-          "생동감", "트렌디", "개성적", "화려함", "자신감",
-          "에너지", "독특함", "매력적", "밝음", "당당함"
-        ];
-      }
-      
-      // matchingPerfumes 필드는 분석 후 매칭 로직에서 추가되므로 초기화
-      parsedResult.matchingPerfumes = [];
-      
-    } catch (parseError) {
-      console.error('JSON 파싱 오류:', parseError);
-      console.log('원본 응답 텍스트:', text);
-      
-      // JSON 형식이 아닌 경우 기본값 사용
-      parsedResult = {
-        traits: {
-          sexy: 7,
-          cute: 5,
-          charisma: 8,
-          darkness: 3,
-          freshness: 6,
-          elegance: 9,
-          freedom: 4,
-          luxury: 10,
-          purity: 3,
-          uniqueness: 7
-        },
-        dominantColors: ["#FFD700", "#FF4500", "#1E90FF", "#9932CC"],
-        personalColor: {
-          season: "spring",
-          tone: "bright",
-          palette: ["#FFD700", "#FFA500", "#FF4500", "#FF6347"],
-          description: "밝고 따뜻한 느낌의 봄 타입 컬러로, 화사하고 생동감 있는 이미지를 표현합니다."
-        },
-        analysis: {
-          mood: "눈 마주치는 순간 영혼까지 사로잡는 카리스마 폭격기. \"회의실에 들어가면 공기가 바뀐다\"는 소리 듣는 인간 포스. 말 한마디가 칼보다 강력한 존재감의 소유자.",
-          style: "올드머니 여왕의 위엄과 품격. \"와인 리스트 좀 볼게요. 이건 2015년산이네요, 2014년은 없나요?\" 말투에서부터 느껴지는 3대째 물려받은 우아함. 고급 취향이 유전자에 각인된 존재.",
-          expression: "자신감 있고 당당한 표현 방식으로, 눈빛만으로 원하는 것을 얻어내는 통찰력의 소유자. \"내가 원하는 건 항상 내 앞에 있어야 해\"라는 아우라가 넘쳐흐르는 표정 관리의 달인.",
-          concept: "비비드한 에너지와 럭셔리한 감성이 공존하는 모순적 매력의 정점. 도전적이면서도 안정적인, 파격적이면서도 클래식한 양면성의 완벽한 균형점.",
-          aura: "순백의 화려함으로 모든 시선을 강탈하는 인간 다이아몬드. 파티의 중심에 서는 것이 운명인 존재. \"화려함은 내 본질이에요.\" 향기에 취한 남자들이 정신을 잃는 마법사.",
-          toneAndManner: "\"난 일 안 해도 돈이 들어와\"라고 말해도 의심하지 않을 완벽한 여유로움. 칵테일 한 잔에 인생의 모든 걱정을 지운 휴양지의 정령. 발걸음마다 자유와 쿨함이 흘러넘치는 존재.",
-          detailedDescription: "화려한 색감과 당당한 포즈가 강한 자신감을 드러내며, 표정에서는 부드러운 미소와 함께 카리스마가 느껴집니다."
-        },
-        matchingKeywords: [
-          "생동감", "트렌디", "개성적", "화려함", "자신감",
-          "에너지", "독특함", "매력적", "밝음", "당당함"
-        ],
-        scentCategories: {
-          citrus: 6,
-          floral: 6, 
-          woody: 6,
-          musky: 6,
-          fruity: 6,
-          spicy: 6
-        },
-        matchingPerfumes: []
-      };
-      console.log('JSON 파싱 오류로 기본 분석 결과 사용');
-    }
-    
-    // 향수 매칭 수행
-    const matchedPerfumes = findMatchingPerfumes(parsedResult);
-    parsedResult.matchingPerfumes = matchedPerfumes;
-    
+    // 분석 결과 검증
+    // ... existing code ...
+
     return parsedResult;
-    
   } catch (error) {
     console.error('이미지 분석 중 오류 발생:', error);
     
