@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { PerfumeCategory } from '../types/perfume';
-import PerfumeList from '../components/PerfumeList';
+import PerfumeList from '../components/PerfumeList/index';
 import { perfumes } from '../data/perfumeData';
 
 export default function PerfumesPage() {

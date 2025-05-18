@@ -3,7 +3,7 @@
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getPerfumeById } from '../../data/perfumeData';
-import PerfumeRadarChart from '../../components/PerfumeRadarChart';
+import PerfumeRadarChart from '../../components/PerfumeRadarChart/index';
 import { getCategoryKoreanName } from '../../utils/perfumeUtils';
 
 export default function PerfumeDetailPage() {
