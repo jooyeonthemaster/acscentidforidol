@@ -1,0 +1,27 @@
+{
+  "sessionId": "0f849c5c-3853-4c5b-95ba-ee2cb0379f66",
+  "perfumeId": "",
+  "perfumeName": "타임",
+  "matchingScore": 0.9315140241467574,
+  "overallSatisfaction": 20,
+  "emotionRating": 1,
+  "traitRatings": {
+    "sexy": 7,
+    "cute": 3,
+    "charisma": 6,
+    "darkness": 3,
+    "freshness": 6,
+    "elegance": 4,
+    "freedom": 4,
+    "luxury": 3,
+    "purity": 5,
+    "uniqueness": 6
+  },
+  "preferredTraits": [
+    "cute",
+    "charisma",
+    "darkness"
+  ],
+  "comment": "",
+  "timestamp": 1747491096836
+}

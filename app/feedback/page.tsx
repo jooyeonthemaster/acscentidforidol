@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PerfumePersona } from '@/app/types/perfume';
 import { motion } from 'framer-motion';
+import FeedbackForm from '@/app/components/feedback/FeedbackForm';
 
 // 피드백 데이터 인터페이스
 interface PerfumeFeedback {
@@ -23,16 +24,7 @@ export default function FeedbackPage() {
   const [error, setError] = useState<string | null>(null);
   const [perfume, setPerfume] = useState<PerfumePersona | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [feedback, setFeedback] = useState<PerfumeFeedback>({
-    perfumeId: '',
-    retentionPercentage: 100,
-    intensity: 3,
-    sweetness: 3,
-    bitterness: 3,
-    sourness: 3,
-    freshness: 3,
-    notes: '',
-  });
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   useEffect(() => {
     try {
@@ -56,7 +48,6 @@ export default function FeedbackPage() {
       }
       
       setPerfume(topMatch.persona);
-      setFeedback(prev => ({ ...prev, perfumeId: topMatch.persona.id }));
       setLoading(false);
       setIsLoaded(true);
     } catch (err) {
@@ -66,52 +57,27 @@ export default function FeedbackPage() {
     }
   }, []);
 
-  // 슬라이더 변경 핸들러
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFeedback(prev => ({ ...prev, [name]: parseInt(value) }));
-  };
-  
-  // 라디오 버튼 변경 핸들러
-  const handleRadioChange = (value: number) => {
-    setFeedback(prev => ({ ...prev, retentionPercentage: value }));
-  };
-  
-  // 텍스트 영역 변경 핸들러
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setFeedback(prev => ({ ...prev, notes: e.target.value }));
-  };
-  
-  // 피드백 제출 핸들러
-  const handleSubmit = async () => {
-    try {
-      // 로컬 스토리지에 피드백 저장
-      localStorage.setItem('perfumeFeedback', JSON.stringify(feedback));
-      
-      // API 호출 준비
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(feedback),
-      });
-      
-      if (!response.ok) {
-        throw new Error('피드백 저장에 실패했습니다.');
-      }
-      
-      // 향수 조정 페이지로 이동
-      router.push('/adjustment');
-    } catch (error) {
-      console.error('피드백 제출 오류:', error);
-      alert('피드백을 저장하는 중 오류가 발생했습니다. 다시 시도해주세요.');
-    }
+  // 피드백 제출 처리
+  const handleFeedbackSubmit = () => {
+    setFeedbackSubmitted(true);
+    // 사용자를 다음 페이지로 리디렉션하는 대신, 
+    // 컴포넌트 내에서 상태를 업데이트하여 성공 메시지를 표시
   };
   
   // 결과 페이지로 돌아가기
   const handleBack = () => {
     router.push('/result');
+  };
+
+  // 모달 닫기
+  const handleClose = () => {
+    if (feedbackSubmitted) {
+      // 피드백이 제출되었으면 결과 페이지로 리디렉션
+      router.push('/result');
+    } else {
+      // 제출하지 않고 닫으면 그냥 뒤로가기
+      handleBack();
+    }
   };
 
   if (loading) {
@@ -150,7 +116,7 @@ export default function FeedbackPage() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: isLoaded ? 1 : 0, scale: isLoaded ? 1 : 0.95 }}
         transition={{ duration: 0.6 }}
-        className="w-[380px] relative bg-white rounded-3xl border-4 border-dashed border-gray-300 p-6 shadow-lg"
+        className="w-[530px] max-w-full relative bg-white rounded-3xl border-4 border-dashed border-gray-300 p-6 shadow-lg"
         style={{ maxHeight: '90vh', overflowY: 'auto', overflowX: 'hidden' }}
       >
         {/* 왼쪽 위 점 장식 */}
@@ -189,213 +155,13 @@ export default function FeedbackPage() {
           </p>
         </div>
 
-        {/* 향수 정보 */}
-        <div className="bg-white rounded-xl shadow-md p-4 mb-6">
-          <div className="flex items-center mb-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-r from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold mr-3 text-sm">
-              {perfume.id.split('-')[0]}
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-800">{perfume.name}</h2>
-              <p className="text-xs text-gray-500">{perfume.id}</p>
-            </div>
-          </div>
-          
-          <p className="text-sm text-gray-700 mb-3">{perfume.description}</p>
-          
-          <div className="flex flex-wrap gap-1.5 mb-1">
-            {perfume.keywords.map((keyword, index) => (
-              <span key={index} className="px-2 py-0.5 bg-pink-100 text-pink-800 text-xs rounded-full">
-                {keyword}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* 피드백 폼 */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">향수 피드백</h2>
-          
-          {/* 향 유지 비율 */}
-          <div className="mb-5 bg-white rounded-xl shadow-md p-4">
-            <h3 className="text-base font-semibold text-gray-700 mb-2">향 유지 비율</h3>
-            <p className="text-xs text-gray-600 mb-3">
-              추천 향수의 기본 조합에서 얼마나 유지하고 싶으신가요?
-            </p>
-            
-            <div className="grid grid-cols-3 gap-2">
-              {[0, 20, 40, 60, 80, 100].map((value) => (
-                <label 
-                  key={value} 
-                  className={`
-                    border rounded-md p-2 flex flex-col items-center cursor-pointer transition-colors
-                    ${feedback.retentionPercentage === value 
-                      ? 'border-yellow-500 bg-yellow-50' 
-                      : 'border-gray-200 hover:border-yellow-300'}
-                  `}
-                >
-                  <input
-                    type="radio"
-                    name="retentionPercentage"
-                    value={value}
-                    checked={feedback.retentionPercentage === value}
-                    onChange={() => handleRadioChange(value)}
-                    className="sr-only"
-                  />
-                  <span className="text-base font-bold text-gray-700">{value}%</span>
-                  <span className="text-[9px] text-gray-500">
-                    {value === 0 && '완전 변경'}
-                    {value === 100 && '완전 유지'}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-          
-          {/* 향 특성 슬라이더 */}
-          <div className="mb-5 bg-white rounded-xl shadow-md p-4">
-            <h3 className="text-base font-semibold text-gray-700 mb-2">향 특성 조정</h3>
-            
-            {/* 향의 강도 */}
-            <div className="mb-3">
-              <div className="flex justify-between mb-1">
-                <label htmlFor="intensity" className="text-sm font-medium text-gray-700">향의 강도</label>
-                <span className="text-xs text-gray-500">{feedback.intensity}/5</span>
-              </div>
-              <input
-                type="range"
-                id="intensity"
-                name="intensity"
-                min="1"
-                max="5"
-                value={feedback.intensity}
-                onChange={handleSliderChange}
-                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                <span>약함</span>
-                <span>강함</span>
-              </div>
-            </div>
-            
-            {/* 단맛 */}
-            <div className="mb-3">
-              <div className="flex justify-between mb-1">
-                <label htmlFor="sweetness" className="text-sm font-medium text-gray-700">단맛</label>
-                <span className="text-xs text-gray-500">{feedback.sweetness}/5</span>
-              </div>
-              <input
-                type="range"
-                id="sweetness"
-                name="sweetness"
-                min="1"
-                max="5"
-                value={feedback.sweetness}
-                onChange={handleSliderChange}
-                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                <span>적게</span>
-                <span>많이</span>
-              </div>
-            </div>
-            
-            {/* 쓴맛 */}
-            <div className="mb-3">
-              <div className="flex justify-between mb-1">
-                <label htmlFor="bitterness" className="text-sm font-medium text-gray-700">쓴맛</label>
-                <span className="text-xs text-gray-500">{feedback.bitterness}/5</span>
-              </div>
-              <input
-                type="range"
-                id="bitterness"
-                name="bitterness"
-                min="1"
-                max="5"
-                value={feedback.bitterness}
-                onChange={handleSliderChange}
-                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                <span>적게</span>
-                <span>많이</span>
-              </div>
-            </div>
-            
-            {/* 시큼함 */}
-            <div className="mb-3">
-              <div className="flex justify-between mb-1">
-                <label htmlFor="sourness" className="text-sm font-medium text-gray-700">시큼함</label>
-                <span className="text-xs text-gray-500">{feedback.sourness}/5</span>
-              </div>
-              <input
-                type="range"
-                id="sourness"
-                name="sourness"
-                min="1"
-                max="5"
-                value={feedback.sourness}
-                onChange={handleSliderChange}
-                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                <span>적게</span>
-                <span>많이</span>
-              </div>
-            </div>
-            
-            {/* 신선함 */}
-            <div className="mb-1">
-              <div className="flex justify-between mb-1">
-                <label htmlFor="freshness" className="text-sm font-medium text-gray-700">신선함</label>
-                <span className="text-xs text-gray-500">{feedback.freshness}/5</span>
-              </div>
-              <input
-                type="range"
-                id="freshness"
-                name="freshness"
-                min="1"
-                max="5"
-                value={feedback.freshness}
-                onChange={handleSliderChange}
-                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                <span>적게</span>
-                <span>많이</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* 추가 코멘트 */}
-          <div className="mb-5 bg-white rounded-xl shadow-md p-4">
-            <h3 className="text-base font-semibold text-gray-700 mb-2">추가 코멘트</h3>
-            <textarea
-              id="notes"
-              name="notes"
-              value={feedback.notes}
-              onChange={handleNotesChange}
-              placeholder="향수에 대한 추가 의견이나 바라는 점을 자유롭게 작성해주세요."
-              className="w-full h-24 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 resize-none"
-            />
-          </div>
-          
-          {/* 버튼 영역 */}
-          <div className="flex flex-col justify-center gap-3 mt-6">
-            <button
-              onClick={handleSubmit}
-              className="bg-yellow-400 text-gray-800 font-bold py-2.5 px-6 rounded-full shadow-md hover:bg-yellow-500 transition-colors w-full"
-            >
-              피드백 제출하기
-            </button>
-            <button
-              onClick={handleBack}
-              className="bg-white border-2 border-gray-800 text-gray-800 font-bold py-2 px-6 rounded-full shadow-sm hover:bg-gray-100 transition-colors w-full"
-            >
-              이전으로 돌아가기
-            </button>
-          </div>
-        </div>
+        {/* FeedbackForm 컴포넌트 사용 */}
+        <FeedbackForm 
+          perfumeId={perfume.id} 
+          perfumeName={perfume.name}
+          onClose={handleClose}
+          onSubmit={handleFeedbackSubmit}
+        />
       </motion.div>
     </div>
   );

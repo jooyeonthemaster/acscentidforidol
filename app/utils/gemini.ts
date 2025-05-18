@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, Part } from '@google/generative-ai';
-import { ImageAnalysisResult } from '../types/perfume';
+import { ImageAnalysisResult, TraitScores, ScentCategoryScores } from '../types/perfume';
 import perfumePersonas from '../data/perfumePersonas';
 import { perfumes } from '../data/perfumeData';
 
@@ -50,13 +50,15 @@ const improvedImageAnalysisPrompt = `
 점수 분포를 1-10 전체 범위에서 골고루 사용하여, 특성 간 명확한 차이가 드러나도록 해주세요.
 두 개 이상의 특성에 동일한 점수를 부여하는 것은 가급적 피하고, 차별화된 점수를 매겨주세요.
 
-향 카테고리도 분석해주세요 (각 향 특성별로 1-10 점수):
-- citrus: 상큼하고 톡 쏘는 감귤류 향 (레몬, 오렌지 등)
-- floral: 꽃향기 (장미, 자스민, 라일락 등)
-- woody: 나무, 숲의 향 (샌달우드, 시더우드 등)
-- musky: 묵직하고 관능적인 향 (머스크, 앰버 등)
-- fruity: 달콤한 과일향 (복숭아, 베리류 등)
-- spicy: 따뜻하고 자극적인 향신료 향 (시나몬, 정향 등)
+이미지에 어울릴 것 같은 향 카테고리도 분석해주세요 (각 향 특성별로 1-10 점수, 서로 다른 값으로 평가):
+- citrus: 상큼하고 톡 쏘는 감귤류 향 (레몬, 오렌지 등) - 밝고 경쾌한 이미지와 어울림
+- floral: 꽃향기 (장미, 자스민, 라일락 등) - 우아하고 여성스러운 이미지와 어울림
+- woody: 나무, 숲의 향 (샌달우드, 시더우드 등) - 차분하고 안정적인 이미지와 어울림
+- musky: 묵직하고 관능적인 향 (머스크, 앰버 등) - 성숙하고 관능적인 이미지와 어울림
+- fruity: 달콤한 과일향 (복숭아, 베리류 등) - 귀엽고 발랄한 이미지와 어울림
+- spicy: 따뜻하고 자극적인 향신료 향 (시나몬, 정향 등) - 강렬하고 독특한 이미지와 어울림
+
+각 향 카테고리별 점수는 이미지와 얼마나 어울리는지에 따라 부여해주세요. 모든 카테고리에 동일한 점수를 부여하지 말고, 이미지 특성에 맞게 다양한 점수(1-10)를 사용하세요. 적어도 2개 이상의 향 카테고리에 높은 점수(7-10)를 부여하고, 2개 이상의 카테고리에 낮은 점수(1-5)를 부여하여 차별화해주세요.
 
 다음 형식의 JSON으로 응답해주세요:
 {
@@ -79,7 +81,21 @@ const improvedImageAnalysisPrompt = `
     "musky": [1-10 점수],
     "fruity": [1-10 점수],
     "spicy": [1-10 점수]
-  }
+  },
+  "dominantColors": ["#RRGGBB", "#RRGGBB", "#RRGGBB", "#RRGGBB"],
+  "personalColor": {
+    "season": "spring | summer | autumn | winter",
+    "tone": "bright | light | mute | deep",
+    "palette": ["#RRGGBB", "#RRGGBB", "#RRGGBB", "#RRGGBB"],
+    "description": "1-2문장 한글 설명"
+  },
+  "analysis": {
+    "mood": "1-2문장, 과장과 감탄사 가득한 주접 멘트로 이미지 분위기 묘사 (예: \"오마이갓! 이 풋풋한 에너지에 심장이 스파클링!\")",
+    "style": "1-2문장, 톱 클래스 패션 스타일리스트가 분석하듯 전문용어+주접 혼합 설명 (예: \"세계적 디자이너도 울고 갈 하이패션 믹스매치!\")",
+    "expression": "1문장, 표정·포즈를 유쾌하게 과장한 설명",
+    "concept": "1문장, 사진의 콘셉트를 영화나 드라마에 빗대 과감하게 표현"
+  },
+  "matchingKeywords": ["키워드1", "키워드2", "키워드3", "키워드4", "키워드5"]
 }
 `;
 
@@ -95,37 +111,299 @@ class SafeJSONParser {
   }
   
   /**
-   * JSON 문자열 전처리
+   * JSON 문자열 전처리 - 개선된 버전
    */
   private preprocess(jsonStr: string): string {
-    // 코드 블록 제거
-    const jsonBlockMatch = jsonStr.match(/```(?:json)?([\s\S]*?)```/);
+    console.log('원본 JSON 문자열 길이:', jsonStr.length);
+    
+    // 1. 코드 블록 제거 (```json ... ```)
+    const jsonBlockMatch = jsonStr.match(/```(?:json)?([\\s\\S]*?)```/);
     if (jsonBlockMatch && jsonBlockMatch[1]) {
       jsonStr = jsonBlockMatch[1].trim();
+      console.log('코드 블록 제거 완료');
     }
     
-    // 불필요한 설명 텍스트 제거
+    // 2. 불필요한 설명 텍스트 제거 (JSON 시작 전 및 끝 이후 텍스트)
     jsonStr = jsonStr.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
+    console.log('불필요한 텍스트 제거 완료');
     
-    // 따옴표 처리
+    // 3. 리터럴 문자열 "\n", "\r", "\t"를 실제 제어 문자로 변환 - 새로 추가!
+    try {
+      // 이스케이프된 문자열을 실제 문자로 변환 (JSON.parse 사용)
+      jsonStr = jsonStr.replace(/\\n/g, '\\n')
+                       .replace(/\\r/g, '\\r')
+                       .replace(/\\t/g, '\\t')
+                       .replace(/\\"/g, '\\"');
+      
+      // 또는 직접 문자열 대체
+      jsonStr = jsonStr.replace(/\\\\n/g, '\\n')
+                       .replace(/\\\\r/g, '\\r')
+                       .replace(/\\\\t/g, '\\t')
+                       .replace(/\\\\"/g, '\\"');
+      
+      console.log('리터럴 이스케이프 문자열 처리 완료');
+    } catch (error) {
+      console.warn('이스케이프 문자열 처리 중 오류:', error);
+    }
+    
+    // 4. 제어 문자 제거 (JSON에서 유효하지 않은 문자)
+    jsonStr = this.removeControlCharacters(jsonStr);
+    console.log('제어 문자 제거 완료');
+    
+    // 5. 따옴표 처리
     jsonStr = this.fixQuotes(jsonStr);
+    console.log('따옴표 처리 완료');
     
-    console.log('따옴표 처리 후 JSON:', jsonStr.substring(0, 70) + '...');
+    // 6. 줄바꿈 문자 처리
+    jsonStr = this.fixLineBreaks(jsonStr);
+    console.log('줄바꿈 처리 완료');
+    
+    // 7. 문자열 내 이스케이프되지 않은 백슬래시 처리 - 새로 추가!
+    jsonStr = this.fixBackslashes(jsonStr);
+    console.log('백슬래시 처리 완료');
+    
+    // 8. JSON 객체가 맞는지 확인 (중괄호로 시작하고 끝나는지)
+    if (!jsonStr.trim().startsWith('{') || !jsonStr.trim().endsWith('}')) {
+      console.warn('JSON 문자열이 객체 형식이 아닙니다. 가장 바깥쪽 중괄호 추가');
+      jsonStr = `{${jsonStr}}`;
+    }
+    
+    // 9. JSON 문자열 정상화 (문자열 내부 개행문자를 이스케이프된 형태로 통일) - 새로 추가!
+    jsonStr = this.normalizeJSON(jsonStr);
+    console.log('JSON 문자열 정상화 완료');
+    
+    // 전처리된 JSON 로깅 (처음 100자만)
+    const previewLength = Math.min(100, jsonStr.length);
+    console.log('전처리 후 JSON:', jsonStr.substring(0, previewLength) + (jsonStr.length > previewLength ? '...' : ''));
     
     return jsonStr;
   }
   
   /**
-   * 이스케이프되지 않은 따옴표 처리
+   * 제어 문자 제거 - 새로 추가된 메서드
    */
-  private fixQuotes(jsonStr: string): string {
-    // 1. 텍스트 내의 따옴표 문제 처리 (텍스트 내에서 쌍따옴표가 이스케이프되지 않은 경우)
-    // 예: "text": "He said "hello" to me" -> "text": "He said \"hello\" to me"
+  private removeControlCharacters(str: string): string {
+    // ASCII 제어 문자 (0x00-0x1F, 0x7F) 제거
+    // 단, 일부 개행, 탭 등은 이스케이프 처리
+    let result = '';
+    for (let i = 0; i < str.length; i++) {
+      const charCode = str.charCodeAt(i);
+      
+      if (charCode <= 0x1F) {
+        // 개행 문자(LF, CR)는 이스케이프 처리
+        if (charCode === 0x0A) { // LF (Line Feed, \n)
+          // 줄바꿈은 JSON에서 허용되는 공백 문자이므로 그대로 유지
+          result += '\n';
+        } 
+        else if (charCode === 0x0D) { // CR (Carriage Return, \r)
+          result += '\r';
+        }
+        else if (charCode === 0x09) { // 탭 (Tab, \t)
+          result += '\t';
+        }
+        // 다른 제어 문자는 무시 (제거)
+      } 
+      else if (charCode === 0x7F) { // DEL 문자
+        // 무시 (제거)
+      } 
+      else {
+        // 일반 문자는 그대로 유지
+        result += str.charAt(i);
+      }
+    }
     
-    // 프로퍼티 값 내부의 이스케이프되지 않은 따옴표 처리 정규식
-    // 해당 정규식은 프로퍼티 값 내에서 이스케이프되지 않은 따옴표를 찾아 이스케이프합니다
-    return jsonStr.replace(/: *"([^"\\]*(\\.[^"\\]*)*)"([^"\\]*)"([^"]*)"(?=[,}])/g, 
-                            (match, p1, p2, p3, p4) => `: "${p1}${p3.replace(/"/g, '\\"')}${p4}"`);
+    if (result.length !== str.length) {
+      console.log(`제어 문자 ${str.length - result.length}개 제거됨`);
+    }
+    
+    return result;
+  }
+  
+  /**
+   * 이스케이프되지 않은 따옴표 처리 - 전면 개선된 버전
+   */
+  private fixQuotes(str: string): string {
+    // 1단계: JSON 문자열을 분석하여 프로퍼티와 값을 올바르게 구분
+    let result = '';
+    let inString = false;
+    let inKey = false;
+    let escapeNext = false;
+    let buffer = '';
+    
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charAt(i);
+      
+      // 다음 문자 이스케이프 처리
+      if (escapeNext) {
+        escapeNext = false;
+        result += char;
+        continue;
+      }
+      
+      // 이스케이프 문자 자체 처리
+      if (char === '\\') {
+        escapeNext = true;
+        result += char;
+        continue;
+      }
+      
+      // 따옴표 처리 (문자열 시작/종료 구분)
+      if (char === '"') {
+        // 문자열 시작
+        if (!inString) {
+          inString = true;
+          inKey = !result.trim().endsWith(':') && !result.trim().endsWith(',') && 
+                 !result.trim().endsWith('[') && !result.trim().endsWith('{');
+          buffer = '';
+          result += char;
+        } 
+        // 문자열 종료
+        else {
+          // 문자열이 끝나는지 확인
+          const isStringEnd = i === str.length - 1 || 
+                              /[\s,\}\]:]/g.test(str.charAt(i + 1));
+          
+          if (isStringEnd) {
+            inString = false;
+            inKey = false;
+            result += char;
+          } else {
+            // 문자열 내부의 따옴표는 이스케이프
+            result += '\\' + char;
+          }
+        }
+      } 
+      // 문자열 내부 처리
+      else if (inString) {
+        buffer += char;
+        
+        // 키 내부의 백슬래시는 그대로 유지 (이미 이스케이프 처리되었거나 필요 없는 경우)
+        if (inKey && char === '\\') {
+          // 백슬래시를 그대로 유지
+        }
+        
+        result += char;
+      } 
+      // 문자열 외부 처리
+      else {
+        result += char;
+      }
+    }
+    
+    // 2단계: JSON에서 특수한 프로퍼티명에서 역슬래시 제거
+    result = result.replace(/"([^"]*?)\\([^"]*?)":/g, '"$1$2":');
+    
+    return result;
+  }
+  
+  /**
+   * 줄바꿈 문자를 이스케이프하여 처리 - 새로 추가된 메서드
+   */
+  private fixLineBreaks(str: string): string {
+    // 특정 필드에서 줄바꿈 문자를 이스케이프 처리
+    // 텍스트 필드에 해당하는 프로퍼티를 찾아 해당 값에서 줄바꿈 이스케이프
+    return str.replace(/"(mood|style|expression|concept|aura|toneAndManner|detailedDescription|description)":\s*"([^"]*)"/g, 
+      (match, field, content) => {
+        // 줄바꿈 문자를 이스케이프 처리
+        const escapedContent = content
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '\\r')
+          .replace(/\t/g, '\\t');
+        return `"${field}":"${escapedContent}"`;
+      }
+    );
+  }
+  
+  /**
+   * 백슬래시 처리 - 새로 추가된 메서드
+   */
+  private fixBackslashes(str: string): string {
+    // 문자열 내에서 적절하게 이스케이프되지 않은 백슬래시를 처리
+    let inString = false;
+    let result = '';
+    let i = 0;
+    
+    while (i < str.length) {
+      const char = str.charAt(i);
+      
+      // 문자열 시작/종료 추적
+      if (char === '"' && (i === 0 || str.charAt(i - 1) !== '\\')) {
+        inString = !inString;
+        result += char;
+      }
+      // 문자열 내부의 백슬래시 처리
+      else if (inString && char === '\\') {
+        // 올바른 이스케이프 시퀀스인지 확인
+        const nextChar = str.charAt(i + 1) || '';
+        if ('"\\/bfnrtu'.indexOf(nextChar) === -1) {
+          // 유효한 이스케이프 시퀀스가 아닌 경우 백슬래시 한 번 더 추가
+          result += '\\\\';
+        } else {
+          result += char;
+        }
+      }
+      else {
+        result += char;
+      }
+      
+      i++;
+    }
+    
+    return result;
+  }
+  
+  /**
+   * JSON 문자열 정상화 - 새로 추가된 메서드
+   * 문자열 내 실제 개행문자를 이스케이프된 형태로 변환
+   */
+  private normalizeJSON(str: string): string {
+    try {
+      // JSON 구조를 깨지 않게 주의하며 처리
+      let inString = false;
+      let normalizedStr = '';
+      
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charAt(i);
+        const nextChar = str.charAt(i + 1) || '';
+        
+        // 문자열 시작/종료 확인
+        if (char === '"' && (i === 0 || str.charAt(i - 1) !== '\\')) {
+          inString = !inString;
+          normalizedStr += char;
+        }
+        // 문자열 내부에서 실제 개행문자 발견 시 이스케이프 처리
+        else if (inString) {
+          if (char === '\n') {
+            normalizedStr += '\\n';
+          } else if (char === '\r') {
+            normalizedStr += '\\r';
+          } else if (char === '\t') {
+            normalizedStr += '\\t';
+          } else if (char === '\\' && nextChar === 'n') {
+            // 이미 이스케이프된 \n은 그대로 유지
+            normalizedStr += '\\n';
+            i++; // 'n' 건너뛰기
+          } else if (char === '\\' && nextChar === 'r') {
+            // 이미 이스케이프된 \r은 그대로 유지
+            normalizedStr += '\\r';
+            i++; // 'r' 건너뛰기
+          } else if (char === '\\' && nextChar === 't') {
+            // 이미 이스케이프된 \t은 그대로 유지
+            normalizedStr += '\\t';
+            i++; // 't' 건너뛰기
+          } else {
+            normalizedStr += char;
+          }
+        } else {
+          normalizedStr += char;
+        }
+      }
+      
+      return normalizedStr;
+    } catch (error) {
+      console.warn('JSON 정상화 과정에서 오류 발생:', error);
+      return str; // 오류 발생 시 원본 반환
+    }
   }
   
   /**
@@ -135,60 +413,138 @@ class SafeJSONParser {
     try {
       // 표준 JSON.parse 시도
       const result = JSON.parse(this.jsonStr) as ImageAnalysisResult;
+      console.log('JSON 파싱 성공');
       
       // 필수 필드 확인
       this.ensureRequiredFields(result);
-      
-      // scentCategories가 여전히 없으면 강제로 추가
-      if (!result.scentCategories || Object.keys(result.scentCategories).length === 0) {
-        console.log('최종 검사: scentCategories 필드 추가 (기본값)');
-        result.scentCategories = {
-          citrus: 6,
-          floral: 6, 
-          woody: 6,
-          musky: 6,
-          fruity: 6,
-          spicy: 6
-        };
-      }
-      
       return result;
     } catch (e) {
       console.warn('표준 JSON.parse 실패, 대체 파싱 전략 시도:', e);
       
-      // 필드별 추출 시도
-      try {
-        const result = this.extractFieldsManually();
+      // 오류 위치 상세 로깅
+      if (e instanceof SyntaxError) {
+        const errorMessage = e.message;
+        const positionMatch = errorMessage.match(/position (\d+)/);
+        const position = positionMatch ? parseInt(positionMatch[1]) : -1;
         
-        // scentCategories가 여전히 없으면 강제로 추가
-        if (!result.scentCategories || Object.keys(result.scentCategories).length === 0) {
-          console.log('최종 검사: scentCategories 필드 추가 (기본값)');
-          result.scentCategories = {
-            citrus: 6,
-            floral: 6, 
-            woody: 6,
-            musky: 6,
-            fruity: 6,
-            spicy: 6
-          };
+        console.warn(`JSON 구문 오류 위치: ${position}`);
+        
+        // 오류 위치 주변 문자열 출력
+        if (position > 0) {
+          const start = Math.max(0, position - 20);
+          const end = Math.min(this.jsonStr.length, position + 20);
+          const beforeError = this.jsonStr.substring(start, position);
+          const afterError = this.jsonStr.substring(position, end);
+          console.warn(`오류 부근: ...${beforeError}[여기서 오류]${afterError}...`);
+          
+          // 오류 위치의 문자 확인 (ASCII 코드로)
+          if (position < this.jsonStr.length) {
+            const charAtError = this.jsonStr.charAt(position);
+            const charCode = this.jsonStr.charCodeAt(position);
+            console.warn(`오류 위치의 문자: '${charAtError}' (ASCII 코드: ${charCode})`);
+          }
         }
+      }
+      
+      // JSON 문자열 더 정밀하게 정제 시도
+      try {
+        const refinedJSON = this.tryMoreRefinements(this.jsonStr);
+        const parsedResult = JSON.parse(refinedJSON) as ImageAnalysisResult;
+        console.log('추가 정제 후 JSON 파싱 성공');
         
+        // 필수 필드 확인
+        this.ensureRequiredFields(parsedResult);
+        return parsedResult;
+      } catch (refinementError) {
+        console.warn('추가 정제 후에도 파싱 실패:', refinementError);
+      }
+      
+      // 필드별 수동 추출 시도
+      try {
+        console.log('필드별 수동 추출 시도...');
+        const result = this.extractFieldsManually();
+        console.log('필드별 수동 추출 완료:', Object.keys(result.traits).length, '개 특성');
+        
+        // 필수 필드 확인 및 중복 값 처리
+        this.ensureRequiredFields(result);
         return result;
       } catch (extractError) {
         console.error('필드별 추출 실패:', extractError);
         
         // 기본값 반환
+        console.warn('모든 파싱 방법 실패, 기본값 반환');
         return this.getDefaultResult();
       }
     }
   }
   
   /**
+   * 더 정밀한 JSON 정제 시도 - 새로 추가된 메서드
+   */
+  private tryMoreRefinements(jsonStr: string): string {
+    console.log('추가 JSON 정제 시도...');
+    
+    // 1. 모든 백슬래시를 올바르게 처리
+    //    1) 먼저 이중 백슬래시(\\)를 단일 백슬래시(\\)로 축소
+    //    2) 남은 단일 백슬래시 + 따옴표(\") 패턴을 순서대로 제거하여 " → " 로 변환
+    //       이렇게 해야 \" → " 로 올바르게 변환된다.
+    let result = jsonStr
+      // 두 개 이상의 연속된 백슬래시를 하나로 축소
+      .replace(/\\\\+/g, '\\')
+      // 남은 단일 백슬래시가 따옴표를 이스케이프하는 경우 제거
+      .replace(/\\"/g, '"');
+    
+    // 2. 프로퍼티 이름 내 역슬래시 제거
+    result = result.replace(/"([^"]*?)\\([^"]*?)":/g, '"$1$2":');
+    
+    // 3. 잘못된 이스케이프 시퀀스 수정
+    result = result.replace(/\\([^nrtbfu\\"\/])/g, '$1');
+    
+    // 4. 프로퍼티 값 내 따옴표 이스케이프 처리
+    result = result.replace(/:\s*"([^"]*?)([^\\])"([^"]*?)"/g, ': "$1$2\\"$3"');
+    
+    // 5. JSON 구조 유효성 검사 (중괄호, 대괄호 균형)
+    let braceCount = 0, bracketCount = 0;
+    for (let i = 0; i < result.length; i++) {
+      const char = result.charAt(i);
+      if (char === '{') braceCount++;
+      else if (char === '}') braceCount--;
+      else if (char === '[') bracketCount++;
+      else if (char === ']') bracketCount--;
+    }
+    
+    // 중괄호가 부족하면 추가
+    if (braceCount > 0) {
+      console.log(`닫는 중괄호 ${braceCount}개 부족, 추가 중...`);
+      result += '}'.repeat(braceCount);
+    } else if (braceCount < 0) {
+      console.log(`여는 중괄호 ${Math.abs(braceCount)}개 부족, 추가 중...`);
+      result = '{'.repeat(Math.abs(braceCount)) + result;
+    }
+    
+    // 대괄호가 부족하면 추가
+    if (bracketCount > 0) {
+      console.log(`닫는 대괄호 ${bracketCount}개 부족, 추가 중...`);
+      result += ']'.repeat(bracketCount);
+    } else if (bracketCount < 0) {
+      console.log(`여는 대괄호 ${Math.abs(bracketCount)}개 부족, 추가 중...`);
+      result = '['.repeat(Math.abs(bracketCount)) + result;
+    }
+    
+    console.log('추가 정제 완료');
+    return result;
+  }
+  
+  /**
    * 정규식을 사용하여 각 필드를 개별적으로 추출
    */
   private extractFieldsManually(): ImageAnalysisResult {
+    console.log('원본 JSON 길이:', this.jsonStr.length);
+    console.log('원본 JSON 일부:', this.jsonStr.substring(0, Math.min(50, this.jsonStr.length)) + '...');
+    
+    // 타입 안전한 기본값으로 초기화
     const result: ImageAnalysisResult = {
-      traits: {},
+      traits: {} as TraitScores,
       dominantColors: [],
       personalColor: {
         season: "spring",
@@ -196,175 +552,254 @@ class SafeJSONParser {
         palette: [],
         description: ""
       },
-      analysis: {},
+      analysis: {
+        mood: "",
+        style: "",
+        expression: "",
+        concept: ""
+      },
       matchingKeywords: [],
       scentCategories: {
-        citrus: 6,
-        floral: 6, 
-        woody: 6,
+        citrus: 7,
+        floral: 8, 
+        woody: 5,
         musky: 6,
-        fruity: 6,
-        spicy: 6
+        fruity: 9,
+        spicy: 4
       },
       matchingPerfumes: []
     };
     
     try {
-      // traits 필드 추출
-      const traitsMatch = this.jsonStr.match(/"traits"\s*:\s*{([^}]*)}/);
+      // 1. traits 필드 추출 - 개선된 패턴
+      let traitsMatch = this.jsonStr.match(/"traits"\s*:\s*{([^}]*)}/);
+      
+      // 첫 번째 패턴 실패시 대안 패턴 시도
+      if (!traitsMatch) {
+        console.log('첫 번째 traits 패턴 실패, 대안 패턴 시도...');
+        traitsMatch = this.jsonStr.match(/traits[\s\n]*:[\s\n]*{([^}]*)}/);
+      }
+      
+      // 여전히 실패하면 더 복잡한 패턴 시도
+      if (!traitsMatch) {
+        console.log('두 번째 traits 패턴 실패, 더 복잡한 패턴 시도...');
+        
+        // JSON 문자열에서 traits 부분을 찾기 위한 정규식
+        const traitsRegex = /["{]traits["]*\s*:[\s\n]*{([\s\S]*?)}/g;
+        const match = traitsRegex.exec(this.jsonStr);
+        
+        if (match) {
+          traitsMatch = match;
+        }
+      }
+      
       if (traitsMatch && traitsMatch[1]) {
         const traitsStr = traitsMatch[1];
+        console.log('추출된 traits 문자열 일부:', traitsStr.substring(0, Math.min(50, traitsStr.length)) + '...');
         
-        // 각 특성 추출
-        const traitMatches = traitsStr.matchAll(/"(\w+)"\s*:\s*(\d+)/g);
-        for (const match of traitMatches) {
+        // 더 관대한 패턴으로 특성 추출 (공백, 줄바꿈 등을 더 유연하게 처리)
+        const traitRegex = /["']?(\w+)["']?\s*:\s*(\d+)/g;
+        let match;
+        
+        while ((match = traitRegex.exec(traitsStr)) !== null) {
           const key = match[1];
           const value = parseInt(match[2], 10);
+          
           if (!isNaN(value)) {
-            result.traits[key] = value;
+            (result.traits as any)[key] = value;
           }
         }
         
         console.log('특성 추출 성공:', Object.keys(result.traits).length, '개 항목');
+      } else {
+        console.warn('traits 필드를 찾을 수 없음');
       }
       
-      // dominantColors 추출
-      const colorsMatch = this.jsonStr.match(/"dominantColors"\s*:\s*\[(.*?)\]/);
+      // 2. dominantColors 추출 - 개선된 패턴
+      let colorsMatch = this.jsonStr.match(/"dominantColors"\s*:\s*\[(.*?)\]/);
+      
+      // 첫 번째 패턴 실패시 대안 패턴 시도
+      if (!colorsMatch) {
+        console.log('첫 번째 dominantColors 패턴 실패, 대안 패턴 시도...');
+        colorsMatch = this.jsonStr.match(/dominantColors[\s\n]*:[\s\n]*\[(.*?)\]/);
+      }
+      
       if (colorsMatch && colorsMatch[1]) {
         const colorsStr = colorsMatch[1];
         
-        // 각 색상 코드 추출
-        const colorMatches = colorsStr.matchAll(/"(#[A-Fa-f0-9]+)"/g);
-        for (const match of colorMatches) {
-          result.dominantColors.push(match[1]);
+        // 각 색상 코드 추출 (더 관대한 패턴)
+        const colorMatches = colorsStr.match(/["']([^"']+)["']/g);
+        if (colorMatches) {
+          for (const match of colorMatches) {
+            const color = match.replace(/^["']|["']$/g, '');
+            result.dominantColors.push(color);
+          }
         }
+        console.log('dominantColors 추출 성공:', result.dominantColors.length, '개 항목');
+      } else {
+        console.warn('dominantColors 필드를 찾을 수 없음');
       }
       
-      // personalColor 추출
-      const personalColorMatch = this.jsonStr.match(/"personalColor"\s*:\s*{([^}]*)}/);
+      // 3. personalColor 추출 - 개선된 패턴
+      let personalColorMatch = this.jsonStr.match(/"personalColor"\s*:\s*{([^}]*)}/);
+      
+      // 첫 번째 패턴 실패시 대안 패턴 시도
+      if (!personalColorMatch) {
+        console.log('첫 번째 personalColor 패턴 실패, 대안 패턴 시도...');
+        personalColorMatch = this.jsonStr.match(/personalColor[\s\n]*:[\s\n]*{([^}]*)}/);
+      }
+      
       if (personalColorMatch && personalColorMatch[1]) {
         const pcStr = personalColorMatch[1];
         
-        // 시즌 추출
-        const seasonMatch = pcStr.match(/"season"\s*:\s*"([^"]*)"/);
+        // 시즌 추출 - 개선된 패턴
+        const seasonMatch = pcStr.match(/["']?season["']?\s*:\s*["'](\w+)["']/);
         if (seasonMatch && seasonMatch[1]) {
           result.personalColor.season = seasonMatch[1] as any;
         }
         
-        // 톤 추출
-        const toneMatch = pcStr.match(/"tone"\s*:\s*"([^"]*)"/);
+        // 톤 추출 - 개선된 패턴
+        const toneMatch = pcStr.match(/["']?tone["']?\s*:\s*["']([^"']+)["']/);
         if (toneMatch && toneMatch[1]) {
           result.personalColor.tone = toneMatch[1] as any;
         }
         
-        // 설명 추출
-        const descMatch = pcStr.match(/"description"\s*:\s*"([^"]*)"/);
+        // 설명 추출 - 개선된 패턴 (여러 줄 허용)
+        const descMatch = pcStr.match(/["']?description["']?\s*:\s*["']([^"']+)["']/);
         if (descMatch && descMatch[1]) {
           result.personalColor.description = descMatch[1];
         }
         
-        // 팔레트 추출
-        const paletteMatch = pcStr.match(/"palette"\s*:\s*\[(.*?)\]/);
+        // 팔레트 추출 - 개선된 패턴
+        const paletteMatch = pcStr.match(/["']?palette["']?\s*:\s*\[(.*?)\]/);
         if (paletteMatch && paletteMatch[1]) {
           const paletteStr = paletteMatch[1];
-          const colorMatches = paletteStr.matchAll(/"(#[A-Fa-f0-9]+)"/g);
-          for (const match of colorMatches) {
-            result.personalColor.palette.push(match[1]);
+          const colorMatches = paletteStr.match(/["']([^"']+)["']/g);
+          if (colorMatches) {
+            for (const match of colorMatches) {
+              const color = match.replace(/^["']|["']$/g, '');
+              result.personalColor.palette.push(color);
+            }
           }
         }
+        console.log('personalColor 추출 성공');
+      } else {
+        console.warn('personalColor 필드를 찾을 수 없음');
       }
       
-      // analysis 추출
-      const analysisMatch = this.jsonStr.match(/"analysis"\s*:\s*{([^}]*)}/s);
+      // 4. analysis 추출 - 개선된 정규식 사용
+      let analysisMatch = this.jsonStr.match(/"analysis"\s*:\s*{([\s\S]*?)(?:}[\s\n]*,|}\s*$)/);
+      
+      // 첫 번째 패턴 실패시 대안 패턴 시도
+      if (!analysisMatch) {
+        console.log('첫 번째 analysis 패턴 실패, 대안 패턴 시도...');
+        analysisMatch = this.jsonStr.match(/analysis[\s\n]*:[\s\n]*{([\s\S]*?)(?:}[\s\n]*,|}\s*$)/);
+      }
+      
       if (analysisMatch && analysisMatch[1]) {
         const analysisStr = analysisMatch[1];
+        console.log('추출된 analysis 문자열 일부:', analysisStr.substring(0, Math.min(50, analysisStr.length)) + '...');
         
-        // mood 추출
-        const moodMatch = analysisStr.match(/"mood"\s*:\s*"(.*?)(?:"|,$)/s);
-        if (moodMatch && moodMatch[1]) {
-          if (!result.analysis) result.analysis = {} as any;
-          result.analysis.mood = moodMatch[1].replace(/\\"/g, '"');
+        // 추출 함수 정의 유지
+        const extractField = (field: string): string | null => {
+          const regex = new RegExp(`["']${field}["']\\s*:\\s*["'](.*?)(?:["']\\s*[,}]|["']\\s*$)`, 's');
+          const match = analysisStr.match(regex);
+          return match && match[1] ? match[1].replace(/\\"/g, '"') : null;
+        };
+        
+        // 필드 목록 정의
+        const fields = ['mood', 'style', 'expression', 'concept', 'aura', 'toneAndManner', 'detailedDescription'];
+        let extractedCount = 0;
+        
+        // 타입 안전성이 보장된 방식으로 속성 할당
+        for (const field of fields) {
+          const value = extractField(field);
+          if (value) {
+            // analysis 객체는 초기화되었지만 type guard 추가
+            if (result.analysis) {
+              // 필드별 타입 안전한 할당 - any 타입으로 임시 캐스팅
+              (result.analysis as any)[field] = value;
+              extractedCount++;
+            }
+          }
         }
         
-        // style 추출
-        const styleMatch = analysisStr.match(/"style"\s*:\s*"(.*?)(?:"|,$)/s);
-        if (styleMatch && styleMatch[1]) {
-          if (!result.analysis) result.analysis = {} as any;
-          result.analysis.style = styleMatch[1].replace(/\\"/g, '"');
-        }
-        
-        // expression 추출
-        const exprMatch = analysisStr.match(/"expression"\s*:\s*"(.*?)(?:"|,$)/s);
-        if (exprMatch && exprMatch[1]) {
-          if (!result.analysis) result.analysis = {} as any;
-          result.analysis.expression = exprMatch[1].replace(/\\"/g, '"');
-        }
-        
-        // concept 추출
-        const conceptMatch = analysisStr.match(/"concept"\s*:\s*"(.*?)(?:"|,$)/s);
-        if (conceptMatch && conceptMatch[1]) {
-          if (!result.analysis) result.analysis = {} as any;
-          result.analysis.concept = conceptMatch[1].replace(/\\"/g, '"');
-        }
-        
-        // aura 추출
-        const auraMatch = analysisStr.match(/"aura"\s*:\s*"(.*?)(?:"|,$)/s);
-        if (auraMatch && auraMatch[1]) {
-          if (!result.analysis) result.analysis = {} as any;
-          result.analysis.aura = auraMatch[1].replace(/\\"/g, '"');
-        }
-        
-        // toneAndManner 추출
-        const toneMatch = analysisStr.match(/"toneAndManner"\s*:\s*"(.*?)(?:"|,$)/s);
-        if (toneMatch && toneMatch[1]) {
-          if (!result.analysis) result.analysis = {} as any;
-          result.analysis.toneAndManner = toneMatch[1].replace(/\\"/g, '"');
-        }
-        
-        // detailedDescription 추출
-        const detailMatch = analysisStr.match(/"detailedDescription"\s*:\s*"(.*?)(?:"|,$)/s);
-        if (detailMatch && detailMatch[1]) {
-          if (!result.analysis) result.analysis = {} as any;
-          result.analysis.detailedDescription = detailMatch[1].replace(/\\"/g, '"');
-        }
+        console.log('analysis 필드 추출:', extractedCount, '개 항목');
+      } else {
+        console.warn('analysis 필드를 찾을 수 없음');
       }
       
-      // scentCategories 추출 - 추가된 부분
-      const scentCategoriesMatch = this.jsonStr.match(/"scentCategories"\s*:\s*{([^}]*)}/);
+      // 5. scentCategories 추출 - 개선된 패턴
+      let scentCategoriesMatch = this.jsonStr.match(/"scentCategories"\s*:\s*{([^}]*)}/);
+      
+      // 첫 번째 패턴 실패시 대안 패턴 시도
+      if (!scentCategoriesMatch) {
+        console.log('첫 번째 scentCategories 패턴 실패, 대안 패턴 시도...');
+        scentCategoriesMatch = this.jsonStr.match(/scentCategories[\s\n]*:[\s\n]*{([^}]*)}/);
+      }
+      
       if (scentCategoriesMatch && scentCategoriesMatch[1]) {
         const scStr = scentCategoriesMatch[1];
         
-        // 각 카테고리 추출
-        const categoryMatches = scStr.matchAll(/"(\w+)"\s*:\s*(\d+)/g);
-        for (const match of categoryMatches) {
+        // 각 카테고리 추출 (더 관대한 패턴)
+        const categoryRegex = /["']?(\w+)["']?\s*:\s*(\d+)/g;
+        let match;
+        let extractedCategories = 0;
+        
+        while ((match = categoryRegex.exec(scStr)) !== null) {
           const key = match[1];
           const value = parseInt(match[2], 10);
+          
           if (!isNaN(value)) {
             if (!result.scentCategories) result.scentCategories = {} as any;
-            result.scentCategories[key] = value;
+            (result.scentCategories as any)[key] = value;
+            extractedCategories++;
           }
         }
         
-        console.log('향 카테고리 추출 성공:', Object.keys(result.scentCategories).length, '개 항목');
+        console.log('향 카테고리 추출 성공:', extractedCategories, '개 항목');
       } else {
         console.log('향 카테고리 필드를 찾을 수 없음, 기본값 사용');
       }
       
-      // matchingKeywords 추출
-      const keywordsMatch = this.jsonStr.match(/"matchingKeywords"\s*:\s*\[(.*?)\]/s);
-      if (keywordsMatch && keywordsMatch[1]) {
-        const keywordsStr = keywordsMatch[1];
-        const keywordMatches = keywordsStr.matchAll(/"([^"]*)"/g);
-        for (const match of keywordMatches) {
-          if (!result.matchingKeywords) result.matchingKeywords = [];
-          result.matchingKeywords.push(match[1]);
-        }
+      // 6. matchingKeywords 추출 - 개선된 패턴
+      let keywordsMatch = this.jsonStr.match(/"matchingKeywords"\s*:\s*\[(.*?)\]/);
+      
+      // 첫 번째 패턴 실패시 대안 패턴 시도
+      if (!keywordsMatch) {
+        console.log('첫 번째 matchingKeywords 패턴 실패, 대안 패턴 시도...');
+        keywordsMatch = this.jsonStr.match(/matchingKeywords[\s\n]*:[\s\n]*\[(.*?)\]/);
       }
       
-      // customAnalysis 추출
-      const customMatch = this.jsonStr.match(/"customAnalysis"\s*:\s*"(.*?)(?:"|,$)/s);
+      if (keywordsMatch && keywordsMatch[1]) {
+        const keywordsStr = keywordsMatch[1];
+        
+        // 각 키워드 추출 (더 관대한 패턴)
+        const keywordMatches = keywordsStr.match(/["']([^"']+)["']/g);
+        if (keywordMatches) {
+          result.matchingKeywords = result.matchingKeywords || [];
+          for (const kwMatch of keywordMatches) {
+            const keyword = kwMatch.replace(/^["']|["']$/g, '');
+            result.matchingKeywords.push(keyword);
+          }
+        }
+        console.log('matchingKeywords 추출 성공:', result.matchingKeywords?.length || 0, '개 항목');
+      } else {
+        console.warn('matchingKeywords 필드를 찾을 수 없음');
+      }
+      
+      // 7. customAnalysis 추출 - 개선된 패턴
+      let customMatch = this.jsonStr.match(/"customAnalysis"\s*:\s*"(.*?)(?:"|$)/);
+      
+      // 첫 번째 패턴 실패시 대안 패턴 시도
+      if (!customMatch) {
+        console.log('첫 번째 customAnalysis 패턴 실패, 대안 패턴 시도...');
+        customMatch = this.jsonStr.match(/customAnalysis[\s\n]*:[\s\n]*["'](.*?)(?:["']|$)/);
+      }
+      
       if (customMatch && customMatch[1]) {
         result.customAnalysis = customMatch[1].replace(/\\"/g, '"');
+        console.log('customAnalysis 추출 성공');
       }
       
       console.log('향상된 JSON 파싱 성공');
@@ -388,52 +823,32 @@ class SafeJSONParser {
     const missingTraits = requiredTraits.filter(trait => !(trait in result.traits));
     
     if (missingTraits.length > 0) {
-      console.log('중복된 특성 점수가 있음, 조정');
+      console.log('누락된 특성:', missingTraits.join(', '));
       
       // 누락된 특성에 기본값 할당
       for (const trait of missingTraits) {
-        result.traits[trait] = 5; // 기본값
+        (result.traits as any)[trait] = 5; // 기본값
       }
     }
     
-    // 중복된 값이 있는지 확인하고 수정
-    const usedValues = new Set<number>();
-    
-    // 각 특성에 대해
+    // 값 범위(1-10)만 보정, 중복값은 수정하지 않음(분석 결과 존중)
     for (const trait of requiredTraits) {
-      let value = result.traits[trait];
-      
-      // 값이 없거나 범위를 벗어나는 경우 조정
-      if (value === undefined || value < 3 || value > 10) {
-        value = Math.max(3, Math.min(10, value || 5));
-        result.traits[trait] = value;
-      }
-      
-      // 이미 사용된 값인지 확인
-      if (usedValues.has(value)) {
-        // 중복된 값이라면 사용되지 않은 값 찾기
-        for (let newValue = 3; newValue <= 10; newValue++) {
-          if (!usedValues.has(newValue)) {
-            result.traits[trait] = newValue;
-            usedValues.add(newValue);
-            break;
-          }
-        }
-      } else {
-        usedValues.add(value);
-      }
+      const val = (result.traits as any)[trait];
+      if (val === undefined) continue; // 없는 경우는 위에서 기본값 채움
+      if (val < 1) (result.traits as any)[trait] = 1;
+      if (val > 10) (result.traits as any)[trait] = 10;
     }
     
     // 향 카테고리 필드가 없으면 기본값 추가
     if (!result.scentCategories || Object.keys(result.scentCategories).length === 0) {
-      console.log('향 카테고리 필드 추가 (기본값)');
+      console.log('향 카테고리 필드 추가 (다양한 기본값)');
       result.scentCategories = {
-        citrus: 6,
-        floral: 6, 
-        woody: 6,
+        citrus: 7,
+        floral: 8,
+        woody: 5,
         musky: 6,
-        fruity: 6,
-        spicy: 6
+        fruity: 9,
+        spicy: 4
       };
     }
     
@@ -446,7 +861,16 @@ class SafeJSONParser {
       
       // 누락된 카테고리에 기본값 할당
       for (const cat of missingCategories) {
-        result.scentCategories[cat] = 6; // 기본값
+        // 다양한 기본값 할당 (고정값 대신 카테고리별 다른 값)
+        const defaultValues = {
+          citrus: 7,
+          floral: 8,
+          woody: 5,
+          musky: 6,
+          fruity: 9,
+          spicy: 4
+        };
+        (result.scentCategories as any)[cat] = defaultValues[cat as keyof typeof defaultValues] || 6;
       }
     }
     
@@ -459,35 +883,45 @@ class SafeJSONParser {
     // matchingKeywords가 없으면 기본값 추가
     if (!result.matchingKeywords || result.matchingKeywords.length === 0) {
       result.matchingKeywords = [
-        "생동감", "트렌디", "개성적", "화려함", "자신감",
-        "에너지", "독특함", "매력적", "밝음", "당당함"
+        "순수함", "귀여움", "사랑스러움", "천진난만", "맑음",
+        "깨끗함", "앙증맞음", "해맑음", "긍정적", "자유로움"
       ];
       console.log('matchingKeywords 필드 추가 (기본값)');
     }
     
-    // analysis 객체가 없거나 필수 필드가 없으면 기본값 추가
-    if (!result.analysis || !result.analysis.mood || !result.analysis.style || !result.analysis.expression || !result.analysis.concept) {
-      if (!result.analysis) result.analysis = {} as any;
-      
-      if (!result.analysis.mood) {
-        result.analysis.mood = "눈 마주치는 순간 영혼까지 사로잡는 카리스마 폭격기. \"회의실에 들어가면 공기가 바뀐다\"는 소리 듣는 인간 포스. 말 한마디가 칼보다 강력한 존재감의 소유자.";
-        console.log('mood 필드 추가 (기본값)');
-      }
-      
-      if (!result.analysis.style) {
-        result.analysis.style = "올드머니 여왕의 위엄과 품격. \"와인 리스트 좀 볼게요. 이건 2015년산이네요, 2014년은 없나요?\" 말투에서부터 느껴지는 3대째 물려받은 우아함. 고급 취향이 유전자에 각인된 존재.";
-        console.log('style 필드 추가 (기본값)');
-      }
-      
-      if (!result.analysis.expression) {
-        result.analysis.expression = "자신감 있고 당당한 표현 방식으로, 눈빛만으로 원하는 것을 얻어내는 통찰력의 소유자. \"내가 원하는 건 항상 내 앞에 있어야 해\"라는 아우라가 넘쳐흐르는 표정 관리의 달인.";
-        console.log('expression 필드 추가 (기본값)');
-      }
-      
-      if (!result.analysis.concept) {
-        result.analysis.concept = "비비드한 에너지와 럭셔리한 감성이 공존하는 모순적 매력의 정점. 도전적이면서도 안정적인, 파격적이면서도 클래식한 양면성의 완벽한 균형점.";
-        console.log('concept 필드 추가 (기본값)');
-      }
+    // analysis 객체 처리 수정
+    // Type guard를 사용하여 타입 안전성 확보
+    if (!result.analysis) {
+      result.analysis = {
+        mood: "",
+        style: "",
+        expression: "",
+        concept: ""
+      };
+      console.log('analysis 객체 초기화 (기존에 없음)');
+    }
+    
+    // 각 필드에 대해 타입 가드 적용 후 값 설정
+    const analysis = result.analysis;  // 로컬 변수에 할당하여 타입 추론 도움
+    
+    if (!analysis.mood) {
+      analysis.mood = "눈 마주치는 순간 영혼까지 사로잡는 카리스마 폭격기. \"회의실에 들어가면 공기가 바뀐다\"는 소리 듣는 인간 포스. 말 한마디가 칼보다 강력한 존재감의 소유자.";
+      console.log('mood 필드 추가 (기본값)');
+    }
+    
+    if (!analysis.style) {
+      analysis.style = "올드머니 여왕의 위엄과 품격. \"와인 리스트 좀 볼게요. 이건 2015년산이네요, 2014년은 없나요?\" 말투에서부터 느껴지는 3대째 물려받은 우아함. 고급 취향이 유전자에 각인된 존재.";
+      console.log('style 필드 추가 (기본값)');
+    }
+    
+    if (!analysis.expression) {
+      analysis.expression = "자신감 있고 당당한 표현 방식으로, 눈빛만으로 원하는 것을 얻어내는 통찰력의 소유자. \"내가 원하는 건 항상 내 앞에 있어야 해\"라는 아우라가 넘쳐흐르는 표정 관리의 달인.";
+      console.log('expression 필드 추가 (기본값)');
+    }
+    
+    if (!analysis.concept) {
+      analysis.concept = "비비드한 에너지와 럭셔리한 감성이 공존하는 모순적 매력의 정점. 도전적이면서도 안정적인, 파격적이면서도 클래식한 양면성의 완벽한 균형점.";
+      console.log('concept 필드 추가 (기본값)');
     }
   }
   
@@ -495,6 +929,7 @@ class SafeJSONParser {
    * 기본 분석 결과 반환
    */
   private getDefaultResult(): ImageAnalysisResult {
+    console.warn('모든 파싱 방법 실패, 완전한 기본값을 반환합니다.');
     return {
       traits: {
         sexy: 7,
@@ -529,12 +964,12 @@ class SafeJSONParser {
         "에너지", "독특함", "매력적", "밝음", "당당함"
       ],
       scentCategories: {
-        citrus: 6,
-        floral: 6, 
-        woody: 6,
+        citrus: 7,
+        floral: 8, 
+        woody: 5,
         musky: 6,
-        fruity: 6,
-        spicy: 6
+        fruity: 9,
+        spicy: 4
       },
       matchingPerfumes: []
     };

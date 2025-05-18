@@ -21,12 +21,19 @@ export interface PerfumeCharacteristics {
 export interface Perfume {
   id: string;
   name: string;
+  brandName: string;
+  description: string;
+  imageUrl: string;
+  scentCategories: string[];
+  ingredients: string[];
+  features: string[];
+  rating?: number;
+  priceRange?: string;
   mainScent: Scent;
   subScent1: Scent;
   subScent2: Scent;
   characteristics: PerfumeCharacteristics;
   category: PerfumeCategory;
-  description: string;
   recommendation: string;
 }
 
@@ -130,4 +137,101 @@ export interface IdolInfo {
   personality: string[];
   charms: string;
   image?: File | null;
+}
+
+// 향수 피드백 관련 타입들
+
+// 카테고리 선호도 타입
+export type CategoryPreference = 'increase' | 'decrease' | 'maintain';
+
+// 향 특성 타입
+export type FragranceCharacteristic = 'weight' | 'sweetness' | 'freshness' | 'uniqueness';
+
+// 특성 값 타입
+export type CharacteristicValue = 'veryLow' | 'low' | 'medium' | 'high' | 'veryHigh';
+
+// 사용자 친화적 특성 타입
+export interface UserFriendlyCharacteristics {
+  [key: string]: string;
+}
+
+// 향 카테고리
+export interface ScentCategory {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+}
+
+// 특정 향 조정
+export interface SpecificScent {
+  id?: string;
+  name: string;
+  ratio?: number;
+  action?: 'add' | 'remove';
+  adjustmentType?: 'add' | 'remove';
+  description?: string;
+  category?: PerfumeCategory;
+}
+
+// 테스트 가이드 조합
+export interface TestCombination {
+  scents: string[];
+  ratio: string;
+}
+
+// 테스트 가이드
+export interface TestGuide {
+  instructions: string;
+  combinations?: TestCombination[];
+  scentMixtures?: Array<{name: string, ratio: number}>;
+}
+
+// 향수 레시피 구성 요소
+export interface ScentComponent {
+  name: string;
+  amount: string;
+  percentage?: number;
+}
+
+// 레시피 컴포넌트 (Recipe 내부에서 사용되는 컴포넌트)
+export interface RecipeComponent {
+  name: string;
+  amount: string;
+  percentage: number;
+}
+
+// 커스텀 향수 레시피
+export interface CustomPerfumeRecipe {
+  basedOn: string;
+  recipe10ml: ScentComponent[];
+  recipe50ml: ScentComponent[];
+  description: string;
+  testGuide?: TestGuide;
+  recipe?: {
+    '10ml': RecipeComponent[];
+    '50ml': RecipeComponent[];
+  };
+  explanation?: {
+    rationale: string;
+    expectedResult: string;
+    recommendation: string;
+  };
+}
+
+// 향수 피드백 데이터
+export interface PerfumeFeedback {
+  perfumeId: string;
+  perfumeName?: string;
+  impression: string;
+  overallRating?: number;
+  retentionPercentage?: number;
+  categoryPreferences?: Record<PerfumeCategory, CategoryPreference>;
+  userCharacteristics?: Record<FragranceCharacteristic, CharacteristicValue>;
+  scentCategoryPreferences?: Record<string, 'increase' | 'decrease' | 'keep' | 'remove'>;
+  specificScents?: SpecificScent[];
+  specificScentAdjustments?: SpecificScent[];
+  notes?: string;
+  additionalComments?: string;
+  submittedAt?: string;
 } 

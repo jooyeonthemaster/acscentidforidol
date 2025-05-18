@@ -9,6 +9,60 @@ import TraitRadarChart from '@/components/chart/TraitRadarChart';
 import ScentRadarChart from '@/components/chart/ScentRadarChart';
 import KeywordCloud from '@/components/chart/KeywordCloud';
 
+/**
+ * 향수의 특성에 맞는 계절 추천을 반환합니다
+ */
+function getSeasonRecommendation(persona?: PerfumePersona): string {
+  if (!persona || !persona.categories) return '사계절';
+  
+  // @ts-ignore - categories 프로퍼티 접근 허용
+  if (persona.categories.citrus > 6 || persona.categories.fruity > 6) {
+    return '봄, 여름';
+  // @ts-ignore - categories 프로퍼티 접근 허용
+  } else if (persona.categories.woody > 6 || persona.categories.spicy > 6) {
+    return '가을, 겨울';
+  } else {
+    return '사계절';
+  }
+}
+
+/**
+ * 향수의 특성에 맞는 시간대 추천을 반환합니다
+ */
+function getTimeRecommendation(persona?: PerfumePersona): string {
+  if (!persona || !persona.categories) return '언제든지';
+  
+  // @ts-ignore - categories 프로퍼티 접근 허용
+  if (persona.categories.citrus > 6 || persona.categories.fruity > 6) {
+    return '오전, 오후';
+  // @ts-ignore - categories 프로퍼티 접근 허용
+  } else if (persona.categories.woody > 6 || persona.categories.musky > 6) {
+    return '저녁, 밤';
+  } else {
+    return '언제든지';
+  }
+}
+
+/**
+ * 향수의 특성에 맞는 상황 추천을 반환합니다
+ */
+function getOccasionRecommendation(persona?: PerfumePersona): string {
+  if (!persona || !persona.categories) return '특별한 모임, 중요한 자리, 일상적인 향기 표현';
+  
+  // @ts-ignore - categories 프로퍼티 접근 허용
+  if (persona.categories.citrus > 6) {
+    return '활기찬 바캉스, 활동적인 데이트, 산뜻한 오피스 룩';
+  // @ts-ignore - categories 프로퍼티 접근 허용
+  } else if (persona.categories.woody > 6) {
+    return '중요한 비즈니스 미팅, 고급 레스토랑 디너, 특별한 이브닝 모임';
+  // @ts-ignore - categories 프로퍼티 접근 허용
+  } else if (persona.categories.floral > 6) {
+    return '로맨틱한 데이트, 웨딩 게스트, 우아한 갈라 디너';
+  } else {
+    return '특별한 모임, 중요한 자리, 일상적인 향기 표현';
+  }
+}
+
 export default function ResultPage() {
   const router = useRouter();
   const [analysisResult, setAnalysisResult] = useState<ImageAnalysisResult | null>(null);
@@ -96,15 +150,15 @@ export default function ResultPage() {
       .sort(() => 0.5 - Math.random())
       .slice(0, 2);
     
-    // 다양한 트위터 스타일 닉네임 패턴 중 랜덤 선택
+    // 캐릭터 설명 스타일의 패턴
     const patterns = [
-      `✨ ${traitNames[sortedTraits[0]]}과 ${randomKeywords[0]}의 환상 콜라보 ✨`,
-      `${randomKeywords[0]}_${randomKeywords[1]} 매니저님 절찬리 모집중📢`,
-      `${traitNames[sortedTraits[0]]}이 넘치는 ${randomKeywords[0]} 덕후`,
-      `오늘의 ${randomKeywords[0]} 담당 | ${traitNames[sortedTraits[0]]} 전문가🔥`,
-      `${traitNames[sortedTraits[0]]}_${traitNames[sortedTraits[1]]}_${randomKeywords[0]}_맛집`,
-      `${randomKeywords[0]} 타입 최애돌 헤드캐논봇 🤖`,
-      `현실 세계 ${traitNames[sortedTraits[0]]} 담당자`
+      `${randomKeywords[0]} 파 두목. 피도 눈물도 없다.`,
+      `국제 ${traitNames[sortedTraits[0]]} 연맹 회장. 단호박 끝판왕.`,
+      `${randomKeywords[0]} 계의 신. 눈빛만으로 제압 가능.`,
+      `인간 ${randomKeywords[0]}. 저세상 ${traitNames[sortedTraits[0]]}.`,
+      `${traitNames[sortedTraits[0]]} 마스터. 당신의 심장을 훔칠 예정.`,
+      `${randomKeywords[0]} ${randomKeywords[1]} 대마왕. 근접 금지구역.`,
+      `전설의 ${randomKeywords[0]} 사냥꾼. 오늘의 타겟은 바로 당신.`
     ];
     
     const selectedPattern = patterns[Math.floor(Math.random() * patterns.length)];
@@ -211,7 +265,7 @@ export default function ResultPage() {
               </motion.div>
             )}
             
-            {/* 트위터스타일 닉네임 표시 */}
+            {/* 트위터스타일 닉네임 표시 - 로고 제거 및 디자인 개선 */}
             {twitterName && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -219,17 +273,12 @@ export default function ResultPage() {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="mb-5"
               >
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start">
-                  <div className="flex-shrink-0 mr-3">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M22 5.8a8.49 8.49 0 0 1-2.36.64 4.13 4.13 0 0 0 1.81-2.27 8.21 8.21 0 0 1-2.61 1 4.1 4.1 0 0 0-7 3.74 11.64 11.64 0 0 1-8.45-4.29 4.16 4.16 0 0 0-.55 2.07 4.09 4.09 0 0 0 1.82 3.41 4.05 4.05 0 0 1-1.86-.51v.05a4.1 4.1 0 0 0 3.3 4 3.93 3.93 0 0 1-1.1.17 3.9 3.9 0 0 1-.77-.07 4.11 4.11 0 0 0 3.83 2.84A8.22 8.22 0 0 1 3 18.34a7.93 7.93 0 0 1-1-.06 11.57 11.57 0 0 0 6.29 1.85A11.59 11.59 0 0 0 20 8.45v-.53a8.43 8.43 0 0 0 2-2.12Z"></path>
-                      </svg>
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4">
+                  <div className="flex items-center">
+                    <div className="mr-3 text-2xl">⭐</div>
+                    <div>
+                      <div className="font-bold text-gray-800 text-lg">{twitterName}</div>
                     </div>
-                  </div>
-                  <div>
-                    <div className="font-bold text-gray-800">{twitterName}</div>
-                    <p className="text-gray-500 text-xs mt-1">@acscent_identity</p>
                   </div>
                 </div>
               </motion.div>
@@ -320,24 +369,61 @@ export default function ResultPage() {
                     )}
                     
                     {/* 특성 점수 - 레이더 차트 추가 */}
-                    <div className="mb-5">
+                    <div className="mb-16">
                       <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center">
                         <span className="bg-yellow-100 px-2 py-0.5 rounded">이미지 특성 점수</span>
                         <span className="ml-2 text-xs text-pink-600">향수 매칭의 핵심</span>
                       </h3>
                       
-                      {/* 레이더 차트 부분 */}
-                      {analysisResult.traits && (
-                        <div className="mb-4 flex justify-center">
-                          <div className="w-full h-52 relative">
-                            <TraitRadarChart traits={analysisResult.traits} />
+                      <div className="bg-white rounded-xl p-4 border border-yellow-100 shadow-sm mb-4">
+                        {/* 레이더 차트 부분 - 높이 조정 및 충분한 여백 확보 */}
+                        {analysisResult.traits && (
+                          <div className="flex justify-center">
+                            <div className="w-full h-84 relative mb-3">
+                              <TraitRadarChart traits={analysisResult.traits} />
+                            </div>
                           </div>
+                        )}
+                        
+                        {/* 특성 점수 텍스트 표시 */}
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {analysisResult.traits && Object.entries(analysisResult.traits).map(([key, value]) => {
+                            const traitNames: Record<string, string> = {
+                              sexy: '섹시함',
+                              cute: '귀여움',
+                              charisma: '카리스마',
+                              darkness: '다크함',
+                              freshness: '청량함',
+                              elegance: '우아함',
+                              freedom: '자유로움',
+                              luxury: '럭셔리함',
+                              purity: '순수함',
+                              uniqueness: '독특함'
+                            };
+                            
+                            return (
+                              <div key={key} className="flex items-center space-x-2 bg-gray-50 rounded-lg p-2">
+                                <div className={`h-2 w-2 rounded-full bg-${
+                                  key === 'sexy' ? 'pink' : 
+                                  key === 'cute' ? 'purple' : 
+                                  key === 'charisma' ? 'yellow' : 
+                                  key === 'darkness' ? 'gray' : 
+                                  key === 'freshness' ? 'blue' : 
+                                  key === 'elegance' ? 'indigo' : 
+                                  key === 'freedom' ? 'green' : 
+                                  key === 'luxury' ? 'amber' : 
+                                  key === 'purity' ? 'cyan' : 
+                                  'violet'
+                                }-500`}></div>
+                                <span className="text-xs font-medium">{traitNames[key]}: {value}</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
-                      
+                      </div>
                     </div>
                     
-                    {/* 스타일 분석 */}
+                    {/* 스타일 분석 - API 응답 사용하면서 간결하게 표현 */}
                     {analysisResult.analysis && (
                       <div className="mb-5">
                         <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center">
@@ -346,25 +432,24 @@ export default function ResultPage() {
                         </h3>
                         <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-200 shadow-sm">
                           <div className="grid grid-cols-1 gap-3">
-                            <div className="bg-white rounded-lg p-4 border-l-4 border-pink-400 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="flex items-start">
-                                <div className="rounded-full bg-pink-100 p-2 mr-3 flex-shrink-0">
-                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-pink-500">
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                    <path d="M5 21V19a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"></path>
-                                  </svg>
-                                </div>
-                                <div>
-                                  <h4 className="text-xs font-bold text-pink-700 mb-1">패션 스타일</h4>
-                                  <p className="text-gray-700 text-sm italic">
-                                    "와우 언니! 이 스타일은 진짜 '모던 글램'에 '하이퍼리얼리즘 스트릿'이 믹스된 완전 새로운 장르예요! 
-                                    저 벌키한 실루엣과 미니멀 액세서리의 조합이 너무 센스쟁이! 
-                                    시크한 오버사이즈 재킷에 타이트한 이너웨어 매치는 대비가 미쳤어요! 
-                                    센 언니들만 소화 가능한 스타일이에요! 진짜 제가 팬이에요...😍"
-                                  </p>
+                            {analysisResult.analysis.style && (
+                              <div className="bg-white rounded-lg p-4 border-l-4 border-pink-400 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex items-start">
+                                  <div className="rounded-full bg-pink-100 p-2 mr-3 flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-pink-500">
+                                      <circle cx="12" cy="7" r="4"></circle>
+                                      <path d="M5 21V19a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"></path>
+                                    </svg>
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-bold text-pink-700 mb-1">패션 스타일</h4>
+                                    <p className="text-gray-700 text-sm italic">
+                                      세계적인 디자이너급 "{analysisResult.analysis.style}"
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            )}
                             
                             {analysisResult.analysis.expression && (
                               <div className="bg-white rounded-lg p-4 border-l-4 border-purple-400 shadow-sm hover:shadow-md transition-shadow">
@@ -377,11 +462,9 @@ export default function ResultPage() {
                                     </svg>
                                   </div>
                                   <div>
-                                    <h4 className="text-xs font-bold text-purple-700 mb-1">표현력</h4>
+                                    <h4 className="text-xs font-bold text-purple-700 mb-1">표현과 연출</h4>
                                     <p className="text-gray-700 text-sm italic">
-                                      "헐! 이 표정은 뭐죠? 말 안 해도 '난 네가 원하는 모든 것'이라고 말하는 눈빛에 심장이 쿵쾅쿵쾅! 
-                                      한 장의 사진에 저 표정만으로 100만 팬 픽 가능한 엄청난 표현력이라니... 
-                                      이런 진짜 '인간 감정 신(神)'은 처음 봐요! 어떻게 카메라만 보는데 제 영혼을 읽어버리는 거죠?! 🔥"
+                                      케이트 모스도 울고 갈 "{analysisResult.analysis.expression}"
                                     </p>
                                   </div>
                                 </div>
@@ -397,12 +480,9 @@ export default function ResultPage() {
                                     </svg>
                                   </div>
                                   <div>
-                                    <h4 className="text-xs font-bold text-indigo-700 mb-1">콘셉트</h4>
+                                    <h4 className="text-xs font-bold text-indigo-700 mb-1">스타일 콘셉트</h4>
                                     <p className="text-gray-700 text-sm italic">
-                                      "이건 진짜 '네오 로맨틱 아방가르드' 콘셉트의 레전드급 완성본이에요! 
-                                      이렇게 상반된 매력이 하나로 완벽하게 어우러지는 건 대체 어떤 마법이죠? 
-                                      컨셉 회의에서 '이거 가능할까요?'라고 했을 때 '내가 가능하게 해줄게'라고 말한 그 자신감... 
-                                      이건 콘셉트가 아니라 하나의 예술 사조를 만든 거예요! 🎭✨"
+                                      패션위크 런웨이급 "{analysisResult.analysis.concept}"
                                     </p>
                                   </div>
                                 </div>
@@ -413,7 +493,7 @@ export default function ResultPage() {
                       </div>
                     )}
                     
-                    {/* 아우라 및 톤앤매너 */}
+                    {/* 아우라 및 톤앤매너 - 추가 설명 텍스트 간소화 */}
                     {analysisResult.analysis && (analysisResult.analysis.aura || analysisResult.analysis.toneAndManner) && (
                       <div className="mb-5">
                         <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center">
@@ -432,10 +512,6 @@ export default function ResultPage() {
                                 </div>
                                 <div className="pl-10">
                                   <p className="text-gray-700 text-sm italic">"{analysisResult.analysis.aura}"</p>
-                                  <p className="text-purple-600 text-xs mt-2 font-medium">
-                                    + 어머나! 이 아우라는 정말 압도적이에요! 방에 들어오는 순간 공기까지 바뀌는 그 느낌! 
-                                    완전 '나만 봐' 오라가 폭발하는 중이에요! ✨✨✨
-                                  </p>
                                 </div>
                               </div>
                             )}
@@ -450,10 +526,6 @@ export default function ResultPage() {
                                 </div>
                                 <div className="pl-10">
                                   <p className="text-gray-700 text-sm italic">"{analysisResult.analysis.toneAndManner}"</p>
-                                  <p className="text-blue-600 text-xs mt-2 font-medium">
-                                    + 진짜 이 톤앤매너는 레어템이에요! 보는 순간 '어? 뭐지?' 하면서도 
-                                    계속 보게 되는 중독성! 세상에 단 하나뿐인 색채감이랄까요? 💙💫
-                                  </p>
                                 </div>
                               </div>
                             )}
@@ -495,8 +567,8 @@ export default function ResultPage() {
                             ></div>
                             <div>
                               <p className="text-gray-800 text-sm font-bold">
-                                {analysisResult.personalColor.season} {analysisResult.personalColor.tone} 타입
-                              </p>
+                            {analysisResult.personalColor.season} {analysisResult.personalColor.tone} 타입
+                          </p>
                               <p className="text-gray-600 text-sm mt-1 italic">
                                 "{analysisResult.personalColor.description}"
                               </p>
@@ -554,76 +626,432 @@ export default function ResultPage() {
                         {analysisResult.matchingPerfumes.map((match, index) => (
                           <div key={index} className="mb-6">
                             <div className="bg-white rounded-xl border border-yellow-200 overflow-hidden">
-                              {/* 향수 정보 헤더 */}
-                              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 px-4 py-3 border-b border-yellow-200">
-                                <div className="flex justify-between items-center">
-                                  <h3 className="text-lg font-bold text-gray-800">
-                                    {match.persona?.name || '맞춤 향수'}
-                                  </h3>
+                              {/* 향수 정보 헤더 - 향수 코드 강조 */}
+                              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-4 py-4 border-b border-yellow-200">
+                                <div className="flex justify-between items-start">
+                                  {/* 향수 코드 + 이름 섹션 */}
+                                  <div className="flex flex-col">
+                                    {/* 향수 코드 (강조) */}
+                                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-yellow-700 mb-1 border-b-2 border-amber-300 inline-block pb-1">
+                                      {match.persona?.id || '맞춤 향수'}
+                                    </h2>
+                                    {/* 향료명 (부차적) */}
+                                    <p className="text-sm text-gray-500">
+                                      {match.persona?.name || ''}
+                                    </p>
+                                  </div>
                                   
-                                  {/* 매칭 정확도 */}
-                                  <div className="bg-white px-2 py-0.5 rounded-full border border-yellow-300">
-                                    <span className="text-amber-700 font-medium text-xs">
-                                      매칭도: {Math.round(match.score * 100)}%
-                                    </span>
+                                  {/* 매칭 정확도 - 원형 프로그레스 */}
+                                  <div className="relative h-16 w-16 flex flex-col items-center justify-center">
+                                    <svg className="h-full w-full" viewBox="0 0 36 36">
+                                      {/* 배경 원 */}
+                                      <circle 
+                                        cx="18" cy="18" r="15.91549431" 
+                                        fill="none" 
+                                        stroke="#e9e9e9" 
+                                        strokeWidth="1"
+                                      />
+                                      {/* 프로그레스 원 */}
+                                      <circle 
+                                        cx="18" cy="18" r="15.91549431" 
+                                        fill="none" 
+                                        stroke={
+                                          match.score >= 0.9 ? "#22c55e" : 
+                                          match.score >= 0.8 ? "#3b82f6" :
+                                          match.score >= 0.7 ? "#a855f7" : "#d97706"
+                                        }
+                                        strokeWidth="3"
+                                        strokeDasharray={`${Math.round(match.score * 100)} 100`}
+                                        strokeDashoffset="25"
+                                        strokeLinecap="round"
+                                      />
+                                      <text x="18" y="18.5" textAnchor="middle" dominantBaseline="middle" 
+                                        className="text-xs font-bold" fill="#333">
+                                        {Math.round(match.score * 100)}%
+                                      </text>
+                                    </svg>
+                                    <span className="text-[10px] text-gray-500 mt-1">매칭도</span>
                                   </div>
                                 </div>
                               </div>
                               
-                              {/* 향수 내용 */}
-                              <div className="p-4">
-                                {/* 매칭 이유 */}
-                                <div className="bg-gray-50 p-3 rounded-lg mb-4 border-l-4 border-yellow-400">
-                                  <p className="text-gray-700 text-sm">{match.matchReason}</p>
+                              {/* 향수 내용 - 섹션 구조화 */}
+                              <div className="p-4 space-y-6">
+                                {/* 향 노트 설명 (Notes) - 피라미드 형태 */}
+                                <div className="mb-4">
+                                  <h3 className="text-base font-semibold text-amber-800 mb-2 flex items-center">
+                                    <span className="mr-2">🌿</span>
+                                    <span className="bg-amber-100 px-2 py-0.5 rounded">향 노트 피라미드</span>
+                                  </h3>
+                                  
+                                  <div className="relative pt-6">
+                                    {/* Top Note */}
+                                    <div className="bg-gradient-to-b from-yellow-100 to-yellow-50 p-3 rounded-t-lg border border-yellow-200 mb-1 hover:shadow-md transition-shadow">
+                                      <div className="flex items-start">
+                                        <div className="bg-yellow-200 rounded-full p-2 mr-3 flex-shrink-0">
+                                          <span className="text-yellow-700 font-bold text-xs">TOP</span>
+                                        </div>
+                                        <div>
+                                          {/* @ts-ignore - Perfume과 PerfumePersona 타입 차이로 인한 접근 허용 */}
+                                          <h4 className="text-sm font-bold text-yellow-800">{match.persona?.mainScent?.name || 'Top Note'}</h4>
+                                          <p className="text-xs text-gray-600 mt-1">
+                                            첫 15-20분간 지속되는 첫인상의 향
+                                          </p>
+                                          <p className="text-xs italic text-amber-700 mt-1">
+                                            "향의 첫인상을 결정하는 탑 노트! 향수를 뿌린 직후 느껴지는 첫 번째 향기로 매력적인 시작을 선사합니다."
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Middle Note */}
+                                    <div className="bg-gradient-to-b from-amber-100 to-amber-50 p-3 border border-amber-200 mb-1 hover:shadow-md transition-shadow">
+                                      <div className="flex items-start">
+                                        <div className="bg-amber-200 rounded-full p-2 mr-3 flex-shrink-0">
+                                          <span className="text-amber-700 font-bold text-xs">MID</span>
+                                        </div>
+                                        <div>
+                                          {/* @ts-ignore - Perfume과 PerfumePersona 타입 차이로 인한 접근 허용 */}
+                                          <h4 className="text-sm font-bold text-amber-800">{match.persona?.subScent1?.name || 'Middle Note'}</h4>
+                                          <p className="text-xs text-gray-600 mt-1">
+                                            3-4시간 지속되는 향수의 심장부
+                                          </p>
+                                          <p className="text-xs italic text-amber-700 mt-1">
+                                            "향의 진정한 성격을 보여주는 미들 노트! 탑 노트가 사라진 후 나타나 향수의 주요 개성과 특징을 드러냅니다."
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Base Note */}
+                                    <div className="bg-gradient-to-b from-orange-100 to-orange-50 p-3 rounded-b-lg border border-orange-200 hover:shadow-md transition-shadow">
+                                      <div className="flex items-start">
+                                        <div className="bg-orange-200 rounded-full p-2 mr-3 flex-shrink-0">
+                                          <span className="text-orange-700 font-bold text-xs">BASE</span>
+                                        </div>
+                                        <div>
+                                          {/* @ts-ignore - Perfume과 PerfumePersona 타입 차이로 인한 접근 허용 */}
+                                          <h4 className="text-sm font-bold text-orange-800">{match.persona?.subScent2?.name || 'Base Note'}</h4>
+                                          <p className="text-xs text-gray-600 mt-1">
+                                            5-6시간 이상 지속되는 잔향
+                                          </p>
+                                          <p className="text-xs italic text-amber-700 mt-1">
+                                            "향의 기억을 담당하는 베이스 노트! 가장 오래 지속되며 향수의 깊이와 따뜻함을 완성하는 마지막 퍼즐입니다."
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* 향 발현 타임라인 */}
+                                    <div className="mt-4 pt-2 border-t border-amber-100">
+                                      <h5 className="text-xs font-medium text-gray-700 mb-2">향 발현 타임라인</h5>
+                                      <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
+                                        <div className="absolute left-0 top-0 h-full w-1/6 bg-yellow-300 rounded-l-full flex items-center justify-center">
+                                          <span className="text-[8px] font-bold text-yellow-800">TOP</span>
+                                        </div>
+                                        <div className="absolute left-1/6 top-0 h-full w-3/6 bg-amber-400 flex items-center justify-center">
+                                          <span className="text-[8px] font-bold text-amber-800">MIDDLE</span>
+                                        </div>
+                                        <div className="absolute right-0 top-0 h-full w-2/6 bg-orange-300 rounded-r-full flex items-center justify-center">
+                                          <span className="text-[8px] font-bold text-orange-800">BASE</span>
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-between mt-1 text-[8px] text-gray-500">
+                                        <span>15-20분</span>
+                                        <span>3-4시간</span>
+                                        <span>5-6시간+</span>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
+
+                                {/* 향수 특성 시각화 */}
+                                {match.persona?.categories && (
+                                  <div className="mb-6 pt-2">
+                                    <h3 className="text-base font-semibold text-amber-800 mb-3 flex items-center">
+                                      <span className="mr-2">⚗️</span>
+                                      <span className="bg-amber-100 px-2 py-0.5 rounded">향수 특성 프로필</span>
+                                    </h3>
+                                    
+                                    <div className="bg-gradient-to-r from-gray-50 to-amber-50 rounded-xl p-4 border border-amber-100">
+                                      {/* 카테고리 바 차트 */}
+                                      <div className="grid grid-cols-1 gap-2 mb-4">
+                                        {Object.entries(match.persona?.categories || {}).map(([category, value]) => {
+                                          const categoryColors: Record<string, { bg: string, text: string, icon: string }> = {
+                                            citrus: { bg: 'bg-yellow-400', text: 'text-yellow-800', icon: '🍋' },
+                                            floral: { bg: 'bg-pink-400', text: 'text-pink-800', icon: '🌸' },
+                                            woody: { bg: 'bg-amber-600', text: 'text-amber-900', icon: '🌳' },
+                                            musky: { bg: 'bg-purple-400', text: 'text-purple-800', icon: '✨' },
+                                            fruity: { bg: 'bg-red-400', text: 'text-red-800', icon: '🍎' },
+                                            spicy: { bg: 'bg-orange-400', text: 'text-orange-800', icon: '🌶️' }
+                                          };
+                                          
+                                          const categoryNames: Record<string, string> = {
+                                            citrus: '시트러스',
+                                            floral: '플로럴',
+                                            woody: '우디',
+                                            musky: '머스크',
+                                            fruity: '프루티',
+                                            spicy: '스파이시'
+                                          };
+                                          
+                                          const color = categoryColors[category] || { bg: 'bg-gray-400', text: 'text-gray-800', icon: '⚪' };
+                                          const percent = Math.min(Math.round((value as number) * 10), 100);
+                                          
+                                          return (
+                                            <div key={category} className="flex items-center">
+                                              <div className="flex-shrink-0 w-24 text-xs font-medium flex items-center mr-2">
+                                                <span className="mr-1">{color.icon}</span>
+                                                <span className={color.text}>{categoryNames[category] || category}</span>
+                                              </div>
+                                              <div className="flex-grow bg-gray-200 rounded-full h-3 relative">
+                                                <div 
+                                                  className={`${color.bg} h-3 rounded-full`} 
+                                                  style={{ width: `${percent}%` }}
+                                                ></div>
+                                              </div>
+                                              <div className="flex-shrink-0 ml-2 text-xs font-bold text-gray-600">{value}</div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                      
+                                      {/* 주요 카테고리 특성 */}
+                                      <div className="bg-white rounded-lg p-3 border border-amber-100 shadow-sm">
+                                        <p className="text-xs text-gray-700">
+                                          <span className="font-bold">주요 계열:</span> {(() => {
+                                            const mainCategory = Object.entries(match.persona?.categories || {})
+                                              .sort(([, a], [, b]) => (b as number) - (a as number))[0];
+                                            
+                                            const categoryNames: Record<string, string> = {
+                                              citrus: '시트러스',
+                                              floral: '플로럴',
+                                              woody: '우디',
+                                              musky: '머스크',
+                                              fruity: '프루티',
+                                              spicy: '스파이시'
+                                            };
+                                            
+                                            return categoryNames[mainCategory[0]] || mainCategory[0];
+                                          })()}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                                 
-                                {/* 향 카테고리 */}
-                                {match.persona && match.persona.categories && (
-                                  <div className="mb-4">
-                                    <h4 className="text-sm font-medium text-gray-700 mb-2">향 카테고리</h4>
-                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                      {Object.entries(match.persona.categories).map(([key, value]) => {
-                                        const categoryNames: Record<string, string> = {
-                                          citrus: '시트러스',
-                                          floral: '플로럴',
-                                          woody: '우디',
-                                          musky: '머스크',
-                                          fruity: '프루티',
-                                          spicy: '스파이시'
-                                        };
+                                {/* 향수 매칭 이유 및 설명 */}
+                                {match.matchReason && (
+                                  <div className="mb-6">
+                                    <h3 className="text-base font-semibold text-amber-800 mb-3 flex items-center">
+                                      <span className="mr-2">✨</span>
+                                      <span className="bg-amber-100 px-2 py-0.5 rounded">향수 매칭 스토리</span>
+                                    </h3>
+                                    
+                                    {/* 매칭 이유 섹션 - 주접 가득한 설명 파싱 */}
+                                    {(() => {
+                                      try {
+                                        // matchReason을 줄바꿈으로 분리하여 섹션 파싱
+                                        const sections = match.matchReason.split('\n\n');
+                                        const introduction = sections[0] || '';
+                                        const matchingReason = sections.length > 2 ? sections[2] : '';
+                                        const usageRecommendation = sections.length > 3 ? sections[3] : '';
                                         
                                         return (
-                                          <div key={key} className="flex flex-col">
-                                            <div className="flex justify-between">
-                                              <span className="text-gray-600">{categoryNames[key] || key}</span>
-                                              <span className="font-medium">{value}/10</span>
+                                          <div className="space-y-3">
+                                            {/* 소개 */}
+                                            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200 shadow-sm">
+                                              <div className="flex">
+                                                <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-amber-300 to-amber-500 rounded-full flex items-center justify-center mr-3 shadow-md">
+                                                  <span className="text-xl text-white">💬</span>
+                                                </div>
+                                                <div>
+                                                  <h4 className="text-sm font-bold text-amber-800 mb-1">향수 전문가의 평가</h4>
+                                                  <p className="text-sm italic text-amber-700">{introduction}</p>
+                                                </div>
+                                              </div>
                                             </div>
-                                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                                              <div 
-                                                className="bg-amber-400 h-1.5 rounded-full" 
-                                                style={{ width: `${(value / 10) * 100}%` }}
-                                              />
+                                            
+                                            {/* 매칭 이유 */}
+                                            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-200 shadow-sm">
+                                              <h4 className="flex items-center text-sm font-bold text-indigo-800 mb-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-1">
+                                                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                                                </svg>
+                                                이미지와 향수의 매칭 이유
+                                              </h4>
+                                              <p className="text-sm text-indigo-700 italic bg-white bg-opacity-60 p-3 rounded-lg border border-indigo-100">
+                                                {matchingReason}
+                                              </p>
+                                            </div>
+                                            
+                                            {/* 사용 추천 */}
+                                            <div className="grid grid-cols-1 gap-3">
+                                              <div className="bg-white rounded-lg p-4 border border-amber-200 shadow-sm">
+                                                <h4 className="flex items-center text-sm font-bold text-amber-800 mb-2">
+                                                  <span className="mr-2">🕒</span>
+                                                  향수 사용 추천
+                                                </h4>
+                                                <p className="text-sm text-amber-700">{usageRecommendation}</p>
+                                              </div>
+                                              
+                                              {/* 계절 및 시간 추천 - 시각화 */}
+                                              <div className="grid grid-cols-2 gap-3 mt-2">
+                                                {/* 계절 추천 */}
+                                                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-3 border border-emerald-200">
+                                                  <h5 className="text-xs font-bold text-emerald-800 mb-2 flex items-center">
+                                                    <span className="mr-1">🌿</span>
+                                                    추천 계절
+                                                  </h5>
+                                                  <div className="flex justify-between">
+                                                    {['봄', '여름', '가을', '겨울'].map((season, idx) => {
+                                                      const seasonRecommendation = (() => {
+                                                        const mainCategory = Object.entries(match.persona?.categories || {})
+                                                          .sort(([, a], [, b]) => (b as number) - (a as number))[0][0];
+                                                        
+                                                        if (mainCategory === 'citrus' || mainCategory === 'fruity') {
+                                                          return ['봄', '여름'];
+                                                        } else if (mainCategory === 'woody' || mainCategory === 'spicy') {
+                                                          return ['가을', '겨울'];
+                                                        } else {
+                                                          return ['봄', '여름', '가을', '겨울'];
+                                                        }
+                                                      })();
+                                                      
+                                                      const isRecommended = seasonRecommendation.includes(season);
+                                                      
+                                                      return (
+                                                        <div key={season} className="text-center">
+                                                          <div className={`w-10 h-10 rounded-full ${isRecommended ? 'bg-emerald-400 text-white' : 'bg-gray-200 text-gray-400'} flex items-center justify-center mx-auto`}>
+                                                            {idx === 0 && '🌸'}
+                                                            {idx === 1 && '☀️'}
+                                                            {idx === 2 && '🍂'}
+                                                            {idx === 3 && '❄️'}
+                                                          </div>
+                                                          <p className={`text-[10px] mt-1 ${isRecommended ? 'font-bold text-emerald-800' : 'text-gray-400'}`}>
+                                                            {season}
+                                                          </p>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                                
+                                                {/* 시간대 추천 */}
+                                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
+                                                  <h5 className="text-xs font-bold text-blue-800 mb-2 flex items-center">
+                                                    <span className="mr-1">🕰️</span>
+                                                    추천 시간대
+                                                  </h5>
+                                                  <div className="flex justify-between">
+                                                    {['오전', '오후', '저녁', '밤'].map((time, idx) => {
+                                                      const timeRecommendation = (() => {
+                                                        const mainCategory = Object.entries(match.persona?.categories || {})
+                                                          .sort(([, a], [, b]) => (b as number) - (a as number))[0][0];
+                                                        
+                                                        if (mainCategory === 'citrus' || mainCategory === 'fruity') {
+                                                          return ['오전', '오후'];
+                                                        } else if (mainCategory === 'woody' || mainCategory === 'musky') {
+                                                          return ['저녁', '밤'];
+                                                        } else {
+                                                          return ['오전', '오후', '저녁', '밤'];
+                                                        }
+                                                      })();
+                                                      
+                                                      const isRecommended = timeRecommendation.includes(time);
+                                                      
+                                                      return (
+                                                        <div key={time} className="text-center">
+                                                          <div className={`w-10 h-10 rounded-full ${isRecommended ? 'bg-blue-400 text-white' : 'bg-gray-200 text-gray-400'} flex items-center justify-center mx-auto`}>
+                                                            {idx === 0 && '🌅'}
+                                                            {idx === 1 && '☀️'}
+                                                            {idx === 2 && '🌆'}
+                                                            {idx === 3 && '🌙'}
+                                                          </div>
+                                                          <p className={`text-[10px] mt-1 ${isRecommended ? 'font-bold text-blue-800' : 'text-gray-400'}`}>
+                                                            {time}
+                                                          </p>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              </div>
                                             </div>
                                           </div>
                                         );
-                                      })}
-                                    </div>
+                                      } catch (error) {
+                                        console.error('매칭 이유 파싱 오류:', error);
+                                        return (
+                                          <div className="bg-white rounded-lg p-4 border border-amber-200 shadow-sm">
+                                            <p className="text-sm text-amber-700 italic">{match.matchReason}</p>
+                                          </div>
+                                        );
+                                      }
+                                    })()}
                                   </div>
                                 )}
                                 
-                                {/* 키워드 */}
-                                {match.persona?.keywords && match.persona.keywords.length > 0 && (
-                                  <div className="mb-4">
-                                    <h4 className="text-sm font-medium text-gray-700 mb-2">키워드</h4>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {match.persona.keywords.map((keyword, kidx) => (
-                                        <span key={kidx} className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                                          {keyword}
-                                        </span>
-                                      ))}
+                                {/* 향수 사용 가이드 */}
+                                <div className="mb-4">
+                                  <h3 className="text-base font-semibold text-amber-800 mb-3 flex items-center">
+                                    <span className="mr-2">🧪</span>
+                                    <span className="bg-amber-100 px-2 py-0.5 rounded">향수 사용 가이드</span>
+                                  </h3>
+                                  
+                                  <div className="grid grid-cols-1 gap-3">
+                                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-4 border border-pink-200 shadow-sm">
+                                      <h4 className="text-sm font-bold text-pink-800 mb-2 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1 text-pink-600">
+                                          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                          <path d="M12 18h.01"></path>
+                                        </svg>
+                                        어떻게 사용할까요?
+                                      </h4>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-pink-100 text-center">
+                                          <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-1">
+                                            <span className="text-pink-600 text-lg">💆</span>
+                                          </div>
+                                          <p className="text-[10px] font-medium text-pink-700">손목, 귀 뒤</p>
+                                          <p className="text-[8px] text-gray-500">맥박이 뛰는 곳</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-pink-100 text-center">
+                                          <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-1">
+                                            <span className="text-pink-600 text-lg">👔</span>
+                                          </div>
+                                          <p className="text-[10px] font-medium text-pink-700">옷에 뿌리기</p>
+                                          <p className="text-[8px] text-gray-500">15cm 거리에서</p>
+                                        </div>
+                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-pink-100 text-center">
+                                          <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-1">
+                                            <span className="text-pink-600 text-lg">🚿</span>
+                                          </div>
+                                          <p className="text-[10px] font-medium text-pink-700">공기중 분사</p>
+                                          <p className="text-[8px] text-gray-500">향기 구름 속으로</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* 향수 지속력 */}
+                                    <div className="bg-white rounded-lg p-4 border border-amber-200 shadow-sm">
+                                      <h4 className="text-sm font-bold text-amber-800 mb-2 flex items-center">
+                                        <span className="mr-1">⏱️</span>
+                                        향수 지속력
+                                      </h4>
+                                      <div className="relative h-4 bg-gray-100 rounded-full mb-2">
+                                        <div className="absolute left-0 top-0 h-full w-[85%] bg-gradient-to-r from-amber-300 to-yellow-400 rounded-full"></div>
+                                      </div>
+                                      <div className="flex justify-between text-[10px] text-gray-500">
+                                        <span>4-5시간</span>
+                                        <span>지속 시간</span>
+                                        <span>8시간+</span>
+                                      </div>
                                     </div>
                                   </div>
-                                )}
+                                </div>
                               </div>
                             </div>
                           </div>

@@ -1,0 +1,224 @@
+[
+  {
+    "perfumeId": "ST-3503281",
+    "retentionPercentage": 100,
+    "notes": "",
+    "id": "feedback_1747494860141_vxsusib",
+    "timestamp": "2025-05-17T15:14:20.141Z"
+  },
+  {
+    "perfumeId": "ST-3503281",
+    "retentionPercentage": 100,
+    "notes": "",
+    "id": "feedback_1747494860648_4jzv8zl",
+    "timestamp": "2025-05-17T15:14:20.648Z"
+  },
+  {
+    "perfumeId": "ST-3503281",
+    "retentionPercentage": 100,
+    "notes": "",
+    "id": "feedback_1747494861259_ycpgjd0",
+    "timestamp": "2025-05-17T15:14:21.259Z"
+  },
+  {
+    "perfumeId": "ST-3503281",
+    "retentionPercentage": 100,
+    "notes": "",
+    "id": "feedback_1747494861272_ygnzdde",
+    "timestamp": "2025-05-17T15:14:21.272Z"
+  },
+  {
+    "perfumeId": "ST-3503281",
+    "retentionPercentage": 20,
+    "notes": "",
+    "id": "feedback_1747494900119_0pnd6eq",
+    "timestamp": "2025-05-17T15:15:00.119Z"
+  },
+  {
+    "perfumeId": "ST-3503281",
+    "retentionPercentage": 20,
+    "notes": "",
+    "id": "feedback_1747494900481_4ck7sqj",
+    "timestamp": "2025-05-17T15:15:00.481Z"
+  },
+  {
+    "perfumeId": "ST-3503281",
+    "retentionPercentage": 20,
+    "notes": "",
+    "id": "feedback_1747494900485_qbgmxnu",
+    "timestamp": "2025-05-17T15:15:00.485Z"
+  },
+  {
+    "perfumeId": "LV-2225161",
+    "impression": "😍",
+    "retentionPercentage": 20,
+    "categoryPreferences": {
+      "citrus": "maintain",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "specificScents": [
+      {
+        "id": "WD-3005",
+        "name": "오크모스",
+        "ratio": 40,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-17T16:20:58.493Z",
+    "id": "feedback_1747498858886_uhgwzzf",
+    "timestamp": "2025-05-17T16:20:58.886Z"
+  },
+  {
+    "perfumeId": "ST-3503281",
+    "impression": "",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "maintain",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      },
+      {
+        "id": "PT-8415331-1",
+        "name": "비터오렌지",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-17T17:17:36.833Z",
+    "id": "feedback_1747502257277_oolfrtc",
+    "timestamp": "2025-05-17T17:17:37.277Z"
+  },
+  {
+    "perfumeId": "BK-2201281",
+    "impression": "",
+    "retentionPercentage": 20,
+    "categoryPreferences": {
+      "citrus": "maintain",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-18T04:07:51.246Z",
+    "id": "feedback_1747541271696_lgsc916",
+    "timestamp": "2025-05-18T04:07:51.696Z"
+  },
+  {
+    "perfumeId": "IC-3126171",
+    "impression": "",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "maintain",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      },
+      {
+        "id": "TM-2320461",
+        "name": "타임",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-18T04:16:55.300Z",
+    "id": "feedback_1747541815704_n8ypzcr",
+    "timestamp": "2025-05-18T04:16:55.704Z"
+  },
+  {
+    "perfumeId": "BK-2201281",
+    "impression": "😐",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "decrease",
+      "woody": "increase",
+      "musky": "increase",
+      "fruity": "decrease",
+      "spicy": "increase"
+    },
+    "userCharacteristics": {
+      "weight": "low",
+      "sweetness": "high",
+      "freshness": "low",
+      "uniqueness": "veryHigh"
+    },
+    "specificScents": [],
+    "notes": "",
+    "submittedAt": "2025-05-18T08:00:48.182Z",
+    "id": "feedback_1747555248592_mv189hp",
+    "timestamp": "2025-05-18T08:00:48.592Z"
+  },
+  {
+    "perfumeId": "BK-2201281",
+    "impression": "😞",
+    "retentionPercentage": 20,
+    "categoryPreferences": {
+      "citrus": "decrease",
+      "floral": "decrease",
+      "woody": "increase",
+      "musky": "increase",
+      "fruity": "maintain",
+      "spicy": "decrease"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "high",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "BK-2201281-1",
+        "name": "월계수잎",
+        "ratio": 90,
+        "action": "add"
+      },
+      {
+        "id": "RS-2807221-1",
+        "name": "다마스커스 로즈",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-18T08:41:01.558Z",
+    "id": "feedback_1747557661987_jaok20b",
+    "timestamp": "2025-05-18T08:41:01.987Z"
+  }
+]

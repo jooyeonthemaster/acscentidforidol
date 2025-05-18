@@ -1,0 +1,1068 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js';
+import { Radar, Doughnut } from 'react-chartjs-2';
+import { 
+  PerfumeCategory, 
+  CategoryPreference, 
+  PerfumeFeedback, 
+  SpecificScent,
+  FragranceCharacteristic,
+  CharacteristicValue,
+  UserFriendlyCharacteristics,
+  CustomPerfumeRecipe,
+  TestGuide,
+  RecipeComponent
+} from '@/app/types/perfume';
+import { perfumes } from '@/app/data/perfumeData';
+
+// Chart.js 등록
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend,
+  ArcElement
+);
+
+interface FeedbackFormProps {
+  perfumeId: string;
+  perfumeName: string; // 향수 이름 추가
+  onClose: () => void;
+  onSubmit: () => void;
+}
+
+// 초기 피드백 데이터
+const INITIAL_FEEDBACK_DATA: PerfumeFeedback = {
+  perfumeId: '',
+  impression: '',
+  retentionPercentage: 50, // 기본값 50%로 변경
+  categoryPreferences: {
+    citrus: 'maintain',
+    floral: 'maintain',
+    woody: 'maintain',
+    musky: 'maintain', 
+    fruity: 'maintain',
+    spicy: 'maintain'
+  },
+  userCharacteristics: {
+    weight: 'medium',
+    sweetness: 'medium',
+    freshness: 'medium',
+    uniqueness: 'medium'
+  },
+  specificScents: [],
+  notes: '',
+};
+
+// 카테고리 이름 매핑
+const CATEGORY_NAMES: Record<PerfumeCategory, string> = {
+  citrus: '상큼한 향',
+  floral: '꽃 향기',
+  woody: '나무/자연 향',
+  musky: '포근한 향',
+  fruity: '과일 향',
+  spicy: '자극적인 향'
+};
+
+// 카테고리 아이콘 매핑
+const CATEGORY_ICONS: Record<PerfumeCategory, string> = {
+  citrus: '🍋',
+  floral: '🌸',
+  woody: '🌳',
+  musky: '🧴',
+  fruity: '🍎',
+  spicy: '🌶️'
+};
+
+// 향수 계열 설명 추가
+const CATEGORY_DESCRIPTIONS: Record<PerfumeCategory, string> = {
+  citrus: '레몬, 오렌지 같은 상큼하고 시원한 향기',
+  floral: '장미, 자스민 같은 꽃의 달콤하고 부드러운 향기',
+  woody: '나무, 흙, 이끼 같은 자연적이고 편안한 향기',
+  musky: '따뜻하고 안정감을 주는 포근한 향기',
+  fruity: '딸기, 복숭아 같은 달콤하고 상큼한 과일 향기',
+  spicy: '후추, 계피 같은 강렬하고 자극적인 향기'
+};
+
+// 향료 예시 추가
+const CATEGORY_EXAMPLES: Record<PerfumeCategory, string> = {
+  citrus: '레몬, 베르가못, 그레이프프루트',
+  floral: '장미, 자스민, 라벤더, 튤립',
+  woody: '샌달우드, 시더우드, 베티버',
+  musky: '머스크, 앰버, 바닐라',
+  fruity: '딸기, 복숭아, 블랙베리, 사과',
+  spicy: '핑크페퍼, 시나몬, 넛메그'
+};
+
+// 선호도 텍스트 매핑
+const PREFERENCE_TEXT: Record<CategoryPreference, string> = {
+  increase: '더 강하게',
+  decrease: '더 약하게',
+  maintain: '현재 유지'
+};
+
+// 향 특성 이름 매핑
+const CHARACTERISTIC_NAMES: Record<FragranceCharacteristic, string> = {
+  weight: '무게감',
+  sweetness: '당도',
+  freshness: '청량감',
+  uniqueness: '개성'
+};
+
+// 향 특성 설명 매핑
+const CHARACTERISTIC_DESCRIPTIONS: Record<FragranceCharacteristic, string> = {
+  weight: '향이 얼마나 무겁거나 가벼운지 - 가볍게 변경하고 싶으신가요, 무겁게 변경하고 싶으신가요?',
+  sweetness: '향이 얼마나 달콤한지 - 덜 달콤하게 변경하고 싶으신가요, 더 달콤하게 변경하고 싶으신가요?',
+  freshness: '향이 얼마나 상쾌하고 시원한지 - 더 따뜻하게 변경하고 싶으신가요, 더 시원하게 변경하고 싶으신가요?',
+  uniqueness: '향이 얼마나 독특하고 특별한지 - 더 무난하게 변경하고 싶으신가요, 더 독특하게 변경하고 싶으신가요?'
+};
+
+// 향 특성 단계별 레이블
+const CHARACTERISTIC_LABELS: Record<FragranceCharacteristic, Record<CharacteristicValue, string>> = {
+  weight: {
+    veryLow: '훨씬 더 가볍게',
+    low: '더 가볍게',
+    medium: '현재 무게감 유지',
+    high: '더 무겁게',
+    veryHigh: '훨씬 더 무겁게'
+  },
+  sweetness: {
+    veryLow: '훨씬 덜 달콤하게',
+    low: '덜 달콤하게',
+    medium: '현재 당도 유지',
+    high: '더 달콤하게',
+    veryHigh: '훨씬 더 달콤하게'
+  },
+  freshness: {
+    veryLow: '훨씬 더 따뜻하게',
+    low: '더 따뜻하게',
+    medium: '현재 청량감 유지',
+    high: '더 시원하게',
+    veryHigh: '훨씬 더 시원하게'
+  },
+  uniqueness: {
+    veryLow: '훨씬 더 무난하게',
+    low: '더 무난하게',
+    medium: '현재 개성 유지',
+    high: '더 독특하게',
+    veryHigh: '훨씬 더 독특하게'
+  }
+};
+
+// 특성값을 슬라이더 값으로 변환
+const characteristicToSliderValue = (value: CharacteristicValue): number => {
+  switch(value) {
+    case 'veryLow': return 1;
+    case 'low': return 2;
+    case 'medium': return 3;
+    case 'high': return 4;
+    case 'veryHigh': return 5;
+    default: return 3;
+  }
+};
+
+// 슬라이더 값을 특성값으로 변환
+const sliderToCharacteristicValue = (value: number): CharacteristicValue => {
+  switch(value) {
+    case 1: return 'veryLow';
+    case 2: return 'low';
+    case 3: return 'medium';
+    case 4: return 'high';
+    case 5: return 'veryHigh';
+    default: return 'medium';
+  }
+};
+
+// 향료 ID를 코드 형식(MS-XXXXXXX)으로 변환하는 함수 추가
+const formatScentCode = (id: string): string => {
+  // 기존 ID에서 숫자만 추출
+  const numericPart = id.replace(/\D/g, '');
+  // 숫자가 없으면 기본 숫자 사용
+  const paddedNumericPart = numericPart ? numericPart.padStart(7, '0') : (Math.floor(Math.random() * 10000000)).toString().padStart(7, '0');
+  // MS- 접두사 추가
+  return `MS-${paddedNumericPart}`;
+};
+
+export default function FeedbackForm({ perfumeId, perfumeName, onClose, onSubmit }: FeedbackFormProps) {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<PerfumeFeedback>({
+    ...INITIAL_FEEDBACK_DATA,
+    perfumeId,
+  });
+  const [selectedScent, setSelectedScent] = useState<SpecificScent | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<PerfumeCategory>('citrus');
+  const [scentSearchTerm, setScentSearchTerm] = useState('');
+  const [activeCharacteristic, setActiveCharacteristic] = useState<FragranceCharacteristic>('weight');
+  const [recipe, setRecipe] = useState<CustomPerfumeRecipe | null>(null);
+  const [customizationLoading, setCustomizationLoading] = useState(false);
+
+  // perfumeData.ts에서 향료 데이터 추출
+  const generateAvailableScents = () => {
+    const scentsMap = new Map();
+    
+    // 모든 향수에서 향료 정보 추출
+    perfumes.forEach(perfume => {
+      // 메인 향료
+      if (perfume.mainScent && perfume.mainScent.name) {
+        const id = perfume.id;
+        const name = perfume.mainScent.name;
+        const key = `${id}`;  // 향수 ID를 그대로 키로 사용
+        
+        if (!scentsMap.has(key)) {
+          scentsMap.set(key, {
+            id: id,
+            name: name,
+            category: perfume.category,
+            description: perfume.mainScent.description || `${name}의 특징적인 향`
+          });
+        }
+      }
+      
+      // 서브 향료 1
+      if (perfume.subScent1 && perfume.subScent1.name) {
+        const id = `${perfume.id}-1`;  // 고유한 ID 생성
+        const name = perfume.subScent1.name;
+        const key = `${id}`;
+        
+        if (!scentsMap.has(key)) {
+          scentsMap.set(key, {
+            id: id,
+            name: name,
+            category: determineCategory(name),
+            description: perfume.subScent1.description || `${name}의 특징적인 향`
+          });
+        }
+      }
+      
+      // 서브 향료 2
+      if (perfume.subScent2 && perfume.subScent2.name) {
+        const id = `${perfume.id}-2`;  // 고유한 ID 생성
+        const name = perfume.subScent2.name;
+        const key = `${id}`;
+        
+        if (!scentsMap.has(key)) {
+          scentsMap.set(key, {
+            id: id,
+            name: name,
+            category: determineCategory(name),
+            description: perfume.subScent2.description || `${name}의 특징적인 향`
+          });
+        }
+      }
+    });
+    
+    return Array.from(scentsMap.values());
+  };
+  
+  // 향료 이름에 따라 카테고리 추정
+  const determineCategory = (name: string): PerfumeCategory => {
+    name = name.toLowerCase();
+    if (name.includes('시트러스') || name.includes('레몬') || name.includes('오렌지') || name.includes('자몽') || name.includes('라임') || name.includes('베르가못')) {
+      return 'citrus';
+    }
+    if (name.includes('장미') || name.includes('자스민') || name.includes('튤립') || name.includes('플로럴') || name.includes('꽃')) {
+      return 'floral';
+    }
+    if (name.includes('우디') || name.includes('나무') || name.includes('샌달') || name.includes('시더') || name.includes('파인')) {
+      return 'woody';
+    }
+    if (name.includes('머스크') || name.includes('앰버') || name.includes('바닐라')) {
+      return 'musky';
+    }
+    if (name.includes('베리') || name.includes('과일') || name.includes('사과') || name.includes('복숭아') || name.includes('딸기')) {
+      return 'fruity';
+    }
+    if (name.includes('스파이시') || name.includes('시나몬') || name.includes('후추') || name.includes('페퍼')) {
+      return 'spicy';
+    }
+    
+    // 확실하지 않은 경우 워딩이나 특성에 따라 카테고리 배정
+    if (name.includes('달콤') || name.includes('스위트')) {
+      return 'fruity';
+    }
+    if (name.includes('상쾌') || name.includes('신선')) {
+      return 'citrus';
+    }
+    if (name.includes('따뜻') || name.includes('포근')) {
+      return 'musky';
+    }
+    if (name.includes('허브') || name.includes('민트')) {
+      return 'woody';
+    }
+    
+    // 기본 카테고리
+    return 'woody';
+  };
+
+  // 모든 향료 목록 생성
+  const availableScents = generateAvailableScents();
+
+  // 인상 이모티콘 옵션 - 이모티콘과 설명을 더 직관적으로 수정
+  const impressionOptions = [
+    { value: '😍', label: '완벽해요', retention: 100 },
+    { value: '😊', label: '좋아요', retention: 80 },
+    { value: '😐', label: '괜찮아요', retention: 60 },
+    { value: '😕', label: '아쉬워요', retention: 40 },
+    { value: '😞', label: '별로예요', retention: 20 },
+  ];
+
+  // 첫인상 선택 시 기본 유지 비율 설정
+  useEffect(() => {
+    if (feedback.impression) {
+      const selectedOption = impressionOptions.find(option => option.value === feedback.impression);
+      if (selectedOption) {
+        setFeedback(prev => ({
+          ...prev,
+          retentionPercentage: selectedOption.retention
+        }));
+      }
+    }
+  }, [feedback.impression]);
+
+  // 피드백 제출 처리
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // 향의 강도나 지속력 관련 피드백 제거
+      const submissionData: PerfumeFeedback = {
+        ...feedback,
+        submittedAt: new Date().toISOString()
+      };
+
+      // specificScents에서 빈 항목 제거
+      if (submissionData.specificScents?.length) {
+        submissionData.specificScents = submissionData.specificScents.filter(
+          scent => scent.id && scent.name && scent.ratio > 0
+        );
+      }
+
+      // 1. 먼저 피드백 제출
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submissionData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '피드백 제출 중 오류가 발생했습니다.');
+      }
+
+      // 로컬 스토리지에 피드백 저장 (중복 제출 방지)
+      const storedFeedbacks = JSON.parse(localStorage.getItem('submittedFeedbacks') || '[]');
+      localStorage.setItem('submittedFeedbacks', JSON.stringify([
+        ...storedFeedbacks,
+        { perfumeId, submittedAt: new Date().toISOString() },
+      ]));
+
+      setLoading(false);
+      setSuccess(true);
+      
+      // 2. 커스터마이제이션 API 호출
+      setCustomizationLoading(true);
+      
+      try {
+        const customizeResponse = await fetch('/api/perfume/customize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            feedback: submissionData
+          }),
+        });
+        
+        if (!customizeResponse.ok) {
+          const errorData = await customizeResponse.json();
+          console.error('커스터마이제이션 API 오류:', errorData);
+          // API 오류가 발생하더라도 피드백은 제출 완료되었으므로 치명적 오류로 처리하지 않음
+        } else {
+          const customizeData = await customizeResponse.json();
+          setRecipe(customizeData.recipe);
+        }
+      } catch (customizeErr) {
+        console.error('커스터마이제이션 API 호출 오류:', customizeErr);
+      } finally {
+        setCustomizationLoading(false);
+      }
+      
+      // 커스터마이제이션 결과가 표시되므로 자동으로 모달을 닫지 않음
+    } catch (err) {
+      setLoading(false);
+      setCustomizationLoading(false);
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      console.error('피드백 제출 오류:', err);
+    }
+  };
+
+  // 카테고리 선택 컴포넌트
+  const CategorySelector = ({ category, currentValue, onChange }: { 
+    category: PerfumeCategory, 
+    currentValue: CategoryPreference, 
+    onChange: (cat: PerfumeCategory, pref: CategoryPreference) => void 
+  }) => {
+    return (
+      <div className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-amber-100">
+        <div className="flex items-center mb-2">
+          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mr-3 text-xl">
+            {CATEGORY_ICONS[category]}
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-800">{CATEGORY_NAMES[category]}</h3>
+            <p className="text-xs text-gray-500">{CATEGORY_DESCRIPTIONS[category]}</p>
+          </div>
+        </div>
+        
+        <div className="mt-2 mb-1">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">예시</span>: {CATEGORY_EXAMPLES[category]}
+          </p>
+        </div>
+        
+        <div className="flex justify-between border border-gray-200 rounded-lg overflow-hidden mt-3">
+          <button 
+            onClick={() => onChange(category, 'decrease')}
+            className={`flex-1 py-2 px-1 text-sm transition-colors ${
+              currentValue === 'decrease' 
+                ? 'bg-red-100 text-red-700 font-medium' 
+                : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <div className="flex flex-col items-center">
+              <span className="text-lg mb-1">👇</span>
+              <span className="text-xs">더 약하게</span>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => onChange(category, 'maintain')}
+            className={`flex-1 py-2 px-1 text-sm transition-colors ${
+              currentValue === 'maintain' 
+                ? 'bg-amber-100 text-amber-700 font-medium' 
+                : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <div className="flex flex-col items-center">
+              <span className="text-lg mb-1">👌</span>
+              <span className="text-xs">현재 유지</span>
+            </div>
+          </button>
+          
+          <button 
+            onClick={() => onChange(category, 'increase')}
+            className={`flex-1 py-2 px-1 text-sm transition-colors ${
+              currentValue === 'increase' 
+                ? 'bg-green-100 text-green-700 font-medium' 
+                : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <div className="flex flex-col items-center">
+              <span className="text-lg mb-1">👆</span>
+              <span className="text-xs">더 강하게</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // 향 특성 슬라이더 컴포넌트
+  const CharacteristicSlider = ({ 
+    characteristic, 
+    value, 
+    onChange 
+  }: { 
+    characteristic: FragranceCharacteristic; 
+    value: CharacteristicValue; 
+    onChange: (char: FragranceCharacteristic, val: CharacteristicValue) => void;
+  }) => {
+    const sliderValue = characteristicToSliderValue(value);
+
+    return (
+      <div className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-amber-100">
+        <div className="flex items-center mb-3">
+          <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mr-3">
+            {characteristic === 'weight' && '⚖️'}
+            {characteristic === 'sweetness' && '🍯'}
+            {characteristic === 'freshness' && '❄️'}
+            {characteristic === 'uniqueness' && '✨'}
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-800">{CHARACTERISTIC_NAMES[characteristic]}을(를) 어떻게 개선하고 싶으신가요?</h3>
+            <p className="text-xs text-gray-500">
+              {CHARACTERISTIC_DESCRIPTIONS[characteristic]}
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-2">
+          <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <span className="font-medium text-amber-600">
+              {CHARACTERISTIC_LABELS[characteristic][value]}
+            </span>
+          </div>
+          
+          <input
+            type="range"
+            min="1"
+            max="5"
+            step="1"
+            value={sliderValue}
+            onChange={(e) => {
+              const newValue = sliderToCharacteristicValue(parseInt(e.target.value));
+              onChange(characteristic, newValue);
+            }}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+          />
+          
+          <div className="flex justify-between mt-2">
+            {[1, 2, 3, 4, 5].map((val) => (
+              <button
+                key={val}
+                onClick={() => onChange(characteristic, sliderToCharacteristicValue(val))}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${
+                  sliderValue === val 
+                    ? 'bg-amber-500 text-white' 
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {val}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 카테고리 선호도 변경 처리
+  const handleCategoryPreferenceChange = (category: PerfumeCategory, preference: CategoryPreference) => {
+    setFeedback({
+      ...feedback,
+      categoryPreferences: {
+        ...(feedback.categoryPreferences || {
+          citrus: 'maintain',
+          floral: 'maintain',
+          woody: 'maintain',
+          musky: 'maintain',
+          fruity: 'maintain',
+          spicy: 'maintain'
+        }),
+        [category]: preference,
+      },
+    });
+  };
+
+  // 향 특성 변경 처리
+  const handleCharacteristicChange = (characteristic: FragranceCharacteristic, value: CharacteristicValue) => {
+    setFeedback({
+      ...feedback,
+      userCharacteristics: {
+        ...(feedback.userCharacteristics || {
+          weight: 'medium',
+          sweetness: 'medium',
+          freshness: 'medium',
+          uniqueness: 'medium'
+        }),
+        [characteristic]: value,
+      },
+    });
+  };
+
+  // 향료 추가 처리
+  const handleAddScent = () => {
+    if (selectedScent) {
+      const updatedScents = [...(feedback.specificScents || [])];
+      
+      // 이미 있는 향료인지 확인
+      const existingIndex = updatedScents.findIndex(s => s.id === selectedScent.id);
+      
+      if (existingIndex >= 0) {
+        // 이미 있는 향료면 알림
+        setError('이미 선택한 향료입니다.');
+        setTimeout(() => setError(null), 3000); // 3초 후 에러 메시지 사라짐
+      } else {
+        // 새 향료 추가 (최대 2개까지만 허용)
+        if (updatedScents.length >= 2) {
+          // 이미 2개가 있으면 알림 표시 후 종료
+          setError('향료는 최대 2개까지만 선택할 수 있습니다.');
+          setTimeout(() => setError(null), 3000); // 3초 후 에러 메시지 사라짐
+          setSelectedScent(null);
+          return;
+        }
+        
+        // SpecificScent 형식에 맞추기
+        updatedScents.push({
+          id: selectedScent.id,
+          name: selectedScent.name,
+          ratio: 50, // 기본값 50%
+          action: 'add' // 필수 속성
+        });
+      }
+      
+      setFeedback({
+        ...feedback,
+        specificScents: updatedScents,
+      });
+      
+      setSelectedScent(null);
+    }
+  };
+
+  // 향료 제거 처리
+  const handleRemoveScent = (id: string) => {
+    if (feedback.specificScents) {
+      setFeedback({
+        ...feedback,
+        specificScents: feedback.specificScents.filter(s => s.id !== id),
+      });
+    }
+  };
+
+  // 단계 이동 처리
+  const handleNextStep = () => {
+    setError(null);
+    if (step < 3) {  // 단계 수 3으로 변경
+      setStep(step + 1);
+    } else {
+      handleSubmit();
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    } else {
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-amber-50 to-amber-100 bg-opacity-95">
+      <div className="w-full max-w-md p-6 mx-4 bg-white rounded-2xl shadow-xl border border-amber-200 max-h-[90vh] overflow-y-auto">
+        {/* 헤더 영역 */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center mr-3 text-xl shadow-md">
+              ✨
+            </div>
+            <div>
+              <h2 className="text-xl font-bold bg-gradient-to-r from-amber-600 to-amber-800 bg-clip-text text-transparent">AC'SCENT ID</h2>
+              <p className="text-xs text-amber-500">당신만의 맞춤 향수</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-gray-100 transition-all"
+            disabled={loading}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-gray-500">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* 추천된 향수 정보 표시 */}
+        <div className="mb-6 p-5 bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl border border-amber-200 shadow-md">
+          <div className="flex items-center">
+            <div className="w-14 h-14 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full flex items-center justify-center mr-4 shadow-md">
+              <span className="text-2xl text-white">🧪</span>
+            </div>
+            <div>
+              <p className="text-sm text-amber-600 font-medium">맞춤 향수</p>
+              <h3 className="text-lg font-medium text-gray-800">{perfumeName}</h3>
+              <div className="flex items-center mt-1">
+                <span className="text-xs py-0.5 px-2 bg-amber-100 text-amber-700 rounded-full font-medium">{formatScentCode(perfumeId)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 진행 상태 표시 */}
+        <div className="mb-6">
+          <div className="flex justify-between mb-2 items-center">
+            <div className="flex items-center">
+              <span className="text-xs font-medium bg-gradient-to-r from-amber-500 to-amber-600 text-white py-1 px-2 rounded-full shadow-sm">단계 {step}/3</span>
+            </div>
+            <span className="text-xs font-medium text-amber-700 bg-amber-50 py-1 px-3 rounded-full shadow-sm border border-amber-100">
+              {step === 1 ? '향의 유지 비율 선택' : step === 2 ? '향의 특성 개선' : '세부 향료 선택'}
+            </span>
+          </div>
+          <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+            <div
+              className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full transition-all duration-500 ease-in-out"
+              style={{ width: `${(step / 3) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* 오류 메시지 */}
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm flex items-start"
+          >
+            <div className="shrink-0 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center mr-2 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="white" className="w-4 h-4">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <p className="text-red-600 text-sm">{error}</p>
+      </motion.div>
+    )}
+
+    {/* 성공 메시지 & 커스터마이제이션 결과 */}
+    {success ? (
+      <div className="py-4 flex flex-col">
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="w-16 h-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-4 mx-auto shadow-lg"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="white" className="w-8 h-8">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </motion.div>
+        
+        <h3 className="text-center text-lg font-medium text-gray-800 mb-2">
+          맞춤 향수 레시피가 준비되었습니다!
+        </h3>
+        
+        {customizationLoading ? (
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="w-12 h-12 border-4 border-t-transparent border-amber-500 rounded-full animate-spin mb-4"></div>
+            <p className="text-amber-600 font-medium">맞춤 향수 레시피 생성 중...</p>
+            <p className="text-sm text-gray-500 mt-2">잠시만 기다려주세요. 최대 15초 정도 소요됩니다.</p>
+          </div>
+        ) : recipe ? (
+          <div className="mt-4 space-y-6">
+            {/* 피드백 반영 시각화 - Before & After */}
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-5 border border-indigo-200 shadow-md">
+              <h4 className="font-semibold text-indigo-800 mb-3 flex items-center">
+                <span className="text-lg mr-2">✨</span> 피드백이 반영된 결과
+              </h4>
+              
+              {/* 유지 비율 시각화 */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm font-medium text-gray-700">기존 향 유지 비율</p>
+                  <p className="text-sm font-medium text-indigo-600">{feedback.retentionPercentage}%</p>
+                </div>
+                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full"
+                    style={{ width: `${feedback.retentionPercentage}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              {/* 향 특성 Before & After */}
+              <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+                <p className="text-sm font-medium text-gray-700 mb-2">향 특성 변화</p>
+                
+                <div className="aspect-square w-full max-w-md mx-auto">
+                  {/* 레이더 차트 */}
+                  <Radar 
+                    data={{
+                      labels: Object.keys(CHARACTERISTIC_NAMES).map(key => CHARACTERISTIC_NAMES[key as FragranceCharacteristic]),
+                      datasets: [
+                        {
+                          label: '변경 전',
+                          data: Object.keys(CHARACTERISTIC_NAMES).map(() => 3), // 기본값 중간(3)
+                          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                          borderColor: 'rgba(255, 99, 132, 1)',
+                          borderWidth: 1,
+                        },
+                        {
+                          label: '변경 후',
+                          data: Object.keys(CHARACTERISTIC_NAMES).map(key => 
+                            characteristicToSliderValue(feedback.userCharacteristics?.[key as FragranceCharacteristic] || 'medium')
+                          ),
+                          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                          borderColor: 'rgba(54, 162, 235, 1)',
+                          borderWidth: 1,
+                        }
+                      ]
+                    }}
+                    options={{
+                      scales: {
+                        r: {
+                          min: 0,
+                          max: 5,
+                          ticks: {
+                            stepSize: 1,
+                            display: false
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* 선택한 특성 목록 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                {Object.entries(feedback.userCharacteristics || {}).map(([char, value]) => (
+                  <div key={char} className="bg-white rounded-lg p-3 border border-purple-100 flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center mr-2">
+                      {char === 'weight' && '⚖️'}
+                      {char === 'sweetness' && '🍯'}
+                      {char === 'freshness' && '❄️'}
+                      {char === 'uniqueness' && '✨'}
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">{CHARACTERISTIC_NAMES[char as FragranceCharacteristic]}</p>
+                      <p className="text-sm font-medium text-indigo-600">
+                        {CHARACTERISTIC_LABELS[char as FragranceCharacteristic][value]}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* 레시피 시각화 - 도넛 차트 */}
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-200 shadow-md">
+              <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
+                <span className="text-lg mr-2">📊</span> 레시피 구성 비율
+              </h4>
+              
+              <div className="flex flex-col md:flex-row items-center justify-between">
+                <div className="w-full md:w-1/2 aspect-square max-w-[250px] mx-auto">
+                  <Doughnut 
+                    data={{
+                      labels: recipe.recipe['10ml'].map(c => formatScentCode(c.name)),
+                      datasets: [{
+                        data: recipe.recipe['10ml'].map(c => c.percentage),
+                        backgroundColor: [
+                          'rgba(255, 99, 132, 0.7)',
+                          'rgba(54, 162, 235, 0.7)',
+                          'rgba(255, 206, 86, 0.7)',
+                          'rgba(75, 192, 192, 0.7)',
+                          'rgba(153, 102, 255, 0.7)',
+                        ],
+                        borderColor: [
+                          'rgba(255, 99, 132, 1)',
+                          'rgba(54, 162, 235, 1)',
+                          'rgba(255, 206, 86, 1)',
+                          'rgba(75, 192, 192, 1)',
+                          'rgba(153, 102, 255, 1)',
+                        ],
+                        borderWidth: 1,
+                      }]
+                    }}
+                    options={{
+                      plugins: {
+                        legend: {
+                          display: false
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                
+                <div className="mt-4 md:mt-0 md:ml-4 w-full md:w-1/2">
+                  <div className="grid grid-cols-1 gap-2">
+                    {recipe.recipe['10ml'].map((component, i) => (
+                      <div key={i} className="flex items-center p-2 bg-white rounded-lg border border-blue-100">
+                        <div className="w-3 h-3 rounded-full mr-2" style={{ 
+                          backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                          ][i % 5]
+                        }}></div>
+                        <div className="flex-1">
+                          <div className="flex justify-between">
+                            <span className="text-xs font-semibold text-gray-700">{formatScentCode(component.name)}</span>
+                            <span className="text-xs font-medium text-blue-600">{component.percentage}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 테스트 가이드 */}
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-5 border border-amber-200 shadow-md">
+              <h4 className="font-semibold text-amber-800 mb-3 flex items-center">
+                <span className="text-lg mr-2">🧪</span> 향료 알갱이 테스트 가이드
+              </h4>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                {recipe.testGuide.scentMixtures.map((scent, i) => (
+                  <motion.div 
+                    key={i} 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-center bg-white rounded-lg p-3 border border-amber-100 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 flex items-center justify-center mr-3 shrink-0 shadow-sm text-white font-semibold">
+                      {i + 1}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{formatScentCode(scent.name)}</p>
+                      <div className="flex items-center mt-1">
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div 
+                            className="bg-gradient-to-r from-amber-400 to-yellow-400 h-1.5 rounded-full" 
+                            style={{ width: `${scent.ratio}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs ml-2 text-amber-600 font-medium">{scent.ratio}%</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              
+              <div className="mt-4 bg-white p-4 rounded-lg border border-amber-100 shadow-sm">
+                <p className="font-medium text-gray-700 mb-2 flex items-center">
+                  <span className="text-amber-500 mr-2">📋</span>
+                  테스트 방법
+                </p>
+                <p className="text-gray-600 text-sm">{recipe.testGuide.instructions}</p>
+              </div>
+            </div>
+            
+            {/* 레시피 테이블 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 10ml 레시피 */}
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200 shadow-md">
+                <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
+                  <span className="text-lg mr-2">💧</span> 10ml 레시피
+                </h4>
+                
+                <div className="overflow-hidden rounded-lg shadow-sm">
+                  <table className="w-full text-sm">
+                    <thead className="bg-blue-500 text-white">
+                      <tr>
+                        <th className="p-2 text-left rounded-tl-lg">향료 코드</th>
+                        <th className="p-2 text-right">양</th>
+                        <th className="p-2 text-right rounded-tr-lg">비율</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recipe.recipe['10ml'].map((component, i) => (
+                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-blue-50'}>
+                          <td className="p-2 font-medium">{formatScentCode(component.name)}</td>
+                          <td className="p-2 text-right">{component.amount}</td>
+                          <td className="p-2 text-right font-medium text-blue-600">{component.percentage}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              {/* 50ml 레시피 */}
+              <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200 shadow-md">
+                <h4 className="font-semibold text-purple-800 mb-3 flex items-center">
+                  <span className="text-lg mr-2">🧴</span> 50ml 레시피
+                </h4>
+                
+                <div className="overflow-hidden rounded-lg shadow-sm">
+                  <table className="w-full text-sm">
+                    <thead className="bg-purple-500 text-white">
+                      <tr>
+                        <th className="p-2 text-left rounded-tl-lg">향료 코드</th>
+                        <th className="p-2 text-right">양</th>
+                        <th className="p-2 text-right rounded-tr-lg">비율</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recipe.recipe['50ml'].map((component, i) => (
+                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
+                          <td className="p-2 font-medium">{formatScentCode(component.name)}</td>
+                          <td className="p-2 text-right">{component.amount}</td>
+                          <td className="p-2 text-right font-medium text-purple-600">{component.percentage}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            
+            {/* 설명 */}
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200 shadow-md">
+              <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+                <span className="text-lg mr-2">💫</span> 조향사의 설명
+              </h4>
+              
+              <div className="space-y-4 mt-2 text-sm">
+                <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                  <p className="font-medium text-gray-700 mb-1">배합 이유</p>
+                  <p className="text-gray-600">{recipe.explanation.rationale}</p>
+                </div>
+                
+                <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                  <p className="font-medium text-gray-700 mb-1">예상되는 향의 특징</p>
+                  <p className="text-gray-600">{recipe.explanation.expectedResult}</p>
+                </div>
+                
+                <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                  <p className="font-medium text-gray-700 mb-1">추천 상황</p>
+                  <p className="text-gray-600">{recipe.explanation.recommendation}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={onClose}
+                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 focus:ring-2 focus:ring-amber-300 focus:outline-none transition-all shadow-md hover:shadow-lg"
+              >
+                확인 완료
+              </button>
+            </div>
+          </div>
+                  ) : (
+          <div className="text-center py-4">
+            <p className="text-gray-500">
+              피드백이 성공적으로 제출되었습니다!
+            </p>
+            <p className="text-sm text-gray-400 mt-2">
+              소중한 의견 감사합니다. 향수 추천 품질 향상에 큰 도움이 됩니다.
+            </p>
+            <button
+              onClick={onClose}
+              className="mt-4 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 transition-colors shadow-md"
+            >
+              닫기
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

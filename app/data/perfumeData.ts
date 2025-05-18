@@ -670,7 +670,7 @@ export const perfumes: Perfume[] = [
       "citrus": 3,
       "floral": 3,
       "woody": 8,
-      "musky": 8,
+      "musky": 9,
       "fruity": 1,
       "spicy": 7
     },
