@@ -1,35 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { recommendPerfume } from '@/utils/gemini';
+import { askGemini } from '../../utils/gemini';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { image, history, idolInfo } = body;
-
-    if (!image) {
+    const body = await req.json();
+    const { prompt } = body;
+    
+    if (!prompt) {
       return NextResponse.json(
-        { error: '이미지가 필요합니다.' },
+        { error: '추천을 위한 정보가 필요합니다.' },
         { status: 400 }
       );
     }
-
-    // 요청에 최애 정보 추가
-    let enhancedHistory = [...history];
     
-    // 최애 정보가 있으면 대화 기록에 첨부
-    if (idolInfo && Object.keys(idolInfo).length > 0) {
-      enhancedHistory.unshift({
-        role: 'system',
-        parts: `최애 정보: 이름(${idolInfo.idolName}), 그룹(${idolInfo.idolGroup}), 스타일(${idolInfo.idolStyle}), 성격(${idolInfo.idolPersonality}), 매력 포인트(${idolInfo.idolCharms})`
-      });
-    }
-
-    // Gemini API로 향수 추천 받기
-    const response = await recommendPerfume(image, enhancedHistory);
-
-    return NextResponse.json({ response });
+    // Gemini API를 통한 향수 추천 요청
+    const response = await askGemini(prompt);
+    
+    return NextResponse.json({ recommendation: response });
   } catch (error) {
-    console.error('향수 추천 API 오류:', error);
+    console.error('추천 API 오류:', error);
     return NextResponse.json(
       { error: '서버 오류가 발생했습니다.' },
       { status: 500 }
