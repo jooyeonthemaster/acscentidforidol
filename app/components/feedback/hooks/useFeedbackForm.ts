@@ -6,7 +6,6 @@ import { PerfumeFeedback, CustomPerfumeRecipe } from '@/app/types/perfume';
 // 초기 피드백 데이터
 export const INITIAL_FEEDBACK_DATA: PerfumeFeedback = {
   perfumeId: '',
-  impression: '',
   retentionPercentage: 50, // 기본값 50%로 변경
   categoryPreferences: {
     citrus: 'maintain',
@@ -53,7 +52,7 @@ export const useFeedbackForm = (perfumeId: string) => {
       // specificScents에서 빈 항목 제거
       if (submissionData.specificScents?.length) {
         submissionData.specificScents = submissionData.specificScents.filter(
-          scent => scent.id && scent.name && scent.ratio > 0
+          scent => scent.id && scent.name && (scent.ratio ?? 0) > 0
         );
       }
 

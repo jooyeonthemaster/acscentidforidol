@@ -5,13 +5,13 @@ import { ScentSelector, SelectedScents } from '../components/ScentSelector';
 import { PerfumeCategory, PerfumeFeedback, SpecificScent } from '@/app/types/perfume';
 import { generateAvailableScents } from '../utils/formatters';
 
-interface Step4ViewProps {
+interface Step3ViewProps {
   feedback: PerfumeFeedback;
   setFeedback: React.Dispatch<React.SetStateAction<PerfumeFeedback>>;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-export const Step4View: React.FC<Step4ViewProps> = ({ 
+export const Step3View: React.FC<Step3ViewProps> = ({ 
   feedback, 
   setFeedback,
   setError

@@ -15,8 +15,8 @@ import {
 
 // Views
 import { Step1View } from './views/Step1View';
+import { Step2View } from './views/Step2View';
 import { Step3View } from './views/Step3View';
-import { Step4View } from './views/Step4View';
 import { SuccessView } from './views/SuccessView';
 
 // Hooks
@@ -188,7 +188,7 @@ export default function FeedbackForm({
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Step3View feedback={feedback} setFeedback={setFeedback} />
+                    <Step2View feedback={feedback} setFeedback={setFeedback} />
                   </motion.div>
                 )}
                 
@@ -200,7 +200,7 @@ export default function FeedbackForm({
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Step4View feedback={feedback} setFeedback={setFeedback} setError={setError} />
+                    <Step3View feedback={feedback} setFeedback={setFeedback} setError={setError} />
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -3,15 +3,47 @@ import { SpecificScent, PerfumeCategory } from '@/app/types/perfume';
 import { determineCategory } from '../constants/categories';
 import perfumePersonas from '@/app/data/perfumePersonas';
 
-// 향료 ID를 원래 형식 그대로 반환하는 함수
-export const formatScentCode = (id: string): string => {
-  // ID가 이미 형식에 맞는 경우 그대로 반환
-  if (id && id.includes('-')) {
-    return id;
+// 향료 이름으로 ID를 찾는 함수
+export const findScentIdByName = (name: string): string | undefined => {
+  const persona = perfumePersonas.personas.find(p => p.name === name);
+  return persona?.id;
+};
+
+// ID로 향료 이름을 찾는 함수
+export const findScentNameById = (id: string): string | undefined => {
+  const persona = perfumePersonas.personas.find(p => p.id === id);
+  return persona?.name;
+};
+
+// 향료 코드나 이름을 ID 형식으로 변환하는 함수
+export const formatScentCode = (nameOrId: string): string => {
+  // ID 패턴 체크 (XX-YYYYYYY 형식)
+  if (nameOrId && /^[A-Z]{2}-\d+$/.test(nameOrId)) {
+    return nameOrId; // 이미 ID 형식이면 그대로 반환
   }
   
-  // ID가 없거나 형식이 맞지 않는 경우
-  return id || 'UNKNOWN-ID';
+  // 이름으로 ID 찾기
+  const id = findScentIdByName(nameOrId);
+  return id || nameOrId || 'UNKNOWN-ID';
+};
+
+// 향료 코드나 이름을 표시용 형식으로 변환 (이름 + ID)
+export const formatScentDisplay = (nameOrId: string): string => {
+  let id = nameOrId;
+  let name = nameOrId;
+  
+  // ID 형식인 경우
+  if (nameOrId && /^[A-Z]{2}-\d+$/.test(nameOrId)) {
+    id = nameOrId;
+    name = findScentNameById(id) || id;
+  } 
+  // 이름인 경우
+  else {
+    name = nameOrId;
+    id = findScentIdByName(name) || 'UNKNOWN-ID';
+  }
+  
+  return `${name} (${id})`;
 };
 
 // perfumePersonas.ts에서 향료 데이터 추출

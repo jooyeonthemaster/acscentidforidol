@@ -79,7 +79,7 @@ async function generateCustomRecipe(feedback: PerfumeFeedback, perfume: PerfumeP
     const recipe50ml = calculateRecipe(normalizedScents, 5.0); // 50ml에는 5g의 향료 사용
     
     // 시향 테스트 가이드 생성
-    const testGuide = generateTestGuide(normalizedScents);
+    const testGuide = generateTestGuide(normalizedScents, feedback, perfume);
     
     // 레시피 설명 생성
     const explanation = generateExplanation(feedback, normalizedScents, perfume);
@@ -412,41 +412,107 @@ function generateTestGuide(scents: Array<{
   name: string;
   ratio: number;
   category: PerfumeCategory;
-}>): {
+}>, feedback?: PerfumeFeedback, perfume?: PerfumePersona): {
   instructions: string;
-  scentMixtures: Array<{ name: string; ratio: number }>;
+  scentMixtures: Array<{ id: string; name: string; count: number; ratio: number }>;
 } {
-  // 상위 3개 향료만 선택 (비율순)
-  const topScents = [...scents]
+  // 향료 이름을 ID로 변환하는 유틸리티 함수 임포트
+  const { formatScentCode, findScentIdByName, findScentNameById } = require('@/app/components/feedback/utils/formatters');
+  
+  // 선택된 향료 목록 준비
+  let selectedScents = [...scents];
+  
+  // 1. 기본 향수를 첫 번째 항목으로 포함 (perfume이 제공된 경우)
+  if (perfume) {
+    // 기존 selectedScents에서 기본 향수가 있는지 확인
+    const baseExists = selectedScents.find(s => s.name === perfume.name);
+    
+    // 없으면 기본 향수 추가 (유지 비율에 따라)
+    if (!baseExists) {
+      const retentionRatio = (feedback?.retentionPercentage ?? 50) / 100;
+      selectedScents.unshift({
+        name: perfume.name,
+        ratio: 50 * retentionRatio, // 기본 비율의 50%를 기본 향수에 할당
+        category: 'woody' as PerfumeCategory // 기본값
+      });
+    }
+  }
+  
+  // 2. 사용자가 선택한 특정 향료 처리 (최대 2개)
+  if (feedback?.specificScents && feedback.specificScents.length > 0) {
+    feedback.specificScents.forEach(specificScent => {
+      if (specificScent.action === 'add' && specificScent.name) {
+        // 이미 선택된 향료 목록에 있는지 확인
+        const existingIndex = selectedScents.findIndex(s => 
+          s.name === specificScent.name || formatScentCode(s.name) === formatScentCode(specificScent.name)
+        );
+        
+        if (existingIndex === -1) {
+          // 없으면 새로 추가
+          selectedScents.push({
+            name: specificScent.name,
+            ratio: specificScent.ratio || 50, // 기본값 50
+            category: specificScent.category || 'woody' as PerfumeCategory
+          });
+        } else {
+          // 있으면 비율 업데이트
+          selectedScents[existingIndex].ratio = specificScent.ratio || selectedScents[existingIndex].ratio;
+        }
+      }
+    });
+  }
+  
+  // 3. 상위 3개 향료만 선택 (비율순)
+  // 최대 향료 개수를 3개로 제한 (기본 향 + 최대 2개 추가)
+  const topScents = selectedScents
     .sort((a, b) => b.ratio - a.ratio)
-    .slice(0, Math.min(3, scents.length));
+    .slice(0, 3);
   
-  // 향료 비율 재정규화
+  // 4. 향료 비율 재정규화
   const totalTopRatio = topScents.reduce((sum, scent) => sum + scent.ratio, 0);
-  const normalizedTopScents = topScents.map(scent => ({
-    name: scent.name,
-    ratio: Math.round((scent.ratio / totalTopRatio) * 100)
-  }));
   
-  // 알갱이 개수 계산 (각 향료별 알갱이 수)
-  const granules = normalizedTopScents.map(scent => {
-    // 비율에 따라 알갱이 수 결정 (최소 1개)
-    const count = Math.max(1, Math.round(scent.ratio / 20));
-    return `${scent.name} ${count}알`;
+  // 5. 알갱이 개수 계산 및 ID 매핑
+  const scentMixtures = topScents.map(scent => {
+    // 향료 ID 찾기
+    const id = formatScentCode(scent.name);
+    const name = scent.name;
+    
+    // 비율 계산 (0-100%)
+    const ratio = Math.round((scent.ratio / totalTopRatio) * 100);
+    
+    // 알갱이 개수 계산 (비율에 따라 1-10개 사이의 정수)
+    // 알갱이 개수 = 비율 / 10 (반올림, 최소 1개, 최대 10개)
+    const count = Math.max(1, Math.min(10, Math.round(ratio / 10)));
+    
+    return {
+      id,
+      name,
+      count,
+      ratio
+    };
   });
   
-  // 시향 가이드 생성
+  // 6. 테스트 방법 설명 생성
+  // 알갱이 목록 텍스트 생성
+  const granulesList = scentMixtures.map(scent => `${scent.id} ${scent.count}알`).join(', ');
+  
+  // 비율 목록 텍스트 생성
+  const ratiosList = scentMixtures.map(scent => `${scent.name} (${scent.id}) ${scent.ratio}%`).join(', ');
+  
+  // 최종 안내 텍스트
   const instructions = `
 다음과 같이 향료 알갱이를 준비하여 시향해보세요:
-${granules.join(', ')}
+${granulesList}
 
 알갱이들을 작은 용기에 함께 넣고 섞어서 완성된 향의 조합을 경험해보세요.
-각 향료의 비율은 ${normalizedTopScents.map(s => `${s.name} ${s.ratio}%`).join(', ')} 입니다.
+각 향료의 비율은 ${ratiosList} 입니다.
+
+이 테스팅 레시피는 향수 제작 전 시향(향 테스트)을 위한 것입니다.
   `.trim();
   
   return {
     instructions,
-    scentMixtures: normalizedTopScents
+    scentMixtures
   };
 }
 

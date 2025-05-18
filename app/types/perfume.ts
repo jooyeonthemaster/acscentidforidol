@@ -223,7 +223,7 @@ export interface CustomPerfumeRecipe {
 export interface PerfumeFeedback {
   perfumeId: string;
   perfumeName?: string;
-  impression: string;
+  impression?: string;
   overallRating?: number;
   retentionPercentage?: number;
   categoryPreferences?: Record<PerfumeCategory, CategoryPreference>;

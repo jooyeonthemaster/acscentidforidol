@@ -32,7 +32,7 @@ const feedbackSchema = z.object({
   // 필수 필드
   perfumeId: z.string().min(1, "향수 ID는 필수입니다"),
   perfumeName: z.string().optional(),
-  impression: z.string().min(1, "첫인상 평가는 필수입니다"),
+  impression: z.string().optional(),
   overallRating: z.number().min(1).max(5).optional(),
   retentionPercentage: z.number().min(0).max(100).optional(),
   categoryPreferences: z.record(PerfumeCategoryEnum, CategoryPreferenceEnum).optional(),
