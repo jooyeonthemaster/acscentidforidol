@@ -99,10 +99,19 @@ interface ScentComponent {
 // 피드백 데이터 저장 경로
 const FEEDBACK_DATA_PATH = path.join(process.cwd(), 'data', 'feedback.json');
 
+// 서버리스 환경 감지 (Vercel 등)
+const isServerlessEnvironment = process.env.VERCEL || process.env.SERVERLESS === 'true';
+
 /**
  * 피드백 데이터를 파일에 저장하는 함수
  */
 async function saveFeedback(feedback: StoredFeedback): Promise<void> {
+  // 서버리스 환경에서는 파일 저장 스킵
+  if (isServerlessEnvironment) {
+    console.log('서버리스 환경에서 파일 저장을 건너뜁니다:', feedback.id);
+    return;
+  }
+
   try {
     // 디렉토리 확인 및 생성
     const dataDir = path.join(process.cwd(), 'data');
@@ -125,7 +134,10 @@ async function saveFeedback(feedback: StoredFeedback): Promise<void> {
     console.log(`피드백 저장 완료: ${feedback.id}`);
   } catch (error) {
     console.error('피드백 저장 오류:', error);
-    throw new Error('피드백 데이터를 저장하는데 실패했습니다');
+    // 서버리스 환경에서는 저장 실패가 치명적 오류가 아니므로 예외를 발생시키지 않음
+    if (!isServerlessEnvironment) {
+      throw new Error('피드백 데이터를 저장하는데 실패했습니다');
+    }
   }
 }
 
@@ -190,8 +202,13 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     };
     
-    // 피드백 데이터 저장
-    await saveFeedback(storedFeedback);
+    try {
+      // 피드백 데이터 저장 (실패해도 API 응답은 성공으로 처리)
+      await saveFeedback(storedFeedback);
+    } catch (saveError) {
+      // 저장 실패 로그만 남기고 계속 진행
+      console.error('피드백 데이터 저장 실패:', saveError);
+    }
     
     // 결과 반환
     return NextResponse.json({
@@ -213,7 +230,8 @@ export async function POST(request: NextRequest) {
  */
 export async function GET() {
   try {
-    if (!fs.existsSync(FEEDBACK_DATA_PATH)) {
+    // 서버리스 환경에서는 빈 배열 반환
+    if (isServerlessEnvironment || !fs.existsSync(FEEDBACK_DATA_PATH)) {
       return NextResponse.json({ feedbacks: [] });
     }
     
