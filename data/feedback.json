@@ -1571,5 +1571,311 @@
     "submittedAt": "2025-05-23T06:19:06.680Z",
     "id": "feedback_1747981147098_zc7tjj8",
     "timestamp": "2025-05-23T06:19:07.098Z"
+  },
+  {
+    "perfumeId": "LV-2812221",
+    "retentionPercentage": 20,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "increase",
+      "woody": "decrease",
+      "musky": "increase",
+      "fruity": "maintain",
+      "spicy": "decrease"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T07:00:47.729Z",
+    "id": "feedback_1747983648195_lah4b2b",
+    "timestamp": "2025-05-23T07:00:48.195Z"
+  },
+  {
+    "perfumeId": "LV-2812221",
+    "retentionPercentage": 20,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "increase",
+      "woody": "decrease",
+      "musky": "maintain",
+      "fruity": "decrease",
+      "spicy": "increase"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "BG-8704231",
+        "name": "베르가못",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T07:02:42.408Z",
+    "id": "feedback_1747983762463_fkumm1e",
+    "timestamp": "2025-05-23T07:02:42.464Z"
+  },
+  {
+    "perfumeId": "LV-2812221",
+    "retentionPercentage": 20,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "increase",
+      "woody": "decrease",
+      "musky": "increase",
+      "fruity": "decrease",
+      "spicy": "increase"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T07:07:35.355Z",
+    "id": "feedback_1747984055788_y9splgc",
+    "timestamp": "2025-05-23T07:07:35.788Z"
+  },
+  {
+    "perfumeId": "LV-2812221",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "maintain",
+      "woody": "decrease",
+      "musky": "maintain",
+      "fruity": "increase",
+      "spicy": "decrease"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T07:12:44.083Z",
+    "id": "feedback_1747984364602_xlouwx6",
+    "timestamp": "2025-05-23T07:12:44.602Z"
+  },
+  {
+    "perfumeId": "LV-2812221",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "BG-8704231",
+        "name": "베르가못",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T07:21:26.780Z",
+    "id": "feedback_1747984886842_xr3qt5o",
+    "timestamp": "2025-05-23T07:21:26.842Z"
+  },
+  {
+    "perfumeId": "LV-2812221",
+    "retentionPercentage": 40,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "maintain",
+      "woody": "decrease",
+      "musky": "maintain",
+      "fruity": "increase",
+      "spicy": "increase"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "CR-3706221",
+        "name": "캐럿",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T08:02:00.077Z",
+    "id": "feedback_1747987320525_j1bs2em",
+    "timestamp": "2025-05-23T08:02:00.525Z"
+  },
+  {
+    "perfumeId": "LV-2812221",
+    "retentionPercentage": 20,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "maintain",
+      "woody": "decrease",
+      "musky": "increase",
+      "fruity": "increase",
+      "spicy": "decrease"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "CR-3706221",
+        "name": "캐럿",
+        "ratio": 50,
+        "action": "add"
+      },
+      {
+        "id": "PT-8415331",
+        "name": "페티그레인",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T08:03:24.807Z",
+    "id": "feedback_1747987404869_5c83tf3",
+    "timestamp": "2025-05-23T08:03:24.869Z"
+  },
+  {
+    "perfumeId": "LV-2225161",
+    "retentionPercentage": 40,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "increase",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "decrease",
+      "spicy": "decrease"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "BG-8704231",
+        "name": "베르가못",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T09:50:43.804Z",
+    "id": "feedback_1747993844285_tbhrmal",
+    "timestamp": "2025-05-23T09:50:44.285Z"
+  },
+  {
+    "perfumeId": "ST-3503281",
+    "retentionPercentage": 40,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "decrease",
+      "woody": "increase",
+      "musky": "decrease",
+      "fruity": "increase",
+      "spicy": "increase"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T10:06:18.044Z",
+    "id": "feedback_1747994778509_476e406",
+    "timestamp": "2025-05-23T10:06:18.509Z"
+  },
+  {
+    "perfumeId": "ST-3503281",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "maintain",
+      "woody": "decrease",
+      "musky": "maintain",
+      "fruity": "increase",
+      "spicy": "maintain"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-23T10:40:12.060Z",
+    "id": "feedback_1747996812132_dluzu3p",
+    "timestamp": "2025-05-23T10:40:12.132Z"
   }
 ]

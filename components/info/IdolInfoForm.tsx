@@ -7,6 +7,7 @@ import IdolImageUpload from '../IdolImageUpload';
 
 // 최애 정보 인터페이스
 interface IdolInfo {
+  userPhone: string;
   name: string;
   style: string[];
   personality: string[];
@@ -21,6 +22,7 @@ export default function IdolInfoForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [analysisStage, setAnalysisStage] = useState<string>('이미지 전송 중...');
   const [idolInfo, setIdolInfo] = useState<IdolInfo>({
+    userPhone: '',
     name: '',
     style: [],
     personality: [],
@@ -157,9 +159,21 @@ export default function IdolInfoForm() {
 
   // 다음 단계로 진행
   const handleNext = () => {
-    if (step === 1 && !idolInfo.name) {
-      alert('최애의 이름을 입력해주세요.');
-      return;
+    if (step === 1) {
+      if (!idolInfo.userPhone) {
+        alert('전화번호를 입력해주세요.');
+        return;
+      }
+      if (!idolInfo.name) {
+        alert('최애의 이름을 입력해주세요.');
+        return;
+      }
+      // 전화번호 형식 간단 검증 (숫자와 하이픈만 허용)
+      const phoneRegex = /^[0-9-]+$/;
+      if (!phoneRegex.test(idolInfo.userPhone)) {
+        alert('전화번호는 숫자와 하이픈(-)만 입력 가능합니다.');
+        return;
+      }
     }
     
     if (step === 2 && idolInfo.style.length === 0) {
@@ -191,6 +205,13 @@ export default function IdolInfoForm() {
     try {
       // 폼 데이터 생성 및 전송
       const formData = new FormData();
+      
+      // 사용자 및 세션 정보 추가 (Firebase 저장을 위해)
+      const userId = idolInfo.userPhone.replace(/-/g, ''); // 하이픈 제거해서 userId로 사용
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      formData.append('userId', userId);
+      formData.append('sessionId', sessionId);
+      
       formData.append('idolName', idolInfo.name);
       
       // 배열 데이터는 여러 개의 동일한 이름으로 추가
@@ -248,6 +269,9 @@ export default function IdolInfoForm() {
       // 추가 디버깅 로그
       console.log('API 요청 경로:', '/api/analyze');
       console.log('FormData 내용:', {
+        userPhone: idolInfo.userPhone,
+        userId: userId,
+        sessionId: sessionId,
         idolName: idolInfo.name,
         idolStyle: idolInfo.style,
         idolPersonality: idolInfo.personality,
@@ -474,8 +498,25 @@ export default function IdolInfoForm() {
           {step === 1 && (
             <div className="space-y-4">
               <div>
+                <label htmlFor="userPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                  전화번호 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  id="userPhone"
+                  name="userPhone"
+                  value={idolInfo.userPhone}
+                  onChange={handleInputChange}
+                  placeholder="예: 010-1234-5678"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-900 placeholder-gray-500"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">향수 주문 및 연락용으로 사용됩니다</p>
+              </div>
+              
+              <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  최애 이름
+                  최애 이름 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"

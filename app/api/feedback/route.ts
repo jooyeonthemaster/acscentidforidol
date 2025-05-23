@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PerfumePersona, PerfumeFeedback, PerfumeCategory, CategoryPreference, FragranceCharacteristic, CharacteristicValue, SpecificScent } from '@/app/types/perfume';
 import perfumePersonas from '@/app/data/perfumePersonas';
+import { saveSessionFeedback } from '../../../lib/firebaseApi';
 import * as z from 'zod';
 import fs from 'fs';
 import path from 'path';
@@ -29,6 +30,9 @@ const SpecificScentSchema = z.object({
 
 // 피드백 데이터 스키마 (Zod) - PerfumeFeedback 인터페이스에 맞게 수정
 const feedbackSchema = z.object({
+  // 세션 정보
+  userId: z.string().optional(),
+  sessionId: z.string().optional(),
   // 필수 필드
   perfumeId: z.string().min(1, "향수 ID는 필수입니다"),
   perfumeName: z.string().optional(),
@@ -203,11 +207,25 @@ export async function POST(request: NextRequest) {
     };
     
     try {
-      // 피드백 데이터 저장 (실패해도 API 응답은 성공으로 처리)
+      // 기존 파일 저장 방식
       await saveFeedback(storedFeedback);
     } catch (saveError) {
       // 저장 실패 로그만 남기고 계속 진행
       console.error('피드백 데이터 저장 실패:', saveError);
+    }
+    
+    // Firebase에 세션 기반 피드백 저장
+    if (validatedData.userId && validatedData.sessionId) {
+      try {
+        await saveSessionFeedback(validatedData.userId, validatedData.sessionId, {
+          ...feedback,
+          recommendations: recommendations
+        });
+        console.log('Firebase에 세션 피드백 저장 완료');
+      } catch (firebaseError) {
+        console.error('Firebase 피드백 저장 오류:', firebaseError);
+        // Firebase 저장 실패해도 계속 진행
+      }
     }
     
     // 결과 반환

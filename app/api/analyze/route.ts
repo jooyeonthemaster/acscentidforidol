@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyzeIdolImage } from '../../utils/gemini';
 import { findMatchingPerfumes } from '../../utils/perfumeUtils';
 import { ImageAnalysisResult } from '../../types/perfume';
+import { saveImageAnalysisWithLink } from '../../../lib/firebaseApi';
 
 /**
  * 이미지 분석 API 엔드포인트
@@ -37,6 +38,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '이미지가 필요합니다.' }, { status: 400 });
     }
     
+    // 사용자 및 세션 정보 추출
+    const userId = formData.get('userId') as string;
+    const sessionId = formData.get('sessionId') as string;
+    
     // 아이돌 정보 추출
     const idolName = formData.get('idolName') as string || '정보 없음';
     const idolStyle = formData.get('idolStyle') as string || '';
@@ -47,6 +52,10 @@ export async function POST(request: NextRequest) {
     const imageBuffer = await imageFile.arrayBuffer();
     const imageBase64 = Buffer.from(imageBuffer).toString('base64');
     console.log(`이미지 변환 시작: ${imageFile.name} ${imageFile.type} ${imageFile.size}`);
+    
+    // 이미지 URL 생성 (실제 환경에서는 Firebase Storage 등에 업로드)
+    const imageUrl = `data:${imageFile.type};base64,${imageBase64.substring(0, 100)}...`; // 임시 URL
+    console.log('이미지 URL 생성 완료');
     
     // Gemini API를 이용한 이미지 분석
     const analysisResult = await analyzeIdolImage(imageBase64, {
@@ -116,6 +125,17 @@ export async function POST(request: NextRequest) {
     
     // 매칭 결과를 분석 결과에 병합
     analysisResult.matchingPerfumes = matchingPerfumes;
+    
+    // Firebase에 이미지 분석 결과 및 이미지 링크 저장
+    if (userId && sessionId) {
+      try {
+        await saveImageAnalysisWithLink(userId, sessionId, analysisResult, imageUrl);
+        console.log('Firebase에 이미지 분석 결과 저장 완료');
+      } catch (firebaseError) {
+        console.error('Firebase 저장 오류:', firebaseError);
+        // Firebase 저장 실패해도 분석 결과는 반환
+      }
+    }
     
     // persona 객체가 있는지 확인
     for (let i = 0; i < matchingPerfumes.length; i++) {

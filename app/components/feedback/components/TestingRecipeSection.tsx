@@ -161,70 +161,62 @@ const TestingRecipeSection: React.FC<TestingRecipeSectionProps> = ({ recipe, fee
       </div>
       
       {/* 테스팅 단계 안내 섹션 */}
-      <div className="bg-white rounded-lg p-5 border border-purple-100 shadow-sm">
-        <h5 className="font-semibold text-purple-700 mb-4 text-base flex items-center">
+      <div className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">
+        <h5 className="font-semibold text-purple-700 mb-3 text-base flex items-center">
           <span className="text-lg mr-2">📝</span> 테스트 방법
         </h5>
         
-        <div className="space-y-6">
+        <div className="space-y-2">
           {/* 단계 1 */}
-          <div className="flex">
-            <div className="mr-4 flex-shrink-0">
-              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold shadow-sm">1</div>
-            </div>
-            <div className="flex-grow">
-              <p className="font-semibold text-gray-800 mb-1">{instructions.step1.title}</p>
-              <p className="text-gray-600 text-sm">{instructions.step1.description}</p>
-              <p className="text-gray-500 mt-2 text-xs bg-purple-50 p-2 rounded-md"><em>{instructions.step1.details}</em></p>
-            </div>
-          </div>
-          
-          {/* 단계 사이 연결선 */}
-          <div className="flex">
-            <div className="mr-4 flex-shrink-0 flex justify-center">
-              <div className="w-0.5 h-6 bg-purple-200"></div>
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-100/50 shadow-sm">
+            <div className="flex">
+              <div className="mr-3 flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">1</div>
+              </div>
+              <div className="flex-grow">
+                <p className="font-semibold text-gray-800 mb-1 text-sm">{instructions.step1.title}</p>
+                <p className="text-gray-600 text-xs leading-relaxed mb-2">{instructions.step1.description}</p>
+                <p className="text-gray-500 text-xs bg-white/70 p-2 rounded border border-purple-100/30"><em>{instructions.step1.details}</em></p>
+              </div>
             </div>
           </div>
           
           {/* 단계 2 */}
-          <div className="flex">
-            <div className="mr-4 flex-shrink-0">
-              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold shadow-sm">2</div>
-            </div>
-            <div className="flex-grow">
-              <p className="font-semibold text-gray-800 mb-1">{instructions.step2.title}</p>
-              <p className="text-gray-600 text-sm">{instructions.step2.description}</p>
-              <p className="text-gray-500 mt-2 text-xs bg-purple-50 p-2 rounded-md"><em>{instructions.step2.details}</em></p>
-            </div>
-          </div>
-          
-          {/* 단계 사이 연결선 */}
-          <div className="flex">
-            <div className="mr-4 flex-shrink-0 flex justify-center">
-              <div className="w-0.5 h-6 bg-purple-200"></div>
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-100/50 shadow-sm">
+            <div className="flex">
+              <div className="mr-3 flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">2</div>
+              </div>
+              <div className="flex-grow">
+                <p className="font-semibold text-gray-800 mb-1 text-sm">{instructions.step2.title}</p>
+                <p className="text-gray-600 text-xs leading-relaxed mb-2">{instructions.step2.description}</p>
+                <p className="text-gray-500 text-xs bg-white/70 p-2 rounded border border-purple-100/30"><em>{instructions.step2.details}</em></p>
+              </div>
             </div>
           </div>
           
           {/* 단계 3 */}
-          <div className="flex">
-            <div className="mr-4 flex-shrink-0">
-              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold shadow-sm">3</div>
-            </div>
-            <div className="flex-grow">
-              <p className="font-semibold text-gray-800 mb-1">{instructions.step3.title}</p>
-              <p className="text-gray-600 text-sm">{instructions.step3.description}</p>
-              <p className="text-gray-500 mt-2 text-xs bg-purple-50 p-2 rounded-md"><em>{instructions.step3.details}</em></p>
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-100/50 shadow-sm">
+            <div className="flex">
+              <div className="mr-3 flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">3</div>
+              </div>
+              <div className="flex-grow">
+                <p className="font-semibold text-gray-800 mb-1 text-sm">{instructions.step3.title}</p>
+                <p className="text-gray-600 text-xs leading-relaxed mb-2">{instructions.step3.description}</p>
+                <p className="text-gray-500 text-xs bg-white/70 p-2 rounded border border-purple-100/30"><em>{instructions.step3.details}</em></p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* 주의사항 */}
-        <div className="mt-6 pt-5 border-t border-dashed border-purple-200">
-          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-100">
+        <div className="mt-4 pt-3 border-t border-dashed border-purple-200">
+          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-3 border border-yellow-200/50 shadow-sm">
             <h6 className="font-semibold text-yellow-700 mb-2 text-sm flex items-center">
-              <span className="text-lg mr-2">⚠️</span> 테스팅 주의사항
+              <span className="text-base mr-2">⚠️</span> 테스팅 주의사항
             </h6>
-            <p className="text-sm text-yellow-600 whitespace-pre-wrap">{instructions.caution}</p>
+            <p className="text-xs text-yellow-600 whitespace-pre-wrap leading-relaxed">{instructions.caution}</p>
           </div>
         </div>
       </div>
