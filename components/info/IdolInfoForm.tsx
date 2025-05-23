@@ -8,7 +8,6 @@ import IdolImageUpload from '../IdolImageUpload';
 // 최애 정보 인터페이스
 interface IdolInfo {
   name: string;
-  group: string;
   style: string[];
   personality: string[];
   charms: string;
@@ -23,7 +22,6 @@ export default function IdolInfoForm() {
   const [analysisStage, setAnalysisStage] = useState<string>('이미지 전송 중...');
   const [idolInfo, setIdolInfo] = useState<IdolInfo>({
     name: '',
-    group: '',
     style: [],
     personality: [],
     charms: '',
@@ -159,8 +157,8 @@ export default function IdolInfoForm() {
 
   // 다음 단계로 진행
   const handleNext = () => {
-    if (step === 1 && (!idolInfo.name || !idolInfo.group)) {
-      alert('최애의 이름과 그룹명을 입력해주세요.');
+    if (step === 1 && !idolInfo.name) {
+      alert('최애의 이름을 입력해주세요.');
       return;
     }
     
@@ -194,7 +192,6 @@ export default function IdolInfoForm() {
       // 폼 데이터 생성 및 전송
       const formData = new FormData();
       formData.append('idolName', idolInfo.name);
-      formData.append('idolGroup', idolInfo.group);
       
       // 배열 데이터는 여러 개의 동일한 이름으로 추가
       idolInfo.style.forEach(style => {
@@ -252,7 +249,6 @@ export default function IdolInfoForm() {
       console.log('API 요청 경로:', '/api/analyze');
       console.log('FormData 내용:', {
         idolName: idolInfo.name,
-        idolGroup: idolInfo.group,
         idolStyle: idolInfo.style,
         idolPersonality: idolInfo.personality,
         idolCharms: idolInfo.charms,
@@ -488,26 +484,11 @@ export default function IdolInfoForm() {
                   value={idolInfo.name}
                   onChange={handleInputChange}
                   placeholder="예: 지수, 정국, 윈터..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-900 placeholder-gray-500"
                   required
                 />
               </div>
               
-              <div>
-                <label htmlFor="group" className="block text-sm font-medium text-gray-700 mb-1">
-                  그룹명 (소속)
-                </label>
-                <input
-                  type="text"
-                  id="group"
-                  name="group"
-                  value={idolInfo.group}
-                  onChange={handleInputChange}
-                  placeholder="예: 블랙핑크, 방탄소년단, 에스파..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
-                  required
-                />
-              </div>
             </div>
           )}
           

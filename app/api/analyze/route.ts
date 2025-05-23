@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
     
     // 아이돌 정보 추출
     const idolName = formData.get('idolName') as string || '정보 없음';
-    const idolGroup = formData.get('idolGroup') as string || '';
     const idolStyle = formData.get('idolStyle') as string || '';
     const idolPersonality = formData.get('idolPersonality') as string || '';
     const idolCharms = formData.get('idolCharms') as string || '';
@@ -52,7 +51,6 @@ export async function POST(request: NextRequest) {
     // Gemini API를 이용한 이미지 분석
     const analysisResult = await analyzeIdolImage(imageBase64, {
       name: idolName,
-      group: idolGroup,
       style: idolStyle.split(',').map(s => s.trim()),
       personality: idolPersonality.split(',').map(s => s.trim()),
       charms: idolCharms

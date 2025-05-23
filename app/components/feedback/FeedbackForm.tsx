@@ -21,6 +21,7 @@ import { SuccessView } from './views/SuccessView';
 
 // Hooks
 import { useFeedbackForm } from './hooks/useFeedbackForm';
+import { PerfumePersona } from '@/app/types/perfume';
 
 // Chart.js 등록
 ChartJS.register(
@@ -34,15 +35,15 @@ ChartJS.register(
 );
 
 interface FeedbackFormProps {
-  perfumeId: string;
-  perfumeName: string;
+  originalPerfume: PerfumePersona;
   onClose: () => void;
   onSubmit: () => void;
+  // resetForm prop 추가 (SuccessView로 전달하기 위함)
+  // resetForm?: () => void; // SuccessView 내부에서 직접 사용하지 않고, SuccessView에 resetForm을 전달하기 위한 용도로 일단 주석 처리
 }
 
 export default function FeedbackForm({ 
-  perfumeId, 
-  perfumeName, 
+  originalPerfume, 
   onClose, 
   onSubmit 
 }: FeedbackFormProps) {
@@ -59,7 +60,8 @@ export default function FeedbackForm({
     setError,
     handleNextStep,
     handlePrevStep,
-  } = useFeedbackForm(perfumeId);
+    resetForm, // useFeedbackForm으로부터 resetForm 함수를 가져옵니다.
+  } = useFeedbackForm(originalPerfume.id);
 
   // 현재 단계에 따른 타이틀
   const stepTitle = () => {
@@ -110,8 +112,8 @@ export default function FeedbackForm({
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">맞춤 향수</p>
-                <h3 className="text-base font-medium text-gray-800">{perfumeName}</h3>
-                <p className="text-xs text-orange-600 mt-1">{perfumeId}</p>
+                <h3 className="text-base font-medium text-gray-800">{originalPerfume.name}</h3>
+                <p className="text-xs text-orange-600 mt-1">{originalPerfume.id}</p>
               </div>
             </div>
           </div>
@@ -161,8 +163,10 @@ export default function FeedbackForm({
             <SuccessView 
               feedback={feedback} 
               recipe={recipe} 
+              originalPerfume={originalPerfume}
               customizationLoading={customizationLoading} 
               onClose={onClose} 
+              onResetForm={resetForm} // resetForm 함수를 SuccessView에 onResetForm prop으로 전달합니다.
             />
           ) : (
             // 피드백 폼 인터페이스 (성공이 아닐 때)

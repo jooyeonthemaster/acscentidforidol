@@ -54,17 +54,22 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
   // 축 경로 생성
   const axisLines = characteristics.map((char, i) => {
     const { x, y } = getCoordinates(maxValue, i);
-    // 가장 높은 점수를 가진 특성의 축은 더 두껍고 강조된 색상으로 표시
     const isHighest = char.key === highestTrait.key;
-    return <line 
+    if (isHighest) { // 가장 높은 특성이면
+      return null; // 축선을 그리지 않음
+    }
+    return <motion.line 
       key={`axis-${i}`} 
       x1={centerX} 
       y1={centerY} 
       x2={x} 
       y2={y} 
-      stroke={isHighest ? "#ff6b9d" : "#ddd"} 
-      strokeWidth={isHighest ? "2" : "1"} 
-      strokeDasharray={isHighest ? "none" : "2,2"}
+      stroke={"#ddd"} // 일반 축선 스타일
+      strokeWidth={"1"}
+      strokeDasharray={"2,2"}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
     />;
   });
   
@@ -72,7 +77,7 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
   const gridCircles = Array.from({ length: 5 }).map((_, i) => {
     const gridRadius = (radius * (i + 1)) / 5;
     return (
-      <circle
+      <motion.circle
         key={`grid-${i}`}
         cx={centerX}
         cy={centerY}
@@ -81,6 +86,9 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
         stroke="#ddd"
         strokeWidth="1"
         strokeDasharray="2,2"
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.1 * i }}
       />
     );
   });
@@ -88,7 +96,6 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
   // 레이블 생성
   const labels = characteristics.map((char, i) => {
     const { x, y } = getCoordinates(maxValue * 1.15, i); // 레이블은 약간 바깥에 위치
-    const isHighest = char.key === highestTrait.key;
     return (
       <text
         key={`label-${i}`}
@@ -96,9 +103,9 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
         y={y}
         dominantBaseline="middle"
         textAnchor="middle"
-        fontSize={isHighest ? "12" : "10"}
+        fontSize="10"
         fontWeight="bold"
-        fill={isHighest ? "#ff4081" : "#666"}
+        fill="#666"
       >
         {char.label}
       </text>
@@ -164,13 +171,13 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
         animate: { opacity: 1, scale: 1 },
         transition: { duration: 0.5 }
       } : {})}
-      className="flex flex-col items-center my-4 p-4 bg-gradient-to-br from-yellow-50 to-pink-50 rounded-xl border border-pink-200 w-full"
+      className="flex flex-col items-center my-4 p-5 bg-gradient-to-br from-yellow-50 to-pink-50 rounded-xl border border-pink-200 w-full relative z-10"
     >
       <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
       
       {/* 가장 높은 점수 특성에 대한 AI 주접 멘트 */}
       {highestTrait && (
-        <div className="w-full bg-pink-100 rounded-lg p-3 mb-4 relative overflow-hidden">
+        <div className="w-full bg-pink-100 rounded-lg p-3 mb-1 relative overflow-hidden">
           <div className="flex items-start">
             <div className="flex-shrink-0 w-8 h-8 bg-pink-400 rounded-full flex items-center justify-center text-white mr-2">
               <span role="img" aria-label="AI">🤖</span>
@@ -185,7 +192,7 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
         </div>
       )}
       
-      <svg width="300" height="300" viewBox="0 0 300 300">
+      <svg width="290" height="290" viewBox="0 0 300 300" className="mb-1">
         {/* 그리드 및 축 */}
         {gridCircles}
         {axisLines}
@@ -216,7 +223,6 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
         {/* 데이터 포인트 */}
         {characteristics.map((char, i) => {
           const { x, y } = getCoordinates(char.value, i);
-          const isHighest = char.key === highestTrait.key;
           
           if (showAnimation) {
             return (
@@ -224,8 +230,8 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
                 key={`point-${i}`}
                 cx={x}
                 cy={y}
-                r={isHighest ? 6 : 4}
-                fill={isHighest ? "#ff4081" : "#ff9eb5"}
+                r={4}
+                fill={"#ff9eb5"}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.8 + i * 0.05 }}
@@ -237,8 +243,8 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
                 key={`point-${i}`}
                 cx={x}
                 cy={y}
-                r={isHighest ? 6 : 4}
-                fill={isHighest ? "#ff4081" : "#ff9eb5"}
+                r={4}
+                fill={"#ff9eb5"}
               />
             );
           }
@@ -246,16 +252,15 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
       </svg>
       
       {/* 특성 값 목록 (작은 배지 형태) */}
-      <div className="flex flex-wrap gap-2 mt-3 justify-center">
+      <div className="flex flex-wrap gap-2 justify-center p-1.5 bg-white bg-opacity-50 rounded-xl w-full">
         {characteristics.map((char, i) => {
-          const isHighest = char.key === highestTrait.key;
           return (
             <div 
               key={`badge-${i}`} 
-              className={`px-2 py-1 ${isHighest ? 'bg-pink-100 border-pink-400 shadow-md' : 'bg-white border-pink-200'} rounded-full text-xs border flex items-center gap-1`}
+              className={`px-2 py-1 bg-white border-pink-200 rounded-full text-xs border flex items-center gap-1`}
             >
               <span>{iconMap[char.key] || '✨'}</span>
-              <span className={`${isHighest ? 'font-bold text-pink-700' : 'font-medium'}`}>
+              <span className="font-medium text-gray-800">
                 {char.label}: {char.value}
               </span>
             </div>

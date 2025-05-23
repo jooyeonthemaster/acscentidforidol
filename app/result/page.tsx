@@ -194,7 +194,7 @@ export default function ResultPage() {
                 AC'SCENT IDENTITY
               </span>
             </h1>
-            <p className="text-gray-600 text-sm">내 최애의 향은 어떨까? 궁금궁금 스멜~</p>
+            <p className="text-gray-800 text-sm">내 최애의 향은 어떨까? 궁금궁금 스멜~</p>
           </div>
         </div>
 
@@ -206,7 +206,7 @@ export default function ResultPage() {
                 <div className="w-4 h-4 rounded-full bg-yellow-300 animate-bounce" style={{ animationDelay: '150ms' }}></div>
                 <div className="w-4 h-4 rounded-full bg-yellow-200 animate-bounce" style={{ animationDelay: '300ms' }}></div>
               </div>
-              <p className="text-center text-gray-600">분석 결과를 로딩 중입니다...</p>
+              <p className="text-center text-gray-700">분석 결과를 로딩 중입니다...</p>
             </div>
             
             {/* 오른쪽 하단 캐릭터 */}
@@ -223,11 +223,11 @@ export default function ResultPage() {
           </div>
         ) : error ? (
           <div className="relative bg-white rounded-3xl border-4 border-dashed border-red-200 p-6 mb-6 shadow-md overflow-hidden">
-            <p className="text-center text-red-500 mb-4">{error}</p>
+            <p className="text-center text-red-600 mb-4">{error}</p>
             <div className="flex justify-center">
               <button
                 onClick={handleRestart}
-                className="px-4 py-2 bg-yellow-400 text-gray-800 rounded-full hover:bg-yellow-500 transition font-medium text-sm"
+                className="px-4 py-2 bg-yellow-400 text-gray-900 rounded-full hover:bg-yellow-500 transition font-medium text-sm"
               >
                 다시 시작하기
               </button>
@@ -319,13 +319,13 @@ export default function ResultPage() {
               {/* 탭 선택 */}
               <div className="flex mb-6 border-b border-gray-200">
                 <button 
-                  className={`flex-1 px-3 py-2 text-sm ${activeTab === 'analysis' ? 'border-b-2 border-yellow-400 text-gray-800 font-medium' : 'text-gray-500'}`}
+                  className={`flex-1 px-3 py-2 text-sm ${activeTab === 'analysis' ? 'border-b-2 border-yellow-400 text-gray-900 font-medium' : 'text-gray-700'}`}
                   onClick={() => setActiveTab('analysis')}
                 >
                   이미지 분석
                 </button>
                 <button 
-                  className={`flex-1 px-3 py-2 text-sm ${activeTab === 'perfume' ? 'border-b-2 border-yellow-400 text-gray-800 font-medium' : 'text-gray-500'}`}
+                  className={`flex-1 px-3 py-2 text-sm ${activeTab === 'perfume' ? 'border-b-2 border-yellow-400 text-gray-900 font-medium' : 'text-gray-700'}`}
                   onClick={() => setActiveTab('perfume')}
                 >
                   향수 추천
@@ -346,9 +346,9 @@ export default function ResultPage() {
                     {/* 분석 요약 */}
                     {analysisResult.analysis && (
                       <div className="mb-5">
-                        <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
                           <span className="bg-yellow-100 px-2 py-0.5 rounded">이미지 분위기</span>
-                          <span className="ml-2 text-xs text-yellow-600">AI의 생각</span>
+                          <span className="ml-2 text-xs text-yellow-700">AI의 생각</span>
                         </h3>
                         <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-5 border border-amber-200 shadow-inner">
                           <div className="flex">
@@ -357,10 +357,10 @@ export default function ResultPage() {
                                 <span className="text-xl">💭</span>
                               </div>
                             </div>
-                            <p className="text-gray-800 text-sm font-medium italic">"{analysisResult.analysis.mood}"</p>
+                            <p className="text-gray-900 text-sm font-medium italic">"{analysisResult.analysis.mood}"</p>
                           </div>
                           <div className="mt-4 text-right">
-                            <span className="inline-block bg-white px-3 py-1 rounded-full text-xs text-amber-700 font-medium border border-amber-200">
+                            <span className="inline-block bg-white px-3 py-1 rounded-full text-xs text-amber-800 font-medium border border-amber-200">
                               @acscent_ai
                             </span>
                           </div>
@@ -370,65 +370,29 @@ export default function ResultPage() {
                     
                     {/* 특성 점수 - 레이더 차트 추가 */}
                     <div className="mb-16">
-                      <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                      <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
                         <span className="bg-yellow-100 px-2 py-0.5 rounded">이미지 특성 점수</span>
-                        <span className="ml-2 text-xs text-pink-600">향수 매칭의 핵심</span>
+                        <span className="ml-2 text-xs text-pink-700">향수 매칭의 핵심</span>
                       </h3>
                       
                       <div className="bg-white rounded-xl p-4 border border-yellow-100 shadow-sm mb-4">
-                        {/* 레이더 차트 부분 - 높이 조정 및 충분한 여백 확보 */}
+                        {/* 레이더 차트 부분 - 여백 적절히 조정 */}
                         {analysisResult.traits && (
                           <div className="flex justify-center">
-                            <div className="w-full h-84 relative mb-3">
+                            <div className="w-full min-h-[380px] h-auto relative mb-6">
                               <TraitRadarChart traits={analysisResult.traits} />
                             </div>
                           </div>
                         )}
-                        
-                        {/* 특성 점수 텍스트 표시 */}
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                          {analysisResult.traits && Object.entries(analysisResult.traits).map(([key, value]) => {
-                            const traitNames: Record<string, string> = {
-                              sexy: '섹시함',
-                              cute: '귀여움',
-                              charisma: '카리스마',
-                              darkness: '다크함',
-                              freshness: '청량함',
-                              elegance: '우아함',
-                              freedom: '자유로움',
-                              luxury: '럭셔리함',
-                              purity: '순수함',
-                              uniqueness: '독특함'
-                            };
-                            
-                            return (
-                              <div key={key} className="flex items-center space-x-2 bg-gray-50 rounded-lg p-2">
-                                <div className={`h-2 w-2 rounded-full bg-${
-                                  key === 'sexy' ? 'pink' : 
-                                  key === 'cute' ? 'purple' : 
-                                  key === 'charisma' ? 'yellow' : 
-                                  key === 'darkness' ? 'gray' : 
-                                  key === 'freshness' ? 'blue' : 
-                                  key === 'elegance' ? 'indigo' : 
-                                  key === 'freedom' ? 'green' : 
-                                  key === 'luxury' ? 'amber' : 
-                                  key === 'purity' ? 'cyan' : 
-                                  'violet'
-                                }-500`}></div>
-                                <span className="text-xs font-medium">{traitNames[key]}: {value}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
                       </div>
                     </div>
                     
                     {/* 스타일 분석 - API 응답 사용하면서 간결하게 표현 */}
                     {analysisResult.analysis && (
                       <div className="mb-5">
-                        <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
                           <span className="bg-yellow-100 px-2 py-0.5 rounded">스타일 분석</span>
-                          <span className="ml-2 text-xs text-green-600">패션 스타일 해석</span>
+                          <span className="ml-2 text-xs text-green-700">패션 스타일 해석</span>
                         </h3>
                         <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-200 shadow-sm">
                           <div className="grid grid-cols-1 gap-3">
@@ -436,14 +400,14 @@ export default function ResultPage() {
                               <div className="bg-white rounded-lg p-4 border-l-4 border-pink-400 shadow-sm hover:shadow-md transition-shadow">
                                 <div className="flex items-start">
                                   <div className="rounded-full bg-pink-100 p-2 mr-3 flex-shrink-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-pink-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-pink-600">
                                       <circle cx="12" cy="7" r="4"></circle>
                                       <path d="M5 21V19a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"></path>
                                     </svg>
                                   </div>
                                   <div>
-                                    <h4 className="text-xs font-bold text-pink-700 mb-1">패션 스타일</h4>
-                                    <p className="text-gray-700 text-sm italic">
+                                    <h4 className="text-xs font-bold text-pink-800 mb-1">패션 스타일</h4>
+                                    <p className="text-gray-800 text-sm italic">
                                       세계적인 디자이너급 "{analysisResult.analysis.style}"
                                     </p>
                                   </div>
@@ -455,15 +419,15 @@ export default function ResultPage() {
                               <div className="bg-white rounded-lg p-4 border-l-4 border-purple-400 shadow-sm hover:shadow-md transition-shadow">
                                 <div className="flex items-start">
                                   <div className="rounded-full bg-purple-100 p-2 mr-3 flex-shrink-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-purple-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-purple-600">
                                       <path d="M12 2c.5 0 1 .2 1.2.6l7.5 13.5c.3.5.3 1 .1 1.4-.2.5-.7.7-1.2.7H4.4c-.5 0-1-.2-1.2-.7-.2-.5-.2-1 .1-1.4L10.8 2.6c.2-.4.7-.6 1.2-.6z"></path>
                                       <path d="M12 9v4"></path>
                                       <path d="M12 17h.01"></path>
                                     </svg>
                                   </div>
                                   <div>
-                                    <h4 className="text-xs font-bold text-purple-700 mb-1">표현과 연출</h4>
-                                    <p className="text-gray-700 text-sm italic">
+                                    <h4 className="text-xs font-bold text-purple-800 mb-1">표현과 연출</h4>
+                                    <p className="text-gray-800 text-sm italic">
                                       케이트 모스도 울고 갈 "{analysisResult.analysis.expression}"
                                     </p>
                                   </div>
@@ -475,13 +439,13 @@ export default function ResultPage() {
                               <div className="bg-white rounded-lg p-4 border-l-4 border-indigo-400 shadow-sm hover:shadow-md transition-shadow">
                                 <div className="flex items-start">
                                   <div className="rounded-full bg-indigo-100 p-2 mr-3 flex-shrink-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-indigo-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-indigo-600">
                                       <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.65 0 3-1.35 3-3s-1.35-3-3-3-3 1.35-3 3 1.35 3 3 3zm0-18c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3zM3 12c0 1.65 1.35 3 3 3s3-1.35 3-3-1.35-3-3-3-3 1.35-3 3z"></path>
                                     </svg>
                                   </div>
                                   <div>
-                                    <h4 className="text-xs font-bold text-indigo-700 mb-1">스타일 콘셉트</h4>
-                                    <p className="text-gray-700 text-sm italic">
+                                    <h4 className="text-xs font-bold text-indigo-800 mb-1">스타일 콘셉트</h4>
+                                    <p className="text-gray-800 text-sm italic">
                                       패션위크 런웨이급 "{analysisResult.analysis.concept}"
                                     </p>
                                   </div>
@@ -496,9 +460,9 @@ export default function ResultPage() {
                     {/* 아우라 및 톤앤매너 - 추가 설명 텍스트 간소화 */}
                     {analysisResult.analysis && (analysisResult.analysis.aura || analysisResult.analysis.toneAndManner) && (
                       <div className="mb-5">
-                        <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
                           <span className="bg-yellow-100 px-2 py-0.5 rounded">아우라 & 톤앤매너</span>
-                          <span className="ml-2 text-xs text-blue-600">분위기의 핵심</span>
+                          <span className="ml-2 text-xs text-blue-700">분위기의 핵심</span>
                         </h3>
                         <div className="bg-gradient-to-tr from-purple-50 via-indigo-50 to-blue-50 rounded-xl p-5 border border-indigo-100 shadow-inner">
                           <div className="grid grid-cols-1 gap-4">
@@ -508,10 +472,10 @@ export default function ResultPage() {
                                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center mr-2">
                                     <span className="text-white text-sm">✨</span>
                                   </div>
-                                  <h4 className="text-sm font-bold text-purple-700">아우라</h4>
+                                  <h4 className="text-sm font-bold text-purple-800">아우라</h4>
                                 </div>
                                 <div className="pl-10">
-                                  <p className="text-gray-700 text-sm italic">"{analysisResult.analysis.aura}"</p>
+                                  <p className="text-gray-800 text-sm italic">"{analysisResult.analysis.aura}"</p>
                                 </div>
                               </div>
                             )}
@@ -522,10 +486,10 @@ export default function ResultPage() {
                                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 flex items-center justify-center mr-2">
                                     <span className="text-white text-sm">🎨</span>
                                   </div>
-                                  <h4 className="text-sm font-bold text-blue-700">톤앤매너</h4>
+                                  <h4 className="text-sm font-bold text-blue-800">톤앤매너</h4>
                                 </div>
                                 <div className="pl-10">
-                                  <p className="text-gray-700 text-sm italic">"{analysisResult.analysis.toneAndManner}"</p>
+                                  <p className="text-gray-800 text-sm italic">"{analysisResult.analysis.toneAndManner}"</p>
                                 </div>
                               </div>
                             )}
@@ -537,11 +501,11 @@ export default function ResultPage() {
                     {/* 매칭 키워드 */}
                     {analysisResult.matchingKeywords && analysisResult.matchingKeywords.length > 0 && (
                       <div className="mb-5">
-                        <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
                           <span className="bg-yellow-100 px-2 py-0.5 rounded">매칭 키워드</span>
-                          <span className="ml-2 text-xs text-orange-600">특성을 나타내는 단어들</span>
+                          <span className="ml-2 text-xs text-orange-700">특성을 나타내는 단어들</span>
                         </h3>
-                        <div className="bg-white rounded-xl p-4 border border-orange-200">
+                        <div className="bg-white rounded-xl py-3 px-4 border border-orange-200 min-h-[150px] max-h-[180px] overflow-auto">
                           <KeywordCloud keywords={analysisResult.matchingKeywords} />
                         </div>
                       </div>
@@ -550,9 +514,9 @@ export default function ResultPage() {
                     {/* 퍼스널 컬러 */}
                     {analysisResult.personalColor && (
                       <div className="mb-5">
-                        <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center">
+                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
                           <span className="bg-yellow-100 px-2 py-0.5 rounded">퍼스널 컬러</span>
-                          <span className="ml-2 text-xs text-teal-600">이미지 컬러 분석</span>
+                          <span className="ml-2 text-xs text-teal-700">이미지 컬러 분석</span>
                         </h3>
                         <div className="bg-gradient-to-r from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100 shadow-sm">
                           <div className="flex items-start mb-3">
@@ -566,13 +530,13 @@ export default function ResultPage() {
                               }}
                             ></div>
                             <div>
-                              <p className="text-gray-800 text-sm font-bold">
+                              <p className="text-gray-900 text-sm font-bold">
                             {analysisResult.personalColor.season} {analysisResult.personalColor.tone} 타입
                           </p>
-                              <p className="text-gray-600 text-sm mt-1 italic">
+                              <p className="text-gray-700 text-sm mt-1 italic">
                                 "{analysisResult.personalColor.description}"
                               </p>
-                              <p className="text-pink-600 text-xs mt-2 font-medium">
+                              <p className="text-pink-700 text-xs mt-2 font-medium">
                                 + 어머! 이 컬러 조합은 정말 당신 최애를 위해 태어난 거예요! 
                                 이런 퍼스널 컬러는 타고나는 건데... 색감이 영혼까지 표현해주네요! 
                                 이 컬러 팔레트로 메이크업해도 진짜 찰떡일 것 같아요! 💄✨
@@ -592,8 +556,8 @@ export default function ResultPage() {
                           </div>
                           
                           <div className="mt-4 p-3 bg-white rounded-lg border border-pink-100">
-                            <h5 className="text-xs font-bold text-pink-600 mb-2">컬러 매칭 코디 추천</h5>
-                            <p className="text-gray-700 text-xs">
+                            <h5 className="text-xs font-bold text-pink-700 mb-2">컬러 매칭 코디 추천</h5>
+                            <p className="text-gray-800 text-xs">
                               ✨ 이 톤은 {analysisResult.personalColor.season === 'winter' ? '차가운 블루 베이스' : 
                                        analysisResult.personalColor.season === 'summer' ? '부드러운 쿨톤' : 
                                        analysisResult.personalColor.season === 'autumn' ? '깊이 있는 웜톤' : '밝고 화사한 웜톤'}의 대표 주자! 
@@ -636,7 +600,7 @@ export default function ResultPage() {
                                       {match.persona?.id || '맞춤 향수'}
                                     </h2>
                                     {/* 향료명 (부차적) */}
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-gray-700">
                                       {match.persona?.name || ''}
                                     </p>
                                   </div>
@@ -666,11 +630,11 @@ export default function ResultPage() {
                                         strokeLinecap="round"
                                       />
                                       <text x="18" y="18.5" textAnchor="middle" dominantBaseline="middle" 
-                                        className="text-xs font-bold" fill="#333">
+                                        className="text-xs font-bold" fill="#374151">
                                         {Math.round(match.score * 100)}%
                                       </text>
                                     </svg>
-                                    <span className="text-[10px] text-gray-500 mt-1">매칭도</span>
+                                    <span className="text-[10px] text-gray-700 mt-1">매칭도</span>
                                   </div>
                                 </div>
                               </div>
@@ -679,7 +643,7 @@ export default function ResultPage() {
                               <div className="p-4 space-y-6">
                                 {/* 향 노트 설명 (Notes) - 피라미드 형태 */}
                                 <div className="mb-4">
-                                  <h3 className="text-base font-semibold text-amber-800 mb-2 flex items-center">
+                                  <h3 className="text-base font-semibold text-amber-900 mb-2 flex items-center">
                                     <span className="mr-2">🌿</span>
                                     <span className="bg-amber-100 px-2 py-0.5 rounded">향 노트 피라미드</span>
                                   </h3>
@@ -693,11 +657,11 @@ export default function ResultPage() {
                                         </div>
                                         <div>
                                           {/* @ts-ignore - Perfume과 PerfumePersona 타입 차이로 인한 접근 허용 */}
-                                          <h4 className="text-sm font-bold text-yellow-800">{match.persona?.mainScent?.name || 'Top Note'}</h4>
-                                          <p className="text-xs text-gray-600 mt-1">
+                                          <h4 className="text-sm font-bold text-yellow-900">{match.persona?.mainScent?.name || 'Top Note'}</h4>
+                                          <p className="text-xs text-gray-700 mt-1">
                                             첫 15-20분간 지속되는 첫인상의 향
                                           </p>
-                                          <p className="text-xs italic text-amber-700 mt-1">
+                                          <p className="text-xs italic text-amber-800 mt-1">
                                             "향의 첫인상을 결정하는 탑 노트! 향수를 뿌린 직후 느껴지는 첫 번째 향기로 매력적인 시작을 선사합니다."
                                           </p>
                                         </div>
@@ -712,11 +676,11 @@ export default function ResultPage() {
                                         </div>
                                         <div>
                                           {/* @ts-ignore - Perfume과 PerfumePersona 타입 차이로 인한 접근 허용 */}
-                                          <h4 className="text-sm font-bold text-amber-800">{match.persona?.subScent1?.name || 'Middle Note'}</h4>
-                                          <p className="text-xs text-gray-600 mt-1">
+                                          <h4 className="text-sm font-bold text-amber-900">{match.persona?.subScent1?.name || 'Middle Note'}</h4>
+                                          <p className="text-xs text-gray-700 mt-1">
                                             3-4시간 지속되는 향수의 심장부
                                           </p>
-                                          <p className="text-xs italic text-amber-700 mt-1">
+                                          <p className="text-xs italic text-amber-800 mt-1">
                                             "향의 진정한 성격을 보여주는 미들 노트! 탑 노트가 사라진 후 나타나 향수의 주요 개성과 특징을 드러냅니다."
                                           </p>
                                         </div>
@@ -731,11 +695,11 @@ export default function ResultPage() {
                                         </div>
                                         <div>
                                           {/* @ts-ignore - Perfume과 PerfumePersona 타입 차이로 인한 접근 허용 */}
-                                          <h4 className="text-sm font-bold text-orange-800">{match.persona?.subScent2?.name || 'Base Note'}</h4>
-                                          <p className="text-xs text-gray-600 mt-1">
+                                          <h4 className="text-sm font-bold text-orange-900">{match.persona?.subScent2?.name || 'Base Note'}</h4>
+                                          <p className="text-xs text-gray-700 mt-1">
                                             5-6시간 이상 지속되는 잔향
                                           </p>
-                                          <p className="text-xs italic text-amber-700 mt-1">
+                                          <p className="text-xs italic text-amber-800 mt-1">
                                             "향의 기억을 담당하는 베이스 노트! 가장 오래 지속되며 향수의 깊이와 따뜻함을 완성하는 마지막 퍼즐입니다."
                                           </p>
                                         </div>
@@ -744,19 +708,19 @@ export default function ResultPage() {
                                     
                                     {/* 향 발현 타임라인 */}
                                     <div className="mt-4 pt-2 border-t border-amber-100">
-                                      <h5 className="text-xs font-medium text-gray-700 mb-2">향 발현 타임라인</h5>
+                                      <h5 className="text-xs font-medium text-gray-800 mb-2">향 발현 타임라인</h5>
                                       <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
                                         <div className="absolute left-0 top-0 h-full w-1/6 bg-yellow-300 rounded-l-full flex items-center justify-center">
-                                          <span className="text-[8px] font-bold text-yellow-800">TOP</span>
+                                          <span className="text-[8px] font-bold text-yellow-900">TOP</span>
                                         </div>
                                         <div className="absolute left-1/6 top-0 h-full w-3/6 bg-amber-400 flex items-center justify-center">
-                                          <span className="text-[8px] font-bold text-amber-800">MIDDLE</span>
+                                          <span className="text-[8px] font-bold text-amber-900">MIDDLE</span>
                                         </div>
                                         <div className="absolute right-0 top-0 h-full w-2/6 bg-orange-300 rounded-r-full flex items-center justify-center">
-                                          <span className="text-[8px] font-bold text-orange-800">BASE</span>
+                                          <span className="text-[8px] font-bold text-orange-900">BASE</span>
                                         </div>
                                       </div>
-                                      <div className="flex justify-between mt-1 text-[8px] text-gray-500">
+                                      <div className="flex justify-between mt-1 text-[8px] text-gray-700">
                                         <span>15-20분</span>
                                         <span>3-4시간</span>
                                         <span>5-6시간+</span>
@@ -768,7 +732,7 @@ export default function ResultPage() {
                                 {/* 향수 특성 시각화 */}
                                 {match.persona?.categories && (
                                   <div className="mb-6 pt-2">
-                                    <h3 className="text-base font-semibold text-amber-800 mb-3 flex items-center">
+                                    <h3 className="text-base font-semibold text-amber-900 mb-3 flex items-center">
                                       <span className="mr-2">⚗️</span>
                                       <span className="bg-amber-100 px-2 py-0.5 rounded">향수 특성 프로필</span>
                                     </h3>
@@ -802,7 +766,7 @@ export default function ResultPage() {
                                             <div key={category} className="flex items-center">
                                               <div className="flex-shrink-0 w-24 text-xs font-medium flex items-center mr-2">
                                                 <span className="mr-1">{color.icon}</span>
-                                                <span className={color.text}>{categoryNames[category] || category}</span>
+                                                <span className={color.text.replace('text-yellow-800', 'text-yellow-900').replace('text-pink-800', 'text-pink-900').replace('text-amber-900', 'text-amber-950').replace('text-purple-800', 'text-purple-900').replace('text-red-800', 'text-red-900').replace('text-orange-800', 'text-orange-900')}>{categoryNames[category] || category}</span>
                                               </div>
                                               <div className="flex-grow bg-gray-200 rounded-full h-3 relative">
                                                 <div 
@@ -810,7 +774,7 @@ export default function ResultPage() {
                                                   style={{ width: `${percent}%` }}
                                                 ></div>
                                               </div>
-                                              <div className="flex-shrink-0 ml-2 text-xs font-bold text-gray-600">{value}</div>
+                                              <div className="flex-shrink-0 ml-2 text-xs font-bold text-gray-700">{value}</div>
                                             </div>
                                           );
                                         })}
@@ -818,7 +782,7 @@ export default function ResultPage() {
                                       
                                       {/* 주요 카테고리 특성 */}
                                       <div className="bg-white rounded-lg p-3 border border-amber-100 shadow-sm">
-                                        <p className="text-xs text-gray-700">
+                                        <p className="text-xs text-gray-800">
                                           <span className="font-bold">주요 계열:</span> {(() => {
                                             const mainCategory = Object.entries(match.persona?.categories || {})
                                               .sort(([, a], [, b]) => (b as number) - (a as number))[0];
@@ -843,7 +807,7 @@ export default function ResultPage() {
                                 {/* 향수 매칭 이유 및 설명 */}
                                 {match.matchReason && (
                                   <div className="mb-6">
-                                    <h3 className="text-base font-semibold text-amber-800 mb-3 flex items-center">
+                                    <h3 className="text-base font-semibold text-amber-900 mb-3 flex items-center">
                                       <span className="mr-2">✨</span>
                                       <span className="bg-amber-100 px-2 py-0.5 rounded">향수 매칭 스토리</span>
                                     </h3>
@@ -866,15 +830,15 @@ export default function ResultPage() {
                                                   <span className="text-xl text-white">💬</span>
                                                 </div>
                                                 <div>
-                                                  <h4 className="text-sm font-bold text-amber-800 mb-1">향수 전문가의 평가</h4>
-                                                  <p className="text-sm italic text-amber-700">{introduction}</p>
+                                                  <h4 className="text-sm font-bold text-amber-900 mb-1">향수 전문가의 평가</h4>
+                                                  <p className="text-sm italic text-amber-800">{introduction}</p>
                                                 </div>
                                               </div>
                                             </div>
                                             
                                             {/* 매칭 이유 */}
                                             <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-200 shadow-sm">
-                                              <h4 className="flex items-center text-sm font-bold text-indigo-800 mb-2">
+                                              <h4 className="flex items-center text-sm font-bold text-indigo-900 mb-2">
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-1">
                                                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                                                   <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
@@ -882,7 +846,7 @@ export default function ResultPage() {
                                                 </svg>
                                                 이미지와 향수의 매칭 이유
                                               </h4>
-                                              <p className="text-sm text-indigo-700 italic bg-white bg-opacity-60 p-3 rounded-lg border border-indigo-100">
+                                              <p className="text-sm text-indigo-800 italic bg-white bg-opacity-60 p-3 rounded-lg border border-indigo-100">
                                                 {matchingReason}
                                               </p>
                                             </div>
@@ -890,18 +854,18 @@ export default function ResultPage() {
                                             {/* 사용 추천 */}
                                             <div className="grid grid-cols-1 gap-3">
                                               <div className="bg-white rounded-lg p-4 border border-amber-200 shadow-sm">
-                                                <h4 className="flex items-center text-sm font-bold text-amber-800 mb-2">
+                                                <h4 className="flex items-center text-sm font-bold text-amber-900 mb-2">
                                                   <span className="mr-2">🕒</span>
                                                   향수 사용 추천
                                                 </h4>
-                                                <p className="text-sm text-amber-700">{usageRecommendation}</p>
+                                                <p className="text-sm text-amber-800">{usageRecommendation}</p>
                                               </div>
                                               
                                               {/* 계절 및 시간 추천 - 시각화 */}
-                                              <div className="grid grid-cols-2 gap-3 mt-2">
+                                              <div className="grid grid-cols-1 gap-3 mt-2">
                                                 {/* 계절 추천 */}
                                                 <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-3 border border-emerald-200">
-                                                  <h5 className="text-xs font-bold text-emerald-800 mb-2 flex items-center">
+                                                  <h5 className="text-xs font-bold text-emerald-900 mb-2 flex items-center">
                                                     <span className="mr-1">🌿</span>
                                                     추천 계절
                                                   </h5>
@@ -930,7 +894,7 @@ export default function ResultPage() {
                                                             {idx === 2 && '🍂'}
                                                             {idx === 3 && '❄️'}
                                                           </div>
-                                                          <p className={`text-[10px] mt-1 ${isRecommended ? 'font-bold text-emerald-800' : 'text-gray-400'}`}>
+                                                          <p className={`text-[10px] mt-1 ${isRecommended ? 'font-bold text-emerald-900' : 'text-gray-700'}`}>
                                                             {season}
                                                           </p>
                                                         </div>
@@ -941,7 +905,7 @@ export default function ResultPage() {
                                                 
                                                 {/* 시간대 추천 */}
                                                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
-                                                  <h5 className="text-xs font-bold text-blue-800 mb-2 flex items-center">
+                                                  <h5 className="text-xs font-bold text-blue-900 mb-2 flex items-center">
                                                     <span className="mr-1">🕰️</span>
                                                     추천 시간대
                                                   </h5>
@@ -970,7 +934,7 @@ export default function ResultPage() {
                                                             {idx === 2 && '🌆'}
                                                             {idx === 3 && '🌙'}
                                                           </div>
-                                                          <p className={`text-[10px] mt-1 ${isRecommended ? 'font-bold text-blue-800' : 'text-gray-400'}`}>
+                                                          <p className={`text-[10px] mt-1 ${isRecommended ? 'font-bold text-blue-900' : 'text-gray-700'}`}>
                                                             {time}
                                                           </p>
                                                         </div>
@@ -986,7 +950,7 @@ export default function ResultPage() {
                                         console.error('매칭 이유 파싱 오류:', error);
                                         return (
                                           <div className="bg-white rounded-lg p-4 border border-amber-200 shadow-sm">
-                                            <p className="text-sm text-amber-700 italic">{match.matchReason}</p>
+                                            <p className="text-sm text-amber-800 italic">{match.matchReason}</p>
                                           </div>
                                         );
                                       }
@@ -996,55 +960,65 @@ export default function ResultPage() {
                                 
                                 {/* 향수 사용 가이드 */}
                                 <div className="mb-4">
-                                  <h3 className="text-base font-semibold text-amber-800 mb-3 flex items-center">
+                                  <h3 className="text-base font-semibold text-amber-900 mb-3 flex items-center">
                                     <span className="mr-2">🧪</span>
-                                    <span className="bg-amber-100 px-2 py-0.5 rounded">향수 사용 가이드</span>
+                                    <span className="bg-amber-100 px-2 py-0.5 rounded">이렇게 사용해보세요!</span>
                                   </h3>
                                   
                                   <div className="grid grid-cols-1 gap-3">
                                     <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-4 border border-pink-200 shadow-sm">
-                                      <h4 className="text-sm font-bold text-pink-800 mb-2 flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1 text-pink-600">
+                                      <h4 className="text-sm font-bold text-pink-900 mb-2 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1 text-pink-700">
                                           <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
                                           <path d="M12 18h.01"></path>
                                         </svg>
                                         어떻게 사용할까요?
                                       </h4>
-                                      <div className="grid grid-cols-3 gap-2">
-                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-pink-100 text-center">
-                                          <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-1">
-                                            <span className="text-pink-600 text-lg">💆</span>
+                                      {/* 항목들을 세로로 배열하고, 아이콘과 텍스트 크기를 다른 섹션과 유사하게 조정합니다. */}
+                                      <div className="grid grid-cols-1 gap-2"> 
+                                        {/* 아이템 1: 손목, 귀 뒤 */}
+                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-pink-100 text-center flex items-center">
+                                          <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center mr-3 shrink-0"> {/* 아이콘 크기 w-10 h-10, 오른쪽 마진 mr-3 추가 */}
+                                            <span className="text-pink-700 text-xl">🎯</span> {/* 아이콘 크기 text-xl */}
                                           </div>
-                                          <p className="text-[10px] font-medium text-pink-700">손목, 귀 뒤</p>
-                                          <p className="text-[8px] text-gray-500">맥박이 뛰는 곳</p>
+                                          <div className="text-left"> {/* 텍스트 왼쪽 정렬 */}
+                                            <p className="text-sm font-semibold text-pink-800">손목, 귀 뒤</p> {/* 텍스트 크기 text-sm, font-semibold */}
+                                            <p className="text-xs text-gray-700 whitespace-nowrap">맥박이 뛰는 곳</p> {/* 텍스트 크기 text-xs */}
+                                          </div>
                                         </div>
-                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-pink-100 text-center">
-                                          <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-1">
-                                            <span className="text-pink-600 text-lg">👔</span>
+                                        {/* 아이템 2: 옷에 뿌리기 */}
+                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-pink-100 text-center flex items-center">
+                                          <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center mr-3 shrink-0">
+                                            <span className="text-pink-700 text-xl">👕</span>
                                           </div>
-                                          <p className="text-[10px] font-medium text-pink-700">옷에 뿌리기</p>
-                                          <p className="text-[8px] text-gray-500">15cm 거리에서</p>
+                                          <div className="text-left">
+                                            <p className="text-sm font-semibold text-pink-800">옷에 뿌리기</p>
+                                            <p className="text-xs text-gray-700 whitespace-nowrap">15cm 거리에서</p>
+                                          </div>
                                         </div>
-                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-pink-100 text-center">
-                                          <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-1">
-                                            <span className="text-pink-600 text-lg">🚿</span>
+                                        {/* 아이템 3: 공기 중 분사 */}
+                                        <div className="bg-white rounded-lg p-3 shadow-sm border border-pink-100 text-center flex items-center">
+                                          <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center mr-3 shrink-0">
+                                            <span className="text-pink-700 text-xl">💨</span>
                                           </div>
-                                          <p className="text-[10px] font-medium text-pink-700">공기중 분사</p>
-                                          <p className="text-[8px] text-gray-500">향기 구름 속으로</p>
+                                          <div className="text-left">
+                                            <p className="text-sm font-semibold text-pink-800">공기 중 분사</p>
+                                            <p className="text-xs text-gray-700 whitespace-nowrap">향기 구름 속으로</p>
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
                                     
                                     {/* 향수 지속력 */}
                                     <div className="bg-white rounded-lg p-4 border border-amber-200 shadow-sm">
-                                      <h4 className="text-sm font-bold text-amber-800 mb-2 flex items-center">
+                                      <h4 className="text-sm font-bold text-amber-900 mb-2 flex items-center">
                                         <span className="mr-1">⏱️</span>
                                         향수 지속력
                                       </h4>
                                       <div className="relative h-4 bg-gray-100 rounded-full mb-2">
                                         <div className="absolute left-0 top-0 h-full w-[85%] bg-gradient-to-r from-amber-300 to-yellow-400 rounded-full"></div>
                                       </div>
-                                      <div className="flex justify-between text-[10px] text-gray-500">
+                                      <div className="flex justify-between text-[10px] text-gray-700">
                                         <span>4-5시간</span>
                                         <span>지속 시간</span>
                                         <span>8시간+</span>
@@ -1062,7 +1036,7 @@ export default function ResultPage() {
                         <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-3">
                           <span className="text-2xl">🔍</span>
                         </div>
-                        <p className="text-gray-500 text-center">매칭된 향수가 없습니다. 다시 시도해주세요.</p>
+                        <p className="text-gray-700 text-center">매칭된 향수가 없습니다. 다시 시도해주세요.</p>
                       </div>
                     )}
                   </motion.div>
@@ -1073,13 +1047,13 @@ export default function ResultPage() {
               <div className="flex flex-col gap-3 mt-8 pt-4 border-t border-gray-200">
                 <button
                   onClick={handleFeedback}
-                  className="px-4 py-2.5 bg-yellow-400 text-gray-800 rounded-full font-bold text-sm hover:bg-yellow-500 transition-colors shadow-sm"
+                  className="px-4 py-2.5 bg-yellow-400 text-gray-900 rounded-full font-bold text-sm hover:bg-yellow-500 transition-colors shadow-sm"
                 >
                   피드백 남기기
                 </button>
                 <button
                   onClick={handleRestart}
-                  className="px-4 py-2 border-2 border-gray-300 text-gray-600 rounded-full font-medium text-sm hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-full font-medium text-sm hover:bg-gray-50 transition-colors"
                 >
                   다시 시작하기
                 </button>

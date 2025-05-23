@@ -39,7 +39,7 @@ export const ScentSelector: React.FC<ScentSelectorProps> = ({
               placeholder="향료 이름으로 검색하세요..."
               value={scentSearchTerm}
               onChange={(e) => setScentSearchTerm(e.target.value)}
-              className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 bg-gray-50"
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 bg-gray-50 text-gray-900 placeholder-gray-600"
             />
           </div>
           

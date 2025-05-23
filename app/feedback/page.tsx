@@ -156,12 +156,13 @@ export default function FeedbackPage() {
         </div>
 
         {/* FeedbackForm 컴포넌트 사용 */}
-        <FeedbackForm 
-          perfumeId={perfume.id} 
-          perfumeName={perfume.name}
-          onClose={handleClose}
-          onSubmit={handleFeedbackSubmit}
-        />
+        {perfume && (
+          <FeedbackForm 
+            originalPerfume={perfume}
+            onClose={handleClose}
+            onSubmit={handleFeedbackSubmit}
+          />
+        )}
       </motion.div>
     </div>
   );

@@ -173,7 +173,6 @@ export default function AdjustmentPage() {
             <img 
               src="/cute.png" 
               alt="Cute Character" 
-              className="w-full h-full object-contain"
               style={{ 
                 filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
                 transform: 'scaleX(-1)'

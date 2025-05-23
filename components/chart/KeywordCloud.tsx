@@ -53,8 +53,8 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
   
   // 가중치에 따른 폰트 크기 계산
   const getFontSize = (weight: number) => {
-    const baseFontSize = 0.8; // rem 단위
-    return `${baseFontSize + (weight * 0.2)}rem`; // 가중치에 따라 크기 증가
+    const baseFontSize = 0.7; // rem 단위
+    return `${baseFontSize + (weight * 0.15)}rem`; // 가중치에 따라 크기 증가 (더 작은 증가폭)
   };
   
   // 무작위 위치 계산 (겹침 방지 로직 없음, 실제 구현 시 더 복잡한 알고리즘 필요)
@@ -65,17 +65,36 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
       return x - Math.floor(x);
     };
     
-    const section = Math.floor(index / (length / 5)); // 0~4 섹션으로 나눔
-    const sectionWidth = 100 / 5; // 각 섹션의 너비 (%)
+    // 박스 경계 안에 키워드가 항상 있도록 여백 더 추가
+    const padding = 10; // 경계에서 여백 늘림
+    const minX = padding;
+    const maxX = 100 - padding;
+    const minY = padding + 10; // Y축 시작점을 이전보다 위로 (분산 목적)
+    const maxY = 100 - padding - 10; // Y축 끝점을 이전보다 아래로 (분산 목적)
     
-    // 섹션 내 랜덤 위치 계산
-    const minX = section * sectionWidth;
-    const maxX = (section + 1) * sectionWidth - 20; // 단어 최대 길이 고려
+    // 안전한 위치 계산
+    const getSafePosition = () => {
+      // 균등한 분포를 위해 그리드 기반으로 나눔
+      const gridSize = Math.ceil(Math.sqrt(length * 0.5)); // 좀 더 여유있게
+      const cellWidth = (maxX - minX) / gridSize;
+      const cellHeight = (maxY - minY) / gridSize;
+      
+      // 그리드 셀 좌표 계산
+      const row = Math.floor(index / gridSize) % gridSize;
+      const col = index % gridSize;
+      
+      // 각 셀 내에서의 위치에 랜덤성 부여
+      const cellX = minX + (col * cellWidth) + (seededRandom(index * 2) * cellWidth * 0.6);
+      const cellY = minY + (row * cellHeight) + (seededRandom(index * 3) * cellHeight); // Y축 랜덤 범위 최대화
+      
+      // 경계 검사 및 수정
+      const x = Math.max(minX, Math.min(maxX, cellX));
+      const y = Math.max(minY, Math.min(maxY, cellY));
+      
+      return { x, y };
+    };
     
-    const x = minX + (seededRandom(index * 2) * (maxX - minX));
-    const y = 10 + (seededRandom(index * 3) * 80); // 10%~90% 사이
-    
-    return { x, y };
+    return getSafePosition();
   };
   
   const WrapperComponent = showAnimation ? motion.div : 'div';
@@ -87,11 +106,9 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
         animate: { opacity: 1 },
         transition: { duration: 0.5 }
       } : {})}
-      className="flex flex-col items-center my-4 p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200 w-full"
+      className="flex flex-col items-center my-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200 w-full"
     >
-      <h3 className="text-lg font-bold text-gray-800 mb-4">{title}</h3>
-      
-      <div className="relative w-full h-60 bg-white rounded-lg p-4 shadow-sm">
+      <div className="relative w-full h-30 bg-white rounded-lg p-6 shadow-sm">
         {weightedKeywords.map((keyword, index) => {
           const position = getRandomPosition(index, weightedKeywords.length);
           
@@ -109,7 +126,7 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
               }}
             >
               <span 
-                className="whitespace-nowrap font-medium px-2 py-1 rounded-full"
+                className="whitespace-nowrap font-medium px-2.5 py-1.5 rounded-full inline-block"
                 style={{ 
                   fontSize: getFontSize(keyword.weight),
                   color: keyword.color,
@@ -117,7 +134,7 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
                   borderColor: `${keyword.color}40`, // 40% 투명도
                   borderWidth: '1px',
                   borderStyle: 'solid',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                 }}
               >
                 {keyword.text}
@@ -125,22 +142,6 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({
             </motion.div>
           );
         })}
-      </div>
-      
-      {/* 범례 */}
-      <div className="flex justify-center gap-4 mt-4">
-        <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-gray-300 mr-1"></div>
-          <span className="text-xs text-gray-500">낮은 연관성</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 rounded-full bg-gray-500 mr-1"></div>
-          <span className="text-xs text-gray-500">중간 연관성</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-5 h-5 rounded-full bg-gray-700 mr-1"></div>
-          <span className="text-xs text-gray-500">높은 연관성</span>
-        </div>
       </div>
     </WrapperComponent>
   );

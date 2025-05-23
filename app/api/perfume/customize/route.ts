@@ -1,123 +1,261 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PerfumeFeedback, CustomPerfumeRecipe, PerfumeCategory, CategoryPreference, PerfumePersona } from '@/app/types/perfume';
+import { PerfumeFeedback, CustomPerfumeRecipe, PerfumeCategory, CategoryPreference, PerfumePersona, GeminiPerfumeSuggestion, TestingGranule, SpecificScent, CategoryDataPoint } from '@/app/types/perfume';
 import perfumePersonas from '@/app/data/perfumePersonas';
-import { generateCustomPerfumePrompt, parseCustomPerfumeRecipe } from '@/app/utils/promptTemplates/feedbackPrompts';
+import { generateCustomPerfumePrompt, parseGeminiPerfumeSuggestion } from '@/app/utils/promptTemplates/feedbackPrompts';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error('CRITICAL: Gemini API 키가 설정되지 않았습니다. .env 파일을 확인해주세요.');
+  // 프로덕션 환경에서는 이 경우 에러를 발생시켜 서버 시작을 중단시키는 것이 안전합니다.
+  // throw new Error('CRITICAL: Gemini API 키가 설정되지 않았습니다.'); 
+}
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || ""); // API 키가 없으면 빈 문자열로 초기화 (오류 발생 가능성 있음)
+
+const MAX_RETRIES = 1; // 최대 재시도 횟수 (0으로 설정하면 재시도 안 함, 테스트 용도로 1로 설정)
 
 /**
  * 피드백 데이터를 기반으로 맞춤형 향수 레시피 생성 API
  */
 export async function POST(request: NextRequest) {
   try {
-    // 요청 본문 파싱
     const data = await request.json();
-    const feedback: PerfumeFeedback = data.feedback;
+    const clientFeedback: PerfumeFeedback & Partial<Pick<GeminiPerfumeSuggestion, 'overallExplanation' | 'contradictionWarning' | 'impression' | 'notes'> > = data.feedback; // impression, notes 추가
     
-    if (!feedback || !feedback.perfumeId) {
-      return NextResponse.json(
-        { error: '유효하지 않은 피드백 데이터입니다.' },
-        { status: 400 }
-      );
+    if (!clientFeedback || !clientFeedback.perfumeId) {
+      return NextResponse.json({ error: '유효하지 않은 피드백 데이터입니다.' }, { status: 400 });
     }
     
-    // 해당 향수 정보 가져오기
-    const perfume = perfumePersonas.personas.find(
-      (p: PerfumePersona) => p.id === feedback.perfumeId
-    );
+    const originalPerfume = perfumePersonas.personas.find(p => p.id === clientFeedback.perfumeId);
     
-    if (!perfume) {
-      return NextResponse.json(
-        { error: '해당 향수를 찾을 수 없습니다.' },
-        { status: 404 }
-      );
+    if (!originalPerfume) {
+      return NextResponse.json({ error: '해당 원본 향수를 찾을 수 없습니다.' }, { status: 404 });
     }
     
-    // 피드백 데이터에 향수 이름 추가 (없는 경우)
-    if (!feedback.perfumeName) {
-      feedback.perfumeName = perfume.name;
+    // clientFeedback.perfumeName은 generateCustomPerfumePrompt에 전달되지 않으므로, 여기서 설정할 필요 없음
+    // if (!clientFeedback.perfumeName && originalPerfume.name) {
+    //   clientFeedback.perfumeName = originalPerfume.name;
+    // }
+    
+    const categoryKeyToKorean: Record<PerfumeCategory, string> = {
+      citrus: '시트러스',
+      floral: '플로럴',
+      woody: '우디',
+      musky: '머스크',
+      fruity: '프루티',
+      spicy: '스파이시'
+    };
+    
+    const initialCategoryGraphData: CategoryDataPoint[] = Object.entries(originalPerfume.categories).map(([axisKey, value]) => ({
+      axis: categoryKeyToKorean[axisKey as PerfumeCategory] || axisKey,
+      value: value
+    }));
+
+    const feedbackForPrompt: GeminiPerfumeSuggestion & { 
+      categoryPreferences?: PerfumeFeedback['categoryPreferences'], 
+      userCharacteristics?: PerfumeFeedback['userCharacteristics'], 
+      specificScents?: SpecificScent[],
+      notes?: PerfumeFeedback['notes'],
+      impression?: PerfumeFeedback['impression']
+    } = {
+      perfumeId: originalPerfume.id,
+      originalPerfumeName: originalPerfume.name,
+      retentionPercentage: clientFeedback.retentionPercentage || 50,
+      initialCategoryGraphData: initialCategoryGraphData,
+      // 아래 필드들은 AI가 채우거나, feedbackForPrompt 구성 시 기본값/플레이스홀더로 초기화
+      adjustedCategoryGraphData: [], 
+      categoryChanges: [], 
+      testingRecipe: null, // AI가 채울 필드이므로 null 또는 기본 구조로 초기화
+      isFinalRecipe: (clientFeedback.retentionPercentage === 100), // 100%면 최종 레시피로 간주
+      overallExplanation: clientFeedback.overallExplanation || originalPerfume.description, 
+      contradictionWarning: clientFeedback.contradictionWarning || null,
+      // PerfumeFeedback에서 직접 전달받는 필드들
+      categoryPreferences: clientFeedback.categoryPreferences,
+      userCharacteristics: clientFeedback.userCharacteristics,
+      specificScents: clientFeedback.specificScents,
+      notes: clientFeedback.notes,
+      impression: clientFeedback.impression,
+      // finalRecipeDetails는 isFinalRecipe가 true일 때 채워지거나 AI가 생성
+    };
+    
+    if (feedbackForPrompt.isFinalRecipe) {
+      // TODO: 100% 유지 시 finalRecipeDetails를 실제로 구성하는 로직 필요.
+      // 현재는 isFinalRecipe 플래그만 true로 설정하고, 나머지 필요한 정보는 feedbackForPrompt에서 가져옴.
+      // overallExplanation 등을 적절히 설정해주는 것이 좋음.
+      const finalData: GeminiPerfumeSuggestion = {
+        ...feedbackForPrompt,
+        overallExplanation: feedbackForPrompt.overallExplanation || `${originalPerfume.name}의 향을 100% 유지하는 레시피입니다.`,
+        testingRecipe: null, // 100% 유지 시 테스팅 레시피 없음
+        // finalRecipeDetails: { ... } // 여기에 실제 레시피 정보 구성
+      };
+      return NextResponse.json({ success: true, data: finalData });
+    }
+        
+    const result = await callAndValidateWithRetry(feedbackForPrompt, MAX_RETRIES); 
+    
+    if (result && 'error' in result) { // 최종 실패 시 오류 객체 반환됨
+      console.error('callAndValidateWithRetry 최종 실패:', result.error);
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
     
-    // 맞춤형 향수 레시피 생성
-    const recipe = await generateCustomRecipe(feedback, perfume);
+    if (!result) { // 혹시 모를 null 반환 케이스 (이론상 발생 안해야 함)
+        console.error('callAndValidateWithRetry에서 예외적으로 null 반환됨');
+        return NextResponse.json({ error: 'AI 추천 생성 중 알 수 없는 내부 오류가 발생했습니다.' }, { status: 500 });
+    }
     
+    // 성공 응답 반환
     return NextResponse.json({
       success: true,
-      recipe
+      data: result
     });
+
   } catch (error) {
-    console.error('맞춤형 향수 레시피 생성 오류:', error);
+    console.error('맞춤형 향수 레시피 생성 API 핸들러에서 예외 발생:', error);
+    const errorMessage = error instanceof Error ? error.message : '알 수 없는 서버 오류 발생';
+    // 클라이언트에 너무 상세한 오류 메시지를 보내지 않도록 주의
+    const clientErrorMessage = errorMessage.startsWith('SERVER_ERROR:') || errorMessage.startsWith('CRITICAL:') 
+                             ? '서버 내부 설정 오류로 인해 요청을 처리할 수 없습니다.' 
+                             : `맞춤형 향수 레시피를 생성하는 중 오류가 발생했습니다.`;
     return NextResponse.json(
-      { error: '맞춤형 향수 레시피를 생성하는 중 오류가 발생했습니다.' },
+      { error: clientErrorMessage },
       { status: 500 }
     );
   }
 }
 
-/**
- * 맞춤형 향수 레시피 생성 함수
- */
-async function generateCustomRecipe(feedback: PerfumeFeedback, perfume: PerfumePersona): Promise<CustomPerfumeRecipe> {
-  try {
-    // 기본 향료 구성
-    const baseScents = getBaseScentComponents(perfume, feedback);
-    
-    // 피드백에 따른 특성 조정
-    const characteristicScents = getCharacteristicScentComponents(feedback);
-    
-    // 요청한 특정 향료 조정
-    const specificScents = getSpecificScentComponents(feedback);
-    
-    // 모든 향료 구성요소 통합
-    const allScents = [
-      ...baseScents,
-      ...characteristicScents,
-      ...specificScents
-    ];
-    
-    // 비율 정규화 및 10ml/50ml 레시피 생성
-    const normalizedScents = normalizeScents(allScents);
-    const recipe10ml = calculateRecipe(normalizedScents, 1.0); // 10ml에는 1g의 향료 사용
-    const recipe50ml = calculateRecipe(normalizedScents, 5.0); // 50ml에는 5g의 향료 사용
-    
-    // 시향 테스트 가이드 생성
-    const testGuide = generateTestGuide(normalizedScents, feedback, perfume);
-    
-    // 레시피 설명 생성
-    const explanation = generateExplanation(feedback, normalizedScents, perfume);
-    
-    // 최종 레시피 반환
-    return {
-      basedOn: perfume.name,
-      recipe10ml,
-      recipe50ml,
-      description: `${perfume.name} 향수를 기반으로 맞춤 제작된, ${getRecipeCharacteristic(feedback)} 향수입니다.`,
-      testGuide,
-      explanation
-    };
-  } catch (error) {
-    console.error('레시피 생성 오류:', error);
-    
-    // 기본 레시피 반환
-    return {
-      basedOn: perfume.name,
-      recipe10ml: [
-        { name: perfume.name, amount: '1.00g', percentage: 100 }
-      ],
-      recipe50ml: [
-        { name: perfume.name, amount: '5.00g', percentage: 100 }
-      ],
-      description: `${perfume.name} 향수의 기본 레시피입니다.`,
-      testGuide: {
-        instructions: '기본 향수를 그대로 시향해보세요.',
-        scentMixtures: [
-          { name: perfume.name, ratio: 100 }
-        ]
-      },
-      explanation: {
-        rationale: '오류로 인해 기본 레시피가 제공됩니다.',
-        expectedResult: '기존 향수의 향을 유지합니다.',
-        recommendation: '모든 상황에 무난하게 어울립니다.'
+async function callAndValidateWithRetry(
+  originalFeedbackForPrompt: GeminiPerfumeSuggestion & { 
+    categoryPreferences?: PerfumeFeedback['categoryPreferences'], 
+    userCharacteristics?: PerfumeFeedback['userCharacteristics'], 
+    specificScents?: SpecificScent[],
+    notes?: PerfumeFeedback['notes'],
+    impression?: PerfumeFeedback['impression']
+  },
+  maxRetries: number
+): Promise<GeminiPerfumeSuggestion | { error: string, status: number }> { // 오류 객체 반환 타입 추가
+  let attempts = 0;
+  let currentPrompt = generateCustomPerfumePrompt(originalFeedbackForPrompt);
+  let lastErrorDetail: string | null = null;
+
+  const personaDataSourceForRetry = "'@/app/data/perfumePersonas.ts' 파일의 'personas' 배열"; // 재시도 프롬프트용
+
+  while (attempts <= maxRetries) {
+    console.log(`INFO: Gemini API 호출 시도 ${attempts + 1}/${maxRetries + 1}`);
+    const geminiResponseText = await callGeminiAPI(currentPrompt); 
+    const recipeSuggestion = parseGeminiPerfumeSuggestion(geminiResponseText);
+
+    if (!recipeSuggestion) {
+      lastErrorDetail = 'AI 응답 파싱 실패 또는 데이터 형식 오류.';
+      console.error(`ATTEMPT ${attempts + 1} FAILED: Gemini API 응답 파싱 실패. Raw Response:`, geminiResponseText?.substring(0, 500));
+      attempts++;
+      if (attempts > maxRetries) break;
+      // 파싱 실패는 프롬프트 문제일 가능성이 낮으므로 동일 프롬프트로 재시도
+      console.log('INFO: 파싱 실패로 재시도합니다 (동일 프롬프트).');
+      continue; 
+    }
+
+    let invalidGranuleInfo: { id: string, name: string, issue: string } | null = null;
+    if (recipeSuggestion.testingRecipe && recipeSuggestion.testingRecipe.granules) {
+      if (recipeSuggestion.testingRecipe.granules.length === 0 && originalFeedbackForPrompt.retentionPercentage !== 100) {
+        // 100% 유지가 아닌데 추천 향료가 없는 경우 (AI가 빈 배열을 반환한 경우)
+        invalidGranuleInfo = { id: 'N/A', name: 'N/A', issue: 'AI가 추천 향료(granules)를 생성하지 않았습니다.' };
+      } else {
+        const validPersonaIds = new Set(perfumePersonas.personas.map(p => p.id));
+        const validPersonaMap = new Map(perfumePersonas.personas.map(p => [p.id, p.name]));
+
+        for (const granule of recipeSuggestion.testingRecipe.granules) {
+          if (!granule.id || !granule.name) {
+            invalidGranuleInfo = { id: granule.id || 'ID 누락', name: granule.name || '이름 누락', issue: '추천된 향료에 ID 또는 이름이 누락되었습니다.' };
+            break;
+          }
+          if (!validPersonaIds.has(granule.id)) {
+            invalidGranuleInfo = { id: granule.id, name: granule.name, issue: `시스템에 존재하지 않는 ID ('${granule.id}')` };
+            break;
+          }
+          const expectedName = validPersonaMap.get(granule.id);
+          if (expectedName !== granule.name) {
+            invalidGranuleInfo = { id: granule.id, name: granule.name, issue: `ID ('${granule.id}')에 해당하는 이름 불일치 (시스템: '${expectedName}', AI 응답: '${granule.name}')` };
+            break;
+          }
+        }
       }
-    };
+    }
+
+    if (invalidGranuleInfo) {
+      lastErrorDetail = `추천된 향료에서 문제 발생: ${invalidGranuleInfo.issue}.`;
+      console.error(`ATTEMPT ${attempts + 1} FAILED: AI 응답 검증 실패 - ${lastErrorDetail}`);
+      attempts++;
+      if (attempts > maxRetries) break;
+      
+      // AI에게 오류를 알리고 수정을 요청하는 새 프롬프트 생성
+      const retryInstruction = `경고: 이전 AI 응답에서 다음의 심각한 오류가 발견되었습니다: "${lastErrorDetail}". \n이번에는 반드시 다음 규칙을 따라주십시오: 모든 추천 향료(granules)의 id와 name은 반드시 ${personaDataSourceForRetry}에 정의된 실제 향수 데이터와 정확히 일치해야 합니다. 존재하지 않거나 일치하지 않는 ID/이름을 사용하면 안 됩니다. 이 규칙은 절대적입니다. 다른 모든 지침은 동일합니다.\n\n`;
+      currentPrompt = retryInstruction + generateCustomPerfumePrompt(originalFeedbackForPrompt);
+      
+      console.log(`INFO: 잘못된 ID/이름 (${invalidGranuleInfo.issue})으로 인해 재시도합니다. (시도 ${attempts}/${maxRetries + 1})`);
+      continue;
+    }
+
+    console.log(`INFO: ATTEMPT ${attempts + 1} SUCCESS: 유효한 응답 (${recipeSuggestion.perfumeId})을 받았습니다.`);
+    return recipeSuggestion; // 성공
+  }
+
+  console.error(`CRITICAL: 최대 재시도 (${maxRetries + 1}회) 후에도 유효한 응답을 얻지 못했습니다. 마지막 상세 오류: ${lastErrorDetail}`);
+  return { error: lastErrorDetail || 'AI 추천 생성에 최종 실패했습니다.', status: 500 }; // 최종 실패 시 오류 객체 반환
+}
+
+/**
+ * 실제 Gemini API 호출 함수
+ */
+async function callGeminiAPI(prompt: string): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    // 이 함수가 호출되기 전에 이미 API 키 체크가 되어 있어야 하지만, 방어적으로 추가
+    console.error('INTERNAL ERROR: callGeminiAPI 호출되었으나 API 키 없음.');
+    throw new Error('SERVER_ERROR: API 키가 설정되지 않아 Gemini 호출 불가.');
+  }
+  // console.log("Attempting to call Gemini API..."); // 로그 간소화
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const safetySettings = [
+      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    ];
+    const generationConfig = { maxOutputTokens: 8192 }; // 필요시 토큰 수 조정
+
+    const result = await model.generateContent(prompt, safetySettings, generationConfig);
+    const response = result.response;
+    
+    if (!response) {
+      const blockReason = result.response?.promptFeedback?.blockReason;
+      console.error('Gemini API 응답 객체 없음. Block Reason:', blockReason, 'Full result:', JSON.stringify(result, null, 2));
+      throw new Error(`AI 응답 생성 실패 (응답 객체 없음)${blockReason ? ' - 차단 이유: ' + blockReason : ''}`);
+    }
+
+    if (!response.candidates || response.candidates.length === 0) {
+      const blockReason = response.promptFeedback?.blockReason;
+      const finishReason = response.candidates?.[0]?.finishReason;
+      let errorMessage = 'AI 응답 생성 실패 (후보 없음)';
+      if (blockReason) errorMessage += ` - 프롬프트 차단 이유: ${blockReason}`;
+      if (finishReason) errorMessage += ` - 생성 중단 이유: ${finishReason}`;
+      console.error(errorMessage, 'Full response:', JSON.stringify(response, null, 2));
+      throw new Error(errorMessage);
+    }
+
+    const candidate = response.candidates[0];
+    if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0 || !candidate.content.parts[0].text) {
+      const finishReason = candidate.finishReason;
+      let errorMessage = 'AI 응답 생성 실패 (내용 없음)';
+      if (finishReason) errorMessage += ` - 생성 중단 이유: ${finishReason}`;
+      console.error(errorMessage, 'Full candidate:', JSON.stringify(candidate, null, 2));
+      throw new Error(errorMessage);
+    }
+    return candidate.content.parts[0].text;
+  } catch (error) {
+    console.error('Gemini API 호출 중 상세 오류 발생:', error);
+    const detailMessage = error instanceof Error ? error.message : '알 수 없는 API 내부 오류';
+    // SERVER_ERROR: 또는 CRITICAL: 접두사를 붙여 클라이언트에게 내부 오류임을 간접적으로 알림
+    throw new Error(`SERVER_ERROR: Gemini API와 통신 중 오류가 발생했습니다: ${detailMessage}`);
   }
 }
 
@@ -319,7 +457,7 @@ function getSpecificScentComponents(feedback: PerfumeFeedback): Array<{
         // 카테고리 추정
         const category = estimateScentCategory(scent.name);
         
-        // 비율 적용 (최대 30%까지 반영)
+        // 비율 적용 (최대 30%까지 반올림)
         const ratio = Math.min((scent.ratio / 100) * 30, 30);
         
         components.push({
