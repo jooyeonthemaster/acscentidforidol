@@ -511,11 +511,11 @@ export default function ResultPage() {
                       </div>
                     )}
                     
-                    {/* 퍼스널 컬러 */}
+                    {/* 컬러 타입 */}
                     {analysisResult.personalColor && (
                       <div className="mb-5">
                         <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
-                          <span className="bg-yellow-100 px-2 py-0.5 rounded">퍼스널 컬러</span>
+                          <span className="bg-yellow-100 px-2 py-0.5 rounded">컬러 타입</span>
                           <span className="ml-2 text-xs text-teal-700">이미지 컬러 분석</span>
                         </h3>
                         <div className="bg-gradient-to-r from-pink-50 to-orange-50 rounded-xl p-4 border border-pink-100 shadow-sm">

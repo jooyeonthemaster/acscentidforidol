@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import KeywordCloud from '../../../../components/KeywordCloud';
+import SimpleRadarChart from '../../../../components/chart/SimpleRadarChart';
 
 interface SessionFullData {
   session: any;
@@ -26,6 +28,60 @@ interface GeneratedReport {
   confidenceLevel: string;
 }
 
+// 노트북 레이아웃 설정
+const NOTEBOOK_LAYOUT = {
+  container: { width: 800, height: 600 },
+  elements: {
+    image: { x: 30, y: 110, width: 155, height: 185 },
+    traitChart: { x: 30, y: 295, width: 155, height: 185 }, // 이미지 바로 아래, 같은 사이즈
+    colorPalette: { x: 30, y: 460, width: 155, height: 80 }, // 레이더 차트 바로 아래
+    name: { x: 200, y: 120, width: 180, height: 25 },
+    gender: { x: 200, y: 140, width: 100, height: 30 },
+    keywords: { x: 200, y: 171, width: 180, height: 100 },
+    radarChart: { x: 40, y: 300, width: 160, height: 160 },
+    features: { x: 190, y: 280, width: 180, height: 90 },
+          colorType: { x: 190, y: 400, width: 180, height: 120 },
+    // 오른쪽 페이지 (SCENT PROFILE)
+    fragranceNotes: { x: 440, y: 90, width: 320, height: 100 },
+    scentChart: { x: 440, y: 220, width: 320, height: 180 },
+          seasonTime: { x: 420, y: 390, width: 340, height: 140 },
+  }
+};
+
+// 노트북 요소 컴포넌트
+interface NotebookElementProps {
+  elementKey: keyof typeof NOTEBOOK_LAYOUT.elements;
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+const NotebookElement: React.FC<NotebookElementProps> = ({ 
+  elementKey, 
+  children, 
+  className = "",
+  style = {} 
+}) => {
+  const config = NOTEBOOK_LAYOUT.elements[elementKey];
+  if (!config) return null;
+  
+  return (
+    <div 
+      className={`notebook-element ${className}`}
+      style={{
+        position: 'absolute',
+        left: `${config.x}px`,
+        top: `${config.y}px`,
+        width: `${config.width}px`,
+        height: `${config.height}px`,
+        ...style
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
 export default function ReportPage() {
   const params = useParams();
   const [sessionData, setSessionData] = useState<SessionFullData | null>(null);
@@ -43,7 +99,6 @@ export default function ReportPage() {
       setLoading(true);
       
       const fullSessionId = params.sessionId as string;
-      // userId_sessionId 형태로 파싱 (예: 01049297430_session_1747987296608_tf245b1)
       const underscoreIndex = fullSessionId.indexOf('_');
       if (underscoreIndex === -1) {
         throw new Error('잘못된 세션 ID 형식입니다.');
@@ -65,13 +120,11 @@ export default function ReportPage() {
       if (data.success) {
         setSessionData(data.data);
         
-        // 캐시된 AI 보고서가 있는지 확인
         const session = data.data.session;
         if (session?.generatedReport) {
           console.log('캐시된 AI 보고서 발견:', session.generatedReport);
           setGeneratedReport(session.generatedReport);
         } else {
-          // 캐시된 보고서가 없으면 새로 생성 (하지만 API 오류로 인해 스킵)
           console.log('AI 보고서 생성 스킵 (API 오류로 인해)');
         }
       } else {
@@ -124,118 +177,236 @@ export default function ReportPage() {
     return String(value);
   };
 
-  // 안전한 배열 렌더링 함수
-  const renderSafeArray = (data: any, maxItems: number = 6): React.ReactNode[] => {
-    if (!data) return [];
-    
-    try {
-      // 배열인 경우
-      if (Array.isArray(data)) {
-        return data.slice(0, maxItems).map((item, index) => (
-          <span key={index} className="category-tag">
-            {safeStringify(item)}
-          </span>
-        ));
-      }
-      
-      // 객체인 경우
-      if (typeof data === 'object') {
-        return Object.entries(data).slice(0, maxItems).map(([key, value], index) => (
-          <span key={index} className="category-tag">
-            {key}: {safeStringify(value)}
-          </span>
-        ));
-      }
-      
-      // 기타 타입
-      return [
-        <span key={0} className="category-tag">
-          {safeStringify(data)}
-        </span>
-      ];
-    } catch (error) {
-      console.error('렌더링 오류:', error);
-      return [
-        <span key={0} className="category-tag">
-          [렌더링 오류]
-        </span>
-      ];
-    }
-  };
 
-  // 특성 점수를 원형 진행률로 표시하는 컴포넌트
-  const CircularProgress = ({ value, label }: { value: number; label: string }) => {
-    const radius = 18;
-    const strokeWidth = 3;
-    const normalizedRadius = radius - strokeWidth * 2;
-    const circumference = normalizedRadius * 2 * Math.PI;
-    const strokeDasharray = `${value * circumference / 10} ${circumference}`;
+
+  // 특성 바 차트 컴포넌트
+  const ScentBarChart = ({ characteristics }: { characteristics: any }) => {
+    if (!characteristics) return null;
+
+    const scentData = [
+      { name: '시트러스', value: characteristics.citrus || 0, color: '#FCD34D', emoji: '🍋' },
+      { name: '플로럴', value: characteristics.floral || 0, color: '#F472B6', emoji: '🌸' },
+      { name: '우디', value: characteristics.woody || 0, color: '#FB923C', emoji: '🌳' },
+      { name: '머스크', value: characteristics.musk || 0, color: '#A78BFA', emoji: '✨' },
+      { name: '프루티', value: characteristics.fruity || 0, color: '#EF4444', emoji: '🍎' },
+      { name: '스파이시', value: characteristics.spicy || 0, color: '#F97316', emoji: '🌶️' }
+    ];
 
     return (
-      <div className="circular-progress">
-        <svg height={radius * 2} width={radius * 2}>
-          <circle
-            stroke="#f3f4f6"
-            fill="transparent"
-            strokeWidth={strokeWidth}
-            r={normalizedRadius}
-            cx={radius}
-            cy={radius}
-          />
-          <circle
-            stroke="#fbbf24"
-            fill="transparent"
-            strokeWidth={strokeWidth}
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={0}
-            strokeLinecap="round"
-            r={normalizedRadius}
-            cx={radius}
-            cy={radius}
-            transform={`rotate(-90 ${radius} ${radius})`}
-          />
-        </svg>
-        <div className="progress-content">
-          <div className="progress-value">{value}</div>
-        </div>
-        <div className="progress-label">{label}</div>
+      <div style={{ marginTop: '16px' }}>
+        {scentData.map((item, index) => (
+          <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '14px', marginRight: '6px' }}>{item.emoji}</span>
+            <span style={{ fontSize: '11px', fontWeight: '600', width: '50px', color: '#374151' }}>
+              {item.name}
+            </span>
+            <div style={{ 
+              flex: 1, 
+              height: '16px', 
+              background: '#F3F4F6', 
+              borderRadius: '8px', 
+              marginLeft: '8px',
+              marginRight: '8px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: `${(item.value / 10) * 100}%`,
+                height: '100%',
+                background: item.color,
+                borderRadius: '8px',
+                transition: 'width 0.3s ease'
+              }} />
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: '700', color: '#374151', width: '20px' }}>
+              {item.value}
+            </span>
+          </div>
+        ))}
       </div>
     );
   };
 
-  const TraitsGrid = ({ traits }: { traits: any }) => {
-    const traitNames: { [key: string]: string } = {
-      sexy: '섹시함',
-      cute: '귀여움',
-      charisma: '카리스마',
-      darkness: '신비로움',
-      freshness: '상쾌함',
-      elegance: '우아함',
-      freedom: '자유로움',
-      luxury: '고급스러움',
-      purity: '순수함',
-      uniqueness: '독특함'
-    };
-
+  // 계절/시간 아이콘 컴포넌트
+  const SeasonTimeIcons = () => {
     return (
-      <div className="traits-grid">
-        {Object.entries(traits).slice(0, 6).map(([key, value]) => (
-          <CircularProgress 
-            key={key} 
-            value={value as number} 
-            label={traitNames[key] || key} 
-          />
-        ))}
+      <div style={{ display: 'flex', gap: '16px', marginTop: '0px' }}>
+        <div>
+          <div style={{ 
+            fontSize: '24px', 
+            fontWeight: '800', 
+            color: 'white', 
+            letterSpacing: '1px',
+            WebkitTextStroke: '2px #374151',
+            whiteSpace: 'nowrap',
+            marginBottom: '4px',
+            textAlign: 'left'
+          } as React.CSSProperties}>
+            BEST SEASON
+          </div>
+          <div style={{ 
+            background: 'white', 
+            borderRadius: '12px', 
+            padding: '8px',
+            border: '2px solid #E5E7EB',
+            display: 'flex',
+            gap: '0px',
+            justifyContent: 'center'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: '#FEF3E2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                marginBottom: '4px'
+              }}>🌸</div>
+              <div style={{ fontSize: '8px', color: '#6B7280' }}>봄</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: '#374151',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                marginBottom: '4px'
+              }}>☀️</div>
+              <div style={{ fontSize: '8px', color: '#6B7280' }}>여름</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: '#F3F4F6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                marginBottom: '4px'
+              }}>🍂</div>
+              <div style={{ fontSize: '8px', color: '#6B7280' }}>가을</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: '#F3F4F6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                marginBottom: '4px'
+              }}>❄️</div>
+              <div style={{ fontSize: '8px', color: '#6B7280' }}>겨울</div>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <div style={{ 
+            fontSize: '24px', 
+            fontWeight: '800', 
+            color: 'white', 
+            letterSpacing: '1px',
+            WebkitTextStroke: '2px #374151',
+            whiteSpace: 'nowrap',
+            marginBottom: '4px',
+            textAlign: 'left'
+          } as React.CSSProperties}>
+            BEST TIME
+          </div>
+          <div style={{ 
+            background: 'white', 
+            borderRadius: '12px', 
+            padding: '8px',
+            border: '2px solid #E5E7EB',
+            display: 'flex',
+            gap: '0px',
+            justifyContent: 'center'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: '#374151',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                marginBottom: '4px'
+              }}>🌅</div>
+              <div style={{ fontSize: '8px', color: '#6B7280' }}>오전</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: '#374151',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                marginBottom: '4px'
+              }}>☀️</div>
+              <div style={{ fontSize: '8px', color: '#6B7280' }}>오후</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: '#F3F4F6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                marginBottom: '4px'
+              }}>🌆</div>
+              <div style={{ fontSize: '8px', color: '#6B7280' }}>저녁</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: '#F3F4F6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px',
+                marginBottom: '4px'
+              }}>🌙</div>
+              <div style={{ fontSize: '8px', color: '#6B7280' }}>밤</div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-500 mx-auto mb-6"></div>
-          <p className="text-gray-700 text-lg">보고서를 불러오는 중...</p>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: '#F9FAFB'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '18px', marginBottom: '8px' }}>📊</div>
+          <div style={{ color: '#6B7280' }}>보고서 로딩 중...</div>
         </div>
       </div>
     );
@@ -243,13 +414,28 @@ export default function ReportPage() {
 
   if (error || !sessionData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-2xl mb-6">❌ 오류 발생</div>
-          <p className="text-gray-600 mb-6 text-lg">{error || '데이터를 찾을 수 없습니다.'}</p>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: '#F9FAFB'
+      }}>
+        <div style={{ textAlign: 'center', color: '#EF4444' }}>
+          <div style={{ fontSize: '18px', marginBottom: '8px' }}>❌</div>
+          <div>오류: {error || '데이터를 찾을 수 없습니다.'}</div>
           <button 
             onClick={() => window.history.back()}
-            className="bg-purple-500 text-white px-8 py-3 rounded-lg hover:bg-purple-600 font-bold text-lg transition-colors"
+            style={{
+              background: '#6366F1',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              marginTop: '16px',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
           >
             뒤로 가기
           </button>
@@ -262,627 +448,841 @@ export default function ReportPage() {
 
   return (
     <>
-      {/* A5 가로 고정 스타일 */}
+      {/* 노트북 스타일 프린트 보고서 */}
       <style jsx global>{`
-        /* A5 가로: 210mm x 148mm */
         @page {
-          size: 210mm 148mm;
+          size: A4 landscape;
           margin: 0;
         }
         
-        .report-container {
-          font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-          min-height: 100vh;
-          padding: 20px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
+        body {
+          margin: 0 !important;
+          padding: 0 !important;
+          font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+          background: #F9FAFB !important;
+          overflow: hidden !important;
+          width: 100vw !important;
+          height: 100vh !important;
         }
         
-        .a5-page {
-          width: 210mm;
-          height: 148mm;
-          background: white;
-          box-shadow: 0 8px 32px rgba(251, 191, 36, 0.3);
-          border-radius: 12px;
-          overflow: hidden;
-          display: flex;
-          position: relative;
-          border: 2px solid #fbbf24;
+        .notebook-container {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          overflow: hidden !important;
+          background: #F9FAFB !important;
+          display: flex !important;
+          justify-content: center !important;
+          align-items: center !important;
+          padding: 0 !important;
+          margin: 0 !important;
         }
         
-        .page-section {
-          width: 50%;
-          height: 100%;
-          position: relative;
-          overflow: hidden;
+        .notebook-wrapper {
+          position: absolute !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+          width: 800px !important;
+          height: 600px !important;
+          background: url('/background.svg') center center !important;
+          background-size: 800px 600px !important;
+          background-repeat: no-repeat !important;
+          border-radius: 16px !important;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+          overflow: hidden !important;
+          display: flex !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          min-width: 800px !important;
+          min-height: 600px !important;
+          max-width: 800px !important;
+          max-height: 600px !important;
         }
         
-        .left-section {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%);
-          color: #92400e;
-          padding: 12mm;
-          box-sizing: border-box;
-          position: relative;
+        .content-container {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 800px !important;
+          height: 600px !important;
+          padding: 40px !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
+          margin: 0 !important;
         }
         
-        .right-section {
-          background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-          padding: 12mm;
-          box-sizing: border-box;
+        .notebook-element {
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          transform: none !important;
         }
         
-        /* 배경 패턴 */
-        .left-section::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-image: 
-            radial-gradient(circle at 20% 50%, rgba(251, 191, 36, 0.1) 1px, transparent 1px),
-            radial-gradient(circle at 80% 50%, rgba(251, 191, 36, 0.05) 1px, transparent 1px);
-          background-size: 20px 20px, 15px 15px;
-          opacity: 0.6;
+        .image-area {
+          border: 2px dashed #EF4444 !important;
+          background: rgba(239, 68, 68, 0.1) !important;
+          border-radius: 8px !important;
         }
         
-        /* 최애 이미지 스타일 */
-        .idol-image-container {
-          width: 100%;
-          height: 45mm;
-          background: rgba(255,255,255,0.3);
-          border-radius: 8px;
-          padding: 4px;
-          margin-bottom: 8px;
-          backdrop-filter: blur(5px);
-          border: 1px solid rgba(251, 191, 36, 0.4);
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .idol-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          border-radius: 6px;
+        .main-image {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          border-radius: 8px !important;
         }
         
         .image-placeholder {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background: rgba(251, 191, 36, 0.1);
-          border-radius: 6px;
-          border: 1px dashed rgba(251, 191, 36, 0.4);
+          width: 100% !important;
+          height: 100% !important;
+          background: #F3F4F6 !important;
+          border-radius: 8px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          font-size: 48px !important;
+          color: #9CA3AF !important;
         }
         
-        /* 헤더 스타일 */
-        .report-header {
-          text-align: center;
-          margin-bottom: 8px;
-        }
-        
-        .brand-title {
-          font-size: 18px;
-          font-weight: 900;
-          margin-bottom: 2px;
-          color: #92400e;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        
-        .report-subtitle {
-          font-size: 8px;
-          opacity: 0.8;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-        }
-        
-        /* 정보 카드 (왼쪽) */
-        .info-card-left {
-          background: rgba(255,255,255,0.4);
-          backdrop-filter: blur(5px);
-          border-radius: 6px;
-          padding: 6px;
-          margin-bottom: 6px;
-          border: 1px solid rgba(251, 191, 36, 0.3);
-        }
-        
-        .info-label-left {
-          font-size: 7px;
-          opacity: 0.7;
-          margin-bottom: 2px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.3px;
-        }
-        
-        .info-value-left {
-          font-size: 9px;
-          font-weight: 700;
-        }
-        
-        /* 원형 진행률 */
-        .traits-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 8px;
-          margin: 8px 0;
-        }
-        
-        .circular-progress {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        
-        .progress-content {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .progress-value {
-          font-size: 8px;
-          font-weight: 900;
-          color: #92400e;
-        }
-        
-        .progress-label {
-          font-size: 6px;
-          text-align: center;
-          margin-top: 4px;
-          opacity: 0.8;
-          font-weight: 600;
-          line-height: 1;
-        }
-        
-        /* 섹션 제목 (왼쪽) */
-        .section-title-left {
-          font-size: 10px;
-          font-weight: 800;
-          margin: 8px 0 6px 0;
-          padding-bottom: 3px;
-          border-bottom: 1px solid rgba(251, 191, 36, 0.4);
-          position: relative;
-        }
-        
-        .section-title-left::after {
-          content: '✨';
-          position: absolute;
-          right: 0;
-          top: 0;
-          font-size: 8px;
-        }
-        
-        /* 오른쪽 섹션 스타일 */
-        .section-title-right {
-          font-size: 12px;
-          font-weight: 800;
-          color: #92400e;
-          margin-bottom: 8px;
-          padding-bottom: 4px;
-          border-bottom: 2px solid #fbbf24;
-          position: relative;
-        }
-        
-        .section-title-right::after {
-          content: '🌟';
-          position: absolute;
-          right: 0;
-          top: 0;
-          font-size: 10px;
-        }
-        
-        /* 향수 카드 */
-        .perfume-card-new {
-          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-          color: white;
-          border-radius: 10px;
-          padding: 12px;
-          margin-bottom: 8px;
-          position: relative;
-          overflow: hidden;
-          box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
-        }
-        
-        .perfume-card-new::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: linear-gradient(90deg, #fff, #fef3c7, #fff);
-        }
-        
-        .perfume-name-new {
-          font-size: 12px;
-          font-weight: 900;
-          margin-bottom: 4px;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-        }
-        
-        .perfume-description-new {
-          font-size: 8px;
-          line-height: 1.4;
-          opacity: 0.9;
-          margin-bottom: 6px;
-        }
-        
-        /* 정보 카드 (오른쪽) */
-        .info-card-right {
-          background: white;
-          border-radius: 8px;
-          padding: 8px;
-          margin-bottom: 6px;
-          border: 1px solid #fbbf24;
-          box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        .info-card-right:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
-        }
-        
-        .info-label-right {
-          font-size: 7px;
-          font-weight: 600;
-          color: #92400e;
-          margin-bottom: 2px;
-          text-transform: uppercase;
-          letter-spacing: 0.3px;
-        }
-        
-        .info-value-right {
-          font-size: 9px;
-          font-weight: 700;
-          color: #374151;
-        }
-        
-        /* 태그 스타일 */
-        .category-tag {
-          display: inline-block;
-          background: rgba(255,255,255,0.3);
-          color: #92400e;
-          padding: 2px 4px;
-          border-radius: 8px;
-          font-size: 6px;
-          font-weight: 600;
-          margin: 1px;
-          border: 1px solid rgba(251, 191, 36, 0.4);
-          backdrop-filter: blur(3px);
-        }
-        
-        .category-tag-right {
-          display: inline-block;
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-          color: white;
-          padding: 2px 6px;
-          border-radius: 10px;
-          font-size: 7px;
-          font-weight: 600;
-          margin: 1px;
-          box-shadow: 0 1px 4px rgba(251, 191, 36, 0.3);
-        }
-        
-        /* 버튼 스타일 */
         .action-buttons {
           position: fixed;
-          top: 15px;
-          left: 15px;
+          top: 20px;
+          left: 20px;
           z-index: 1000;
           display: flex;
-          gap: 8px;
+          gap: 12px;
         }
         
         .btn {
-          padding: 8px 12px;
+          padding: 10px 16px;
           border-radius: 8px;
           font-weight: 700;
-          font-size: 11px;
+          font-size: 12px;
           border: none;
           cursor: pointer;
           transition: all 0.3s ease;
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
         }
         
         .btn-back {
-          background: rgba(0,0,0,0.7);
+          background: rgba(0,0,0,0.8);
           color: white;
           backdrop-filter: blur(10px);
         }
         
         .btn-back:hover {
-          background: rgba(0,0,0,0.8);
-          transform: translateY(-1px);
+          background: rgba(0,0,0,0.9);
+          transform: translateY(-2px);
         }
         
         .btn-print {
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-          color: white;
+          background: linear-gradient(135deg, #FCD34D, #F59E0B);
+          color: #374151;
         }
         
         .btn-print:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(252, 211, 77, 0.4);
         }
         
-        /* AI 분석 텍스트 */
-        .ai-analysis {
-          background: white;
-          border-radius: 8px;
-          padding: 8px;
-          font-size: 7px;
-          line-height: 1.4;
-          color: #374151;
-          border-left: 3px solid #fbbf24;
-          margin: 6px 0;
-          box-shadow: 0 2px 8px rgba(251, 191, 36, 0.15);
+        /* 모든 화면 크기에서 동일한 고정 스타일 강제 */
+        @media screen and (max-width: 1200px), 
+               screen and (max-height: 800px),
+               screen and (min-width: 1px) {
+          .notebook-container {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+            background: #F9FAFB !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          .notebook-wrapper {
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 800px !important;
+            height: 600px !important;
+            background: url('/background.svg') center center !important;
+            background-size: 800px 600px !important;
+            background-repeat: no-repeat !important;
+            border-radius: 16px !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+            overflow: hidden !important;
+            display: flex !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            min-width: 800px !important;
+            min-height: 600px !important;
+            max-width: 800px !important;
+            max-height: 600px !important;
+          }
+          
+          .notebook-element {
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: none !important;
+          }
+          
+          .image-area {
+            border: 2px dashed #EF4444 !important;
+            background: rgba(239, 68, 68, 0.1) !important;
+            border-radius: 8px !important;
+          }
         }
-        
-        /* 프린트용 숨김 */
-        .no-print {
-          display: block;
-        }
-        
+
         @media print {
           body {
-            margin: 0;
-            padding: 0;
             background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            width: 100vw !important;
+            height: 100vh !important;
           }
           
-          .report-container {
-            padding: 0;
-            min-height: auto;
+          .notebook-container {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            padding: 0 !important;
             background: white !important;
+            overflow: hidden !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            margin: 0 !important;
           }
           
-          .a5-page {
-            box-shadow: none;
-            border-radius: 0;
-            page-break-after: always;
-            border: none;
-          }
-          
-          .no-print {
+          .action-buttons {
             display: none !important;
           }
           
-          * {
+          .notebook-wrapper {
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 800px !important;
+            height: 600px !important;
+            background: url('/background.svg') center center !important;
+            background-size: 800px 600px !important;
+            background-repeat: no-repeat !important;
             -webkit-print-color-adjust: exact !important;
             color-adjust: exact !important;
+            box-shadow: none !important;
+            border-radius: 16px !important;
+            overflow: hidden !important;
+            display: flex !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            min-width: 800px !important;
+            min-height: 600px !important;
+            max-width: 800px !important;
+            max-height: 600px !important;
           }
-        }
-        
-        /* 반응형 조정 */
-        @media (max-width: 1200px) {
-          .a5-page {
-            transform: scale(0.8);
+          
+          .notebook-element {
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: none !important;
           }
-        }
-        
-        @media (max-width: 900px) {
-          .a5-page {
-            transform: scale(0.6);
+          
+          .image-area {
+            border: 2px dashed #EF4444 !important;
+            background: rgba(239, 68, 68, 0.1) !important;
+            border-radius: 8px !important;
+          }
+          
+          .content-container {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 800px !important;
+            height: 600px !important;
+            padding: 40px !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+            margin: 0 !important;
           }
         }
       `}</style>
 
-      <div className="report-container">
-        {/* 상단 버튼 (화면용) */}
-        <div className="action-buttons no-print">
-          <button 
-            onClick={() => window.history.back()}
-            className="btn btn-back"
-          >
-            ← 뒤로 가기
-          </button>
-          <button 
-            onClick={() => window.print()}
-            className="btn btn-print"
-          >
-            🖨️ 프린트하기
-          </button>
-        </div>
+      {/* 액션 버튼들 */}
+      <div className="action-buttons">
+        <button 
+          onClick={() => window.history.back()}
+          className="btn btn-back"
+        >
+          ← 뒤로 가기
+        </button>
+        <button 
+          onClick={() => window.print()}
+          className="btn btn-print"
+        >
+          🖨️ 프린트하기
+        </button>
+      </div>
 
-        {/* A5 고정 페이지 */}
-        <div className="a5-page">
-          {/* 왼쪽 섹션 - 최애 이미지 + AI 분석 */}
-          <div className="page-section left-section">
-            <div className="report-header">
-              <div className="brand-title">AC'SCENT</div>
-              <div className="report-subtitle">최애 이미지 분석 보고서</div>
+      {/* 배경 위에 컴포넌트들 배치 */}
+      <div className="notebook-container">
+        <div className="notebook-wrapper">
+          {/* 새로운 시스템으로 이미지 영역 배치 */}
+          <NotebookElement elementKey="image" className="image-area">
+            {session?.imageUrl ? (
+              <img 
+                src={session.imageUrl} 
+                alt="최애 이미지" 
+                className="main-image"
+              />
+            ) : (
+              <div className="image-placeholder">
+                🖼️
+              </div>
+            )}
+          </NotebookElement>
+          
+          {/* NAME 영역 */}
+          <NotebookElement elementKey="name">
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              height: '50%'
+            }}>
+              {/* NAME 라벨 말풍선 */}
+              <div style={{ 
+                background: 'white', 
+                borderRadius: '20px', 
+                padding: '2px 16px',
+                border: '2px solid #374151',
+                display: 'flex',
+                alignItems: 'center',
+                minWidth: '90px',
+                justifyContent: 'center'
+              }}>
+                <span style={{ 
+                  fontSize: '12px', 
+                  fontWeight: '700', 
+                  color: '#374151'
+                }}>NAME</span>
+              </div>
+              {/* 실제 이름 값 */}
+              <span style={{ 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                color: '#1F2937'
+              }}>
+                {session?.name || '김완빈'}
+              </span>
             </div>
+          </NotebookElement>
+          
+          {/* GENDER 영역 */}
+          <NotebookElement elementKey="gender">
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              height: '100%'
+            }}>
+              {/* GENDER 라벨 말풍선 */}
+              <div style={{ 
+                background: 'white', 
+                borderRadius: '15px', 
+                padding: '2px 43px',
+                border: '2px solid #374151',
+                display: 'flex',
+                alignItems: 'center',
+                minWidth: '60px',
+                justifyContent: 'center'
+              }}>
+                <span style={{ 
+                  fontSize: '12px', 
+                  fontWeight: '700', 
+                  color: '#374151'
+                }}>GENDER</span>
+              </div>
+              {/* 실제 성별 값 */}
+              <span style={{ 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                color: '#1F2937',
+                whiteSpace: 'nowrap',
+                display: 'inline-block'
+              }}>
+                {session?.gender || '남성'}
+              </span>
+            </div>
+          </NotebookElement>
+          
+          {/* KEYWORDS 영역 */}
+          <NotebookElement elementKey="keywords">
+            <div style={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              height: '100%'
+            }}>
+              {/* KEYWORDS 라벨 말풍선 */}
+              <div style={{ 
+                background: 'white', 
+                borderRadius: '15px', 
+                padding: '2px 10.5px',
+                border: '2px solid #374151',
+                display: 'flex',
+                alignItems: 'center',
+                width: 'fit-content',
+                justifyContent: 'center'
+              }}>
+                <span style={{ 
+                  fontSize: '12px', 
+                  fontWeight: '700', 
+                  color: '#374151'
+                }}>KEYWORDS</span>
+              </div>
+              {/* 키워드 클라우드 */}
+              <div style={{ 
+                flex: 1,
+                width: '100%',
+                height: '70px',
+                position: 'relative'
+              }}>
+                <KeywordCloud keywords={session?.keywords || ['활발함', '밝음', '청량함']} scattered={true} />
+              </div>
+            </div>
+          </NotebookElement>
 
-            {/* 최애 이미지 */}
-            <div className="idol-image-container">
-              {session?.imageUrl ? (
-                <img 
-                  src={session.imageUrl} 
-                  alt="최애 이미지" 
-                  className="idol-image"
+          {/* TRAIT CHART 영역 */}
+          <NotebookElement elementKey="traitChart">
+            <div style={{ 
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              {/* 분석 결과에서 traits 데이터 가져오기 */}
+              {sessionData?.analyses?.[0]?.traits ? (
+                <SimpleRadarChart 
+                  traits={sessionData.analyses[0].traits} 
+                  size={160}
                 />
               ) : (
-                <div className="image-placeholder">
-                  <div style={{ fontSize: '16px', marginBottom: '4px' }}>🖼️</div>
-                  <div style={{ fontSize: '7px', opacity: '0.7' }}>최애 이미지</div>
+                <div style={{ 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  color: '#6B7280'
+                }}>
+                  <span style={{ fontSize: '14px', fontWeight: '600' }}>특성 분석 데이터</span>
+                  <span style={{ fontSize: '12px' }}>분석 중...</span>
                 </div>
               )}
             </div>
+          </NotebookElement>
 
-            {/* 기본 정보 */}
-            <div className="info-card-left">
-              <div className="info-label-left">고객명</div>
-              <div className="info-value-left">{session?.customerName || '정보 없음'}</div>
-            </div>
-            
-            <div className="info-card-left">
-              <div className="info-label-left">분석 일시</div>
-              <div className="info-value-left">{formatDate(session?.createdAt || session?.updatedAt)}</div>
-            </div>
+          {/* FEATURES 영역 */}
+          <NotebookElement elementKey="features">
+            <div style={{ 
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '12px'
+            }}>
+              {/* FEATURE 헤더 */}
+              <div style={{
+                marginBottom: '1px',
+                textAlign: 'left'
+              }}>
+                <span style={{
+                  fontSize: '24px',
+                  fontWeight: '800',
+                  color: 'white',
+                  letterSpacing: '1px',
+                  WebkitTextStroke: '2px #374151'
+                } as React.CSSProperties}>FEATURE</span>
+              </div>
 
-            {/* 성격 특성 분석 */}
-            {session?.imageAnalysis?.traits && (
-              <>
-                <div className="section-title-left">성격 특성 분석</div>
-                <TraitsGrid traits={session.imageAnalysis.traits} />
-              </>
-            )}
+              {/* 상위 3개 특성 표시 */}
+              <div style={{
+                background: 'white',
+                border: '2px solid #374151',
+                borderRadius: '12px',
+                padding: '4px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}>
+                {sessionData?.analyses?.[0]?.traits ? (() => {
+                  // 특성 데이터에서 상위 3개 추출
+                  const traits = sessionData.analyses[0].traits;
+                  const traitNames: Record<string, string> = {
+                    sexy: '섹시함',
+                    cute: '귀여움',
+                    charisma: '카리스마',
+                    darkness: '다크함',
+                    freshness: '청량함',
+                    elegance: '우아함',
+                    freedom: '자유로움',
+                    luxury: '럭셔리함',
+                    purity: '순수함',
+                    uniqueness: '독특함'
+                  };
 
-            {/* 추천 향 카테고리 */}
-            {session?.imageAnalysis?.scentCategories && (
-              <>
-                <div className="section-title-left">추천 향 카테고리</div>
-                <div style={{ marginBottom: '15px' }}>
-                  {renderSafeArray(session.imageAnalysis.scentCategories)}
-                </div>
-              </>
-            )}
-          </div>
+                  const sortedTraits = Object.entries(traits)
+                    .map(([key, value]) => ({
+                      key,
+                      name: traitNames[key] || key,
+                      value: Number(value) || 0
+                    }))
+                    .sort((a, b) => b.value - a.value)
+                    .slice(0, 3);
 
-          {/* 오른쪽 섹션 - 향수 추천 및 결과 */}
-          <div className="page-section right-section">
-            <div className="report-header">
-              <div className="section-title-right">향수 추천 결과</div>
-            </div>
-
-            {/* 추천 향수 */}
-            {session?.imageAnalysis?.matchingPerfumes && (
-              <>
-                <div className="section-title-right">추천 향수</div>
-                {(() => {
-                  const perfumes = session.imageAnalysis.matchingPerfumes;
-                  
-                  try {
-                    // 배열인 경우
-                    if (Array.isArray(perfumes) && perfumes.length > 0) {
-                      return perfumes.slice(0, 1).map((perfume: any, index: number) => (
-                        <div key={index} className="perfume-card-new">
-                          <div className="perfume-name-new">{safeStringify(perfume?.name || '향수명 없음')}</div>
-                          <div className="perfume-description-new">{safeStringify(perfume?.description || '설명 없음')}</div>
-                          {perfume?.persona && typeof perfume.persona === 'object' && (
-                            <div style={{ fontSize: '7px', opacity: '0.8', marginTop: '4px' }}>
-                              {Object.entries(perfume.persona).slice(0, 3).map(([key, value]) => (
-                                <span key={key} style={{ marginRight: '6px' }}>
-                                  {key}: {safeStringify(value)}/10
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ));
-                    }
-                    
-                    // 객체인 경우 (단일 향수)
-                    if (typeof perfumes === 'object' && perfumes !== null) {
-                      return (
-                        <div className="perfume-card-new">
-                          <div className="perfume-name-new">{safeStringify(perfumes?.name || '향수명 없음')}</div>
-                          <div className="perfume-description-new">{safeStringify(perfumes?.description || '설명 없음')}</div>
-                        </div>
-                      );
-                    }
-                    
-                    return (
-                      <div className="perfume-card-new">
-                        <div className="perfume-name-new">추천 향수 정보 없음</div>
+                  return sortedTraits.map((trait, index) => (
+                    <div key={trait.key} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <div style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: '#374151',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <span style={{
+                          color: 'white',
+                          fontSize: '10px',
+                          fontWeight: '700'
+                        }}>{index + 1}</span>
                       </div>
-                    );
-                  } catch (error) {
-                    console.error('향수 렌더링 오류:', error);
-                    return (
-                      <div className="perfume-card-new">
-                        <div className="perfume-name-new">향수 렌더링 오류</div>
-                      </div>
-                    );
-                  }
-                })()}
-              </>
-            )}
-
-            {/* 고객 피드백 */}
-            {session?.feedback && (
-              <>
-                <div className="section-title-right">고객 피드백</div>
-                <div className="info-card-right">
-                  <div className="info-label-right">전체 평점</div>
-                  <div className="info-value-right">⭐ {session.feedback.overallRating || 'N/A'}/5</div>
-                </div>
-                {session.feedback.impression && (
-                  <div className="info-card-right">
-                    <div className="info-label-right">첫인상</div>
-                    <div className="info-value-right">{session.feedback.impression}</div>
+                      <span style={{
+                        fontSize: '13px',
+                        fontWeight: '900',
+                        color: '#374151'
+                      }}>{trait.name}</span>
+                    </div>
+                  ));
+                })() : (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    color: '#6B7280'
+                  }}>
+                    <span style={{ fontSize: '12px' }}>분석 중...</span>
                   </div>
                 )}
-              </>
-            )}
+              </div>
+            </div>
+          </NotebookElement>
 
-            {/* 맞춤 레시피 */}
-            {session?.improvedRecipe && (
-              <>
-                <div className="section-title-right">맞춤 레시피</div>
-                <div className="ai-analysis">
-                  {typeof session.improvedRecipe === 'object' 
-                    ? `${session.improvedRecipe.overallExplanation || '피드백을 반영한 맞춤형 향수 레시피가 생성되었습니다.'}`
-                    : session.improvedRecipe.toString().substring(0, 120) + '...'
-                  }
-                </div>
-              </>
-            )}
+          {/* COLOR TYPE 영역 */}
+          <NotebookElement elementKey="colorType">
+            <div style={{ 
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '12px'
+            }}>
+              {/* COLOR TYPE 헤더 */}
+              <div style={{
+                marginBottom: '1px',
+                textAlign: 'left'
+              }}>
+                <span style={{
+                  fontSize: '24px',
+                  fontWeight: '800',
+                  color: 'white',
+                  letterSpacing: '1px',
+                  WebkitTextStroke: '2px #374151',
+                  whiteSpace: 'nowrap'
+                } as React.CSSProperties}>COLOR TYPE</span>
+              </div>
 
-            {/* AI 전문가 분석 (캐시된 경우만) */}
-            {generatedReport && (
-              <>
-                <div className="section-title-right">전문가 추천 사유</div>
-                <div className="ai-analysis">
-                  {generatedReport.recommendationReason}
-                </div>
-                
-                <div className="section-title-right">개인 메시지</div>
-                <div className="ai-analysis" style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)', borderLeft: '4px solid #fbbf24' }}>
-                  💌 {generatedReport.personalMessage}
-                </div>
-              </>
-            )}
-
-            {/* 로딩 상태 (AI 보고서 생성 중) */}
-            {reportLoading && (
-              <div style={{ textAlign: 'center', margin: '12px 0', color: '#6b7280' }}>
-                <div style={{ fontSize: '8px', marginBottom: '4px' }}>
-                  AI 분석 보고서 생성 중...
-                </div>
-                <div style={{ 
-                  width: '100%', 
-                  height: '2px', 
-                  background: '#e5e7eb', 
-                  borderRadius: '1px',
-                  overflow: 'hidden'
+              {/* COLOR TYPE 내용 */}
+              <div style={{
+                background: 'white',
+                border: '2px solid #374151',
+                borderRadius: '12px',
+                padding: '8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0px'
+              }}>
+                {/* 컬러 타입 헤더 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
                 }}>
                   <div style={{
-                    width: '50%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
-                    borderRadius: '1px',
-                    animation: 'loading 2s ease-in-out infinite'
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FFC0CB',
+                    border: '1px solid #374151',
+                    flexShrink: 0
                   }}></div>
+                  <span style={{ 
+                    fontSize: '12px', 
+                    fontWeight: '700', 
+                    color: '#374151' 
+                  }}>SPRING LIGHT TYPE</span>
+                </div>
+                
+                {/* 컬러 타입 설명 */}
+                <div style={{
+                  textAlign: 'left',
+                  marginTop: '-1px',
+                  fontSize: '9px',
+                  color: '#374151',
+                  lineHeight: '1.4',
+                  letterSpacing: '-0.2px'
+                } as React.CSSProperties}>
+                  {/* 동적 데이터 사용 예시 */}
+                  {sessionData?.analyses?.[0]?.personalColor?.description || 
+                   '"봄 웜톤의 따스하고 부드러운 라이트 톤! 밝은 파스텔 핑크빛 스타일링이 찰떡궁합!"'}
                 </div>
               </div>
-            )}
+            </div>
+          </NotebookElement>
+
+          {/* COLOR PALETTE 영역 */}
+          <NotebookElement elementKey="colorPalette">
+            <div style={{ 
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '8px'
+            }}>
+              {/* 컬러 팔레트 */}
+              <div style={{
+                display: 'flex',
+                flexWrap: 'nowrap',
+                gap: '6px',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+                {/* 기본 컬러 팔레트 (분석 결과가 있으면 해당 데이터 사용) */}
+                {sessionData?.analyses?.[0]?.personalColor?.palette ? 
+                  sessionData.analyses[0].personalColor.palette.map((color: string, index: number) => (
+                    <div 
+                      key={index}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: color,
+                        border: '2px solid #374151',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                      title={color}
+                    />
+                  )) : 
+                  // 기본 팔레트
+                  ['#FFC0CB', '#FFFFFF', '#F3E5F5', '#F8BBD0', '#FCE4EC'].map((color, index) => (
+                    <div 
+                      key={index}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: color,
+                        border: '2px solid #374151',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                      title={color}
+                    />
+                  ))
+                }
+              </div>
+            </div>
+          </NotebookElement>
+
+                    {/* SCENT PROFILE 영역 - 오른쪽 페이지 */}
+          <NotebookElement elementKey="fragranceNotes">
+            <div style={{ 
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '12px'
+            }}>
+
+                
+              {/* 향수 노트들 */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+                flex: 1
+              }}>
+                {/* TOP NOTE */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div style={{
+                    background: 'white',
+                    border: '2px solid #374151',
+                    borderRadius: '20px',
+                    padding: '2px 8px',
+                    minWidth: '100px',
+                    textAlign: 'center'
+                  }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#374151'
+                    }}>TOP NOTE</span>
+                </div>
+                  <div style={{
+                    padding: '4px 12px',
+                    flex: 1
+                  }}>
+                    <span style={{
+                      fontSize: '22px',
+                      fontWeight: '900',
+                      color: '#fec700'
+                    }}>유자</span>
+                  </div>
+                </div>
+
+                {/* MIDDLE NOTE */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div style={{
+                    background: 'white',
+                    border: '2px solid #374151',
+                    borderRadius: '20px',
+                    padding: '2px 8px',
+                    minWidth: '100px',
+                    textAlign: 'center'
+                  }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#374151'
+                    }}>MIDDLE NOTE</span>
+                </div>
+                <div style={{ 
+                    padding: '4px 12px',
+                    flex: 1
+                  }}>
+                    <span style={{
+                      fontSize: '22px',
+                      fontWeight: '900',
+                      color: '#fec700'
+                    }}>로즈마리</span>
+                  </div>
+                </div>
+
+                {/* BASE NOTE */}
+                  <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div style={{
+                    background: 'white',
+                    border: '2px solid #374151',
+                    borderRadius: '20px',
+                    padding: '2px 8px',
+                    minWidth: '100px',
+                    textAlign: 'center'
+                  }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#374151'
+                    }}>BASE NOTE</span>
+                </div>
+                  <div style={{
+                    padding: '4px 12px',
+                    flex: 1
+                  }}>
+                    <span style={{
+                      fontSize: '22px',
+                      fontWeight: '900',
+                      color: '#fec700'
+                    }}>민트</span>
+              </div>
           </div>
+              </div>
+            </div>
+          </NotebookElement>
+
+          {/* 향료 그래프 영역 */}
+          <NotebookElement elementKey="scentChart">
+            <div style={{ 
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '12px'
+            }}>
+              {/* 향료 분석 결과 표시 */}
+              <ScentBarChart 
+                characteristics={
+                  sessionData?.analyses?.[0]?.fragranceCharacteristics || {
+                    citrus: 8,
+                    floral: 2,
+                    woody: 3,
+                    musk: 3,
+                    fruity: 6,
+                    spicy: 3
+                  }
+                } 
+              />
+            </div>
+          </NotebookElement>
+
+          {/* 계절/시간대 영역 */}
+          <NotebookElement elementKey="seasonTime">
+            <div style={{ 
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '34px 22px'
+            }}>
+              <SeasonTimeIcons />
+            </div>
+          </NotebookElement>
         </div>
       </div>
     </>

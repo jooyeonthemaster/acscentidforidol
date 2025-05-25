@@ -14,6 +14,36 @@ interface TestingRecipeSectionProps {
 }
 
 const TestingRecipeSection: React.FC<TestingRecipeSectionProps> = ({ recipe, feedback }) => {
+  // 최대공약수 구하기
+  const gcd = (a: number, b: number): number => {
+    return b === 0 ? a : gcd(b, a % b);
+  };
+
+  // 배열의 모든 수의 최대공약수 구하기
+  const gcdArray = (arr: number[]): number => {
+    return arr.reduce((acc, curr) => gcd(acc, curr));
+  };
+
+  // 방울 수를 약분하는 함수
+  const simplifyDrops = (granules: any[]) => {
+    if (!granules || granules.length === 0) return granules;
+    
+    // 모든 방울 수 추출
+    const drops = granules.map(g => g.drops);
+    
+    // 최대공약수 구하기
+    const commonDivisor = gcdArray(drops);
+    
+    // 최대공약수가 1이면 더 이상 약분할 수 없음
+    if (commonDivisor <= 1) return granules;
+    
+    // 각 방울 수를 최대공약수로 나누어 약분
+    return granules.map(granule => ({
+      ...granule,
+      drops: Math.round(granule.drops / commonDivisor)
+    }));
+  };
+
   if (!recipe || !recipe.testingRecipe || recipe.testingRecipe.granules.length === 0) {
     if (recipe?.isFinalRecipe && recipe.finalRecipeDetails) {
       // 100% 유지 시나리오: 테스팅 레시피 대신 최종 레시피 정보를 간략히 표시하거나 안내 문구
@@ -43,7 +73,10 @@ const TestingRecipeSection: React.FC<TestingRecipeSectionProps> = ({ recipe, fee
     );
   }
 
-  const { granules, instructions, purpose } = recipe.testingRecipe;
+  const { granules: originalGranules, instructions, purpose } = recipe.testingRecipe;
+  
+  // 방울 수를 약분해서 사용
+  const granules = simplifyDrops(originalGranules);
 
   return (
     <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200 shadow-lg">

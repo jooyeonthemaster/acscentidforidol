@@ -1877,5 +1877,149 @@
     "submittedAt": "2025-05-23T10:40:12.060Z",
     "id": "feedback_1747996812132_dluzu3p",
     "timestamp": "2025-05-23T10:40:12.132Z"
+  },
+  {
+    "perfumeId": "TM-2320461",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "decrease",
+      "floral": "decrease",
+      "woody": "increase",
+      "musky": "increase",
+      "fruity": "maintain",
+      "spicy": "increase"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      },
+      {
+        "id": "SD-2216141",
+        "name": "샌달우드",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-25T10:06:00.769Z",
+    "id": "feedback_1748167561270_fd1gk00",
+    "timestamp": "2025-05-25T10:06:01.270Z"
+  },
+  {
+    "perfumeId": "TL-2810221",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "decrease",
+      "woody": "increase",
+      "musky": "increase",
+      "fruity": "decrease",
+      "spicy": "maintain"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      },
+      {
+        "id": "SD-2216141",
+        "name": "샌달우드",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-25T10:13:11.234Z",
+    "id": "feedback_1748167991706_ivugo4l",
+    "timestamp": "2025-05-25T10:13:11.706Z"
+  },
+  {
+    "perfumeId": "TL-2810221",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "decrease",
+      "floral": "decrease",
+      "woody": "increase",
+      "musky": "maintain",
+      "fruity": "decrease",
+      "spicy": "increase"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      },
+      {
+        "id": "SW-1227171",
+        "name": "스모키 블렌드 우드",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-25T11:24:02.097Z",
+    "id": "feedback_1748172242167_y16h8os",
+    "timestamp": "2025-05-25T11:24:02.167Z"
+  },
+  {
+    "perfumeId": "TL-2810221",
+    "retentionPercentage": 80,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "decrease",
+      "woody": "increase",
+      "musky": "maintain",
+      "fruity": "increase",
+      "spicy": "increase"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "BG-8704231",
+        "name": "베르가못",
+        "ratio": 50,
+        "action": "add"
+      },
+      {
+        "id": "BK-2201281",
+        "name": "블랙베리",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-05-25T11:25:24.247Z",
+    "id": "feedback_1748172324324_rprle01",
+    "timestamp": "2025-05-25T11:25:24.324Z"
   }
 ]

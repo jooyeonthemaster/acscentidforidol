@@ -93,7 +93,7 @@ export default function FeedbackForm({
         </div>
         
         {/* 헤더 영역 */}
-        <div className="px-6 pt-6 pb-2">
+        <div className="px-2 pt-6 pb-2">
           <div className="flex items-center mb-2">
             <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center mr-3 text-xl text-white">
               ✨
@@ -121,7 +121,7 @@ export default function FeedbackForm({
 
         {/* 진행 상태 표시 (성공 상태가 아닐 때만) */}
         {!success && (
-          <div className="px-6 pb-4">
+          <div className="px-2 pb-4">
             <div className="flex justify-between mb-2 items-center">
               <span className="text-xs font-medium bg-orange-500 text-white py-1 px-2 rounded-full">
                 단계 {step}/{totalSteps}
@@ -145,7 +145,7 @@ export default function FeedbackForm({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg shadow-sm flex items-start"
+            className="mx-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg shadow-sm flex items-start"
           >
             <div className="shrink-0 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center mr-2 mt-0.5">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="white" className="w-4 h-4">
@@ -157,7 +157,7 @@ export default function FeedbackForm({
         )}
 
         {/* 폼 내용 영역 */}
-        <div className="px-6 pb-6">
+        <div className="px-2 pb-6">
           {/* 성공 메시지 & 커스터마이제이션 결과 */}
           {success ? (
             <SuccessView 
