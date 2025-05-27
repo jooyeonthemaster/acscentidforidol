@@ -9,6 +9,7 @@ import IdolImageUpload from '../IdolImageUpload';
 interface IdolInfo {
   userPhone: string;
   name: string;
+  gender: string;
   style: string[];
   personality: string[];
   charms: string;
@@ -24,6 +25,7 @@ export default function IdolInfoForm() {
   const [idolInfo, setIdolInfo] = useState<IdolInfo>({
     userPhone: '',
     name: '',
+    gender: '',
     style: [],
     personality: [],
     charms: '',
@@ -59,7 +61,7 @@ export default function IdolInfoForm() {
   ];
 
   // 입력값 변경 핸들러
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setIdolInfo(prev => ({ ...prev, [name]: value }));
   };
@@ -168,6 +170,10 @@ export default function IdolInfoForm() {
         alert('최애의 이름을 입력해주세요.');
         return;
       }
+      if (!idolInfo.gender) {
+        alert('성별을 선택해주세요.');
+        return;
+      }
       // 전화번호 형식 간단 검증 (숫자와 하이픈만 허용)
       const phoneRegex = /^[0-9-]+$/;
       if (!phoneRegex.test(idolInfo.userPhone)) {
@@ -213,6 +219,7 @@ export default function IdolInfoForm() {
       formData.append('sessionId', sessionId);
       
       formData.append('idolName', idolInfo.name);
+      formData.append('idolGender', idolInfo.gender);
       
       // 배열 데이터는 여러 개의 동일한 이름으로 추가
       idolInfo.style.forEach(style => {
@@ -528,6 +535,24 @@ export default function IdolInfoForm() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-900 placeholder-gray-500"
                   required
                 />
+              </div>
+
+              <div>
+                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+                  성별 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="gender"
+                  name="gender"
+                  value={idolInfo.gender}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-900"
+                  required
+                >
+                  <option value="">성별을 선택해주세요</option>
+                  <option value="남성">남성</option>
+                  <option value="여성">여성</option>
+                </select>
               </div>
               
             </div>

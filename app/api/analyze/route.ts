@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     
     // 아이돌 정보 추출
     const idolName = formData.get('idolName') as string || '정보 없음';
+    const idolGender = formData.get('idolGender') as string || '';
     const idolStyle = formData.get('idolStyle') as string || '';
     const idolPersonality = formData.get('idolPersonality') as string || '';
     const idolCharms = formData.get('idolCharms') as string || '';
@@ -53,8 +54,8 @@ export async function POST(request: NextRequest) {
     const imageBase64 = Buffer.from(imageBuffer).toString('base64');
     console.log(`이미지 변환 시작: ${imageFile.name} ${imageFile.type} ${imageFile.size}`);
     
-    // 이미지 URL 생성 (실제 환경에서는 Firebase Storage 등에 업로드)
-    const imageUrl = `data:${imageFile.type};base64,${imageBase64.substring(0, 100)}...`; // 임시 URL
+    // 이미지 URL 생성 (전체 base64 데이터 사용)
+    const imageUrl = `data:${imageFile.type};base64,${imageBase64}`;
     console.log('이미지 URL 생성 완료');
     
     // Gemini API를 이용한 이미지 분석
@@ -129,7 +130,16 @@ export async function POST(request: NextRequest) {
     // Firebase에 이미지 분석 결과 및 이미지 링크 저장
     if (userId && sessionId) {
       try {
-        await saveImageAnalysisWithLink(userId, sessionId, analysisResult, imageUrl);
+        // 세션에 추가 정보 포함
+        const sessionData = {
+          ...analysisResult,
+          name: idolName,
+          gender: idolGender,
+          style: idolStyle.split(',').map(s => s.trim()),
+          personality: idolPersonality.split(',').map(s => s.trim()),
+          charms: idolCharms
+        };
+        await saveImageAnalysisWithLink(userId, sessionId, sessionData, imageUrl);
         console.log('Firebase에 이미지 분석 결과 저장 완료');
       } catch (firebaseError) {
         console.error('Firebase 저장 오류:', firebaseError);

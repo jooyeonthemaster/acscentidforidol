@@ -228,6 +228,44 @@ export default function ReportPage() {
 
   // 계절/시간 아이콘 컴포넌트
   const SeasonTimeIcons = () => {
+    // 실제 데이터에서 주요 카테고리 추출
+    const getMainCategory = () => {
+      const characteristics = sessionData?.analyses?.[0]?.scentCategories || 
+                             sessionData?.analyses?.[0]?.fragranceCharacteristics;
+      if (!characteristics) return 'citrus'; // 기본값
+      
+      const entries = Object.entries(characteristics);
+      const sorted = entries.sort(([, a], [, b]) => (b as number) - (a as number));
+      return sorted[0]?.[0] || 'citrus';
+    };
+
+    const mainCategory = getMainCategory();
+
+    // 계절 추천 로직
+    const getSeasonRecommendation = () => {
+      if (mainCategory === 'citrus' || mainCategory === 'fruity') {
+        return ['봄', '여름'];
+      } else if (mainCategory === 'woody' || mainCategory === 'spicy') {
+        return ['가을', '겨울'];
+      } else {
+        return ['봄', '여름', '가을', '겨울'];
+      }
+    };
+
+    // 시간대 추천 로직
+    const getTimeRecommendation = () => {
+      if (mainCategory === 'citrus' || mainCategory === 'fruity') {
+        return ['오전', '오후'];
+      } else if (mainCategory === 'woody' || mainCategory === 'musky') {
+        return ['저녁', '밤'];
+      } else {
+        return ['오전', '오후', '저녁', '밤'];
+      }
+    };
+
+    const seasonRecommendation = getSeasonRecommendation();
+    const timeRecommendation = getTimeRecommendation();
+
     return (
       <div style={{ display: 'flex', gap: '16px', marginTop: '0px' }}>
         <div>
@@ -252,62 +290,27 @@ export default function ReportPage() {
             gap: '0px',
             justifyContent: 'center'
           }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                background: '#FEF3E2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                marginBottom: '4px'
-              }}>🌸</div>
-              <div style={{ fontSize: '8px', color: '#6B7280' }}>봄</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                background: '#374151',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                marginBottom: '4px'
-              }}>☀️</div>
-              <div style={{ fontSize: '8px', color: '#6B7280' }}>여름</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                background: '#F3F4F6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                marginBottom: '4px'
-              }}>🍂</div>
-              <div style={{ fontSize: '8px', color: '#6B7280' }}>가을</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                background: '#F3F4F6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                marginBottom: '4px'
-              }}>❄️</div>
-              <div style={{ fontSize: '8px', color: '#6B7280' }}>겨울</div>
-            </div>
+            {['봄', '여름', '가을', '겨울'].map((season, idx) => {
+              const isRecommended = seasonRecommendation.includes(season);
+              const emojis = ['🌸', '☀️', '🍂', '❄️'];
+              
+              return (
+                <div key={season} style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    width: '32px', 
+                    height: '32px', 
+                    borderRadius: '50%', 
+                    background: isRecommended ? '#374151' : '#F3F4F6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    marginBottom: '4px'
+                  }}>{emojis[idx]}</div>
+                  <div style={{ fontSize: '8px', color: '#6B7280' }}>{season}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
         
@@ -333,62 +336,27 @@ export default function ReportPage() {
             gap: '0px',
             justifyContent: 'center'
           }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                background: '#374151',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                marginBottom: '4px'
-              }}>🌅</div>
-              <div style={{ fontSize: '8px', color: '#6B7280' }}>오전</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                background: '#374151',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                marginBottom: '4px'
-              }}>☀️</div>
-              <div style={{ fontSize: '8px', color: '#6B7280' }}>오후</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                background: '#F3F4F6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                marginBottom: '4px'
-              }}>🌆</div>
-              <div style={{ fontSize: '8px', color: '#6B7280' }}>저녁</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                background: '#F3F4F6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                marginBottom: '4px'
-              }}>🌙</div>
-              <div style={{ fontSize: '8px', color: '#6B7280' }}>밤</div>
-            </div>
+            {['오전', '오후', '저녁', '밤'].map((time, idx) => {
+              const isRecommended = timeRecommendation.includes(time);
+              const emojis = ['🌅', '☀️', '🌆', '🌙'];
+              
+              return (
+                <div key={time} style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    width: '32px', 
+                    height: '32px', 
+                    borderRadius: '50%', 
+                    background: isRecommended ? '#374151' : '#F3F4F6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    marginBottom: '4px'
+                  }}>{emojis[idx]}</div>
+                  <div style={{ fontSize: '8px', color: '#6B7280' }}>{time}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -789,7 +757,7 @@ export default function ReportPage() {
                 fontWeight: '600', 
                 color: '#1F2937'
               }}>
-                {session?.name || '김완빈'}
+                {sessionData?.analyses?.[0]?.name || session?.name || '김완빈'}
               </span>
             </div>
           </NotebookElement>
@@ -827,7 +795,7 @@ export default function ReportPage() {
                 whiteSpace: 'nowrap',
                 display: 'inline-block'
               }}>
-                {session?.gender || '남성'}
+                {sessionData?.analyses?.[0]?.gender || session?.gender || '남성'}
               </span>
             </div>
           </NotebookElement>
@@ -864,7 +832,7 @@ export default function ReportPage() {
                 height: '70px',
                 position: 'relative'
               }}>
-                <KeywordCloud keywords={session?.keywords || ['활발함', '밝음', '청량함']} scattered={true} />
+                <KeywordCloud keywords={sessionData?.analyses?.[0]?.matchingKeywords || session?.keywords || ['활발함', '밝음', '청량함']} scattered={true} />
               </div>
             </div>
           </NotebookElement>
@@ -1047,15 +1015,23 @@ export default function ReportPage() {
                     width: '16px',
                     height: '16px',
                     borderRadius: '50%',
-                    backgroundColor: '#FFC0CB',
+                    backgroundColor: sessionData?.analyses?.[0]?.personalColor?.palette?.[0] || '#FFC0CB',
                     border: '1px solid #374151',
                     flexShrink: 0
                   }}></div>
                   <span style={{ 
-                    fontSize: '12px', 
+                    fontSize: '10px', 
                     fontWeight: '700', 
-                    color: '#374151' 
-                  }}>SPRING LIGHT TYPE</span>
+                    color: '#374151',
+                    lineHeight: '1.2',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {sessionData?.analyses?.[0]?.personalColor?.season && sessionData?.analyses?.[0]?.personalColor?.tone
+                      ? `${sessionData.analyses[0].personalColor.season.toUpperCase()} ${sessionData.analyses[0].personalColor.tone.toUpperCase()}`
+                      : 'SPRING LIGHT'}
+                  </span>
                 </div>
                 
                 {/* 컬러 타입 설명 */}
@@ -1175,7 +1151,11 @@ export default function ReportPage() {
                       fontSize: '22px',
                       fontWeight: '900',
                       color: '#fec700'
-                    }}>유자</span>
+                    }}>
+                      {sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.mainScent?.name || 
+                       sessionData?.confirmed?.[0]?.mainScent?.name || 
+                       '유자'}
+                    </span>
                   </div>
                 </div>
 
@@ -1207,7 +1187,11 @@ export default function ReportPage() {
                       fontSize: '22px',
                       fontWeight: '900',
                       color: '#fec700'
-                    }}>로즈마리</span>
+                    }}>
+                      {sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.subScent1?.name || 
+                       sessionData?.confirmed?.[0]?.subScent1?.name || 
+                       '로즈마리'}
+                    </span>
                   </div>
                 </div>
 
@@ -1239,7 +1223,11 @@ export default function ReportPage() {
                       fontSize: '22px',
                       fontWeight: '900',
                       color: '#fec700'
-                    }}>민트</span>
+                    }}>
+                      {sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.subScent2?.name || 
+                       sessionData?.confirmed?.[0]?.subScent2?.name || 
+                       '민트'}
+                    </span>
               </div>
           </div>
               </div>
@@ -1258,6 +1246,7 @@ export default function ReportPage() {
               {/* 향료 분석 결과 표시 */}
               <ScentBarChart 
                 characteristics={
+                  sessionData?.analyses?.[0]?.scentCategories || 
                   sessionData?.analyses?.[0]?.fragranceCharacteristics || {
                     citrus: 8,
                     floral: 2,
