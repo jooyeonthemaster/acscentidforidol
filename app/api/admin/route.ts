@@ -40,12 +40,9 @@ export async function GET() {
             updatedAtType: typeof session.updatedAt
           });
           
-          // 전화번호 포맷팅 (하이픈 추가)
-          const formatPhone = (phone: string): string => {
-            if (phone && phone.length === 11) {
-              return `${phone.slice(0, 3)}-${phone.slice(3, 7)}-${phone.slice(7)}`;
-            }
-            return phone || '';
+          // 비밀번호 포맷팅 (4자리 숫자)
+          const formatPassword = (password: string): string => {
+            return password || ''; // 관리자 페이지에서는 비밀번호를 그대로 표시
           };
           
           // 안전한 최애 이름 추출
@@ -63,7 +60,7 @@ export async function GET() {
           sessionsList.push({
             userId: userId,
             sessionId: sessionId,
-            phoneNumber: formatPhone(userId),
+            phoneNumber: formatPassword(userId),
             createdAt: effectiveCreatedAt,
             updatedAt: session.updatedAt || effectiveCreatedAt,
             status: session.status || 'unknown',
@@ -129,18 +126,15 @@ export async function POST(request: NextRequest) {
     
     const sessionData = await getSessionFullData(userId, sessionId);
     
-    // 전화번호 포맷팅
-    const formatPhone = (phone: string): string => {
-      if (phone && phone.length === 11) {
-        return `${phone.slice(0, 3)}-${phone.slice(3, 7)}-${phone.slice(7)}`;
-      }
-      return phone || '';
+    // 비밀번호 포맷팅
+    const formatPassword = (password: string): string => {
+      return password || ''; // 관리자 페이지에서는 비밀번호를 그대로 표시
     };
     
-    // 응답 데이터에 포맷된 전화번호 추가
+    // 응답 데이터에 포맷된 비밀번호 추가
     const responseData = {
       ...sessionData,
-      formattedPhone: formatPhone(userId),
+      formattedPhone: formatPassword(userId),
       userId: userId,
       sessionId: sessionId
     };

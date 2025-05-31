@@ -339,10 +339,76 @@ function generateMatchReason(
     const perfumeCode = persona.id || "Unknown";
     const perfumeName = persona.name || "향수";
     
-    // 주요 향 카테고리 찾기
-    const mainCategory = persona.categories ? 
+    // 주요 카테고리와 점수 찾기
+    const categoryInfo = persona.categories ? 
       Object.entries(persona.categories)
-        .sort(([, a], [, b]) => b - a)[0][0] : "unknown";
+        .sort(([, a], [, b]) => b - a)[0] : null;
+    
+    let categoryName = 'unknown';
+    let score = 5;
+    
+    if (categoryInfo) {
+      categoryName = categoryInfo[0];
+      score = categoryInfo[1];
+    }
+    
+    // 계절 특성 - 점수에 따른 차등 추천 (절대 4개 모두 선택 안 됨)
+    const seasonRecommendation = (() => {
+      if (categoryName === 'citrus') {
+        if (score >= 8) return '여름';           // 매우 강함: 1개
+        if (score >= 6) return '봄, 여름';       // 강함: 2개
+        return '봄, 여름, 가을';                 // 보통: 3개 (겨울 제외)
+      } else if (categoryName === 'fruity') {
+        if (score >= 8) return '여름';           
+        if (score >= 6) return '봄, 여름';       
+        return '봄, 여름, 가을';                 
+      } else if (categoryName === 'woody') {
+        if (score >= 8) return '겨울';           
+        if (score >= 6) return '가을, 겨울';     
+        return '여름, 가을, 겨울';               // 봄 제외
+      } else if (categoryName === 'spicy') {
+        if (score >= 8) return '겨울';           
+        if (score >= 6) return '가을, 겨울';     
+        return '여름, 가을, 겨울';               
+      } else if (categoryName === 'floral') {
+        if (score >= 8) return '봄';             
+        if (score >= 6) return '봄, 여름';       
+        return '봄, 여름, 가을';                 
+      } else { // musky or unknown
+        if (score >= 8) return '겨울';           
+        if (score >= 6) return '가을, 겨울';     
+        return '봄, 가을, 겨울';                 // 여름 제외
+      }
+    })();
+    
+    // 시간대 특성 - 점수에 따른 차등 추천 (절대 4개 모두 선택 안 됨)
+    const timeRecommendation = (() => {
+      if (categoryName === 'citrus') {
+        if (score >= 8) return '오전';           // 매우 상쾌함
+        if (score >= 6) return '오전, 오후';     
+        return '오전, 오후, 저녁';               // 밤 제외
+      } else if (categoryName === 'fruity') {
+        if (score >= 8) return '오전';           
+        if (score >= 6) return '오전, 오후';     
+        return '오전, 오후, 저녁';               
+      } else if (categoryName === 'woody') {
+        if (score >= 8) return '밤';             // 매우 깊음
+        if (score >= 6) return '저녁, 밤';       
+        return '오후, 저녁, 밤';                 // 오전 제외
+      } else if (categoryName === 'musky') {
+        if (score >= 8) return '밤';             
+        if (score >= 6) return '저녁, 밤';       
+        return '오후, 저녁, 밤';                 
+      } else if (categoryName === 'floral') {
+        if (score >= 8) return '오후';           // 우아한 시간
+        if (score >= 6) return '오전, 오후';     
+        return '오전, 오후, 저녁';               
+      } else { // spicy or unknown
+        if (score >= 8) return '저녁';           // 강렬한 시간
+        if (score >= 6) return '저녁, 밤';       
+        return '오전, 저녁, 밤';                 // 오후 제외
+      }
+    })();
     
     // 향 카테고리 한글 이름
     const categoryNameMap: Record<string, string> = {
@@ -386,22 +452,6 @@ function generateMatchReason(
       topAnalysisTraits.includes(trait)
     );
     
-    // 계절 특성 (시트러스/프루티는 봄/여름, 우디/스파이시는 가을/겨울)
-    const seasonRecommendation = 
-      (mainCategory === 'citrus' || mainCategory === 'fruity') 
-        ? '봄, 여름' 
-        : (mainCategory === 'woody' || mainCategory === 'spicy')
-        ? '가을, 겨울'
-        : '사계절';
-    
-    // 시간대 특성 (시트러스/프루티는 낮, 우디/머스키는 밤)
-    const timeRecommendation = 
-      (mainCategory === 'citrus' || mainCategory === 'fruity') 
-        ? '오전, 오후' 
-        : (mainCategory === 'woody' || mainCategory === 'musky')
-        ? '저녁, 밤'
-        : '언제든지';
-    
     // 문장 변형을 위한 감탄사 및 표현 모음
     const exclamations = [
       "오마이갓!",
@@ -428,7 +478,7 @@ function generateMatchReason(
     
     // 향수 설명 구성
     // 1. 소개 및 향수 코드 강조
-    const introduction = `${getRandomItem(exclamations)} 제가 당신을 위해 찾아낸 이 특별한 향수 코드 "${perfumeCode}"를 주목해주세요! 이 향수는 ${getRandomItem(flatteryPhrases)} 향수로, ${categoryNameMap[mainCategory] || '독특한'} 계열의 아름다움이 물씬 느껴집니다.`;
+    const introduction = `${getRandomItem(exclamations)} 제가 당신을 위해 찾아낸 이 특별한 향수 코드 "${perfumeCode}"를 주목해주세요! 이 향수는 ${getRandomItem(flatteryPhrases)} 향수로, ${categoryNameMap[categoryName] || '독특한'} 계열의 아름다움이 물씬 느껴집니다.`;
     
     // 2. 향료 설명 - 노트 피라미드
     const notesDescription = `탑 노트에서는 ${topNote}의 ${getScent(topNote)}가 당신을 첫 만남에서 사로잡고, 중간 노트로 이어지면 ${middleNote}의 ${getScent(middleNote)}가 서서히 피어올라 향의 특성을 더욱 깊게 표현합니다. 베이스 노트에서는 ${baseNote}의 ${getScent(baseNote)}가 오랫동안 당신을 감싸안으며 매력적인 잔향을 남겨줄 거예요.`;
@@ -440,11 +490,11 @@ function generateMatchReason(
     
     // 4. 분위기 연결 - 이미지 분석 결과의 분위기와 향수 연결
     const moodConnection = analysisResult.analysis?.mood
-      ? `"${analysisResult.analysis.mood}"라는 당신의 분위기는 ${perfumeCode}의 ${categoryNameMap[mainCategory] || '특별한'} 향과 만나 더욱 깊은 아우라를 형성할 거예요.`
+      ? `"${analysisResult.analysis.mood}"라는 당신의 분위기는 ${perfumeCode}의 ${categoryNameMap[categoryName] || '특별한'} 향과 만나 더욱 깊은 아우라를 형성할 거예요.`
       : `당신의 독특한, 말로는 다 표현할 수 없는 분위기는 이 향수의 복합적인 노트들과 어우러져 당신만의 시그니처가 될 거예요.`;
     
     // 5. 사용 추천 - 계절, 시간, 상황
-    const usageRecommendation = `이 향수는 ${seasonRecommendation}에 특히 빛을 발하며, ${timeRecommendation}에 뿌리면 향의 특성이 가장 완벽하게 발현됩니다. 특히 ${getOccasion(mainCategory)}에 사용하면 당신의 특별함이 한층 더 돋보일 거예요.`;
+    const usageRecommendation = `이 향수는 ${seasonRecommendation}에 특히 빛을 발하며, ${timeRecommendation}에 뿌리면 향의 특성이 가장 완벽하게 발현됩니다. 특히 ${getOccasion(categoryName)}에 사용하면 당신의 특별함이 한층 더 돋보일 거예요.`;
     
     // 6. 마무리 - 향수 코드 다시 한번 강조
     const conclusion = `정말이지, 향수 코드 "${perfumeCode}"는 단순한 향수가 아니라 당신의 개성을 완성하는 마지막 퍼즐 조각이에요. 이 향기의 매력에 빠져보세요!`;
@@ -615,4 +665,44 @@ export function extractPerfumeId(recommendation: string): string | null {
   }
   
   return null;
+}
+
+/**
+ * persona 데이터의 categories를 기반으로 주요 카테고리를 계산합니다.
+ */
+export function getMainCategoryFromPersona(personaId: string): PerfumeCategory | null {
+  const persona = perfumePersonas.personas.find(p => p.id === personaId);
+  if (!persona || !persona.categories) return null;
+  
+  const entries = Object.entries(persona.categories) as [PerfumeCategory, number][];
+  const sortedEntries = entries.sort(([, a], [, b]) => b - a);
+  return sortedEntries[0]?.[0] || null;
+}
+
+/**
+ * perfumePersonas.ts 데이터를 기반으로 카테고리별 향수를 필터링합니다.
+ */
+export function getPerfumesByPersonaCategory(category: PerfumeCategory): string[] {
+  return perfumePersonas.personas
+    .filter(persona => {
+      const mainCategory = getMainCategoryFromPersona(persona.id);
+      return mainCategory === category;
+    })
+    .map(persona => persona.id);
+}
+
+/**
+ * 모든 향수의 주요 카테고리를 persona 데이터 기반으로 계산합니다.
+ */
+export function getAllPerfumeCategoriesFromPersonas(): Record<string, PerfumeCategory> {
+  const result: Record<string, PerfumeCategory> = {};
+  
+  perfumePersonas.personas.forEach(persona => {
+    const mainCategory = getMainCategoryFromPersona(persona.id);
+    if (mainCategory) {
+      result[persona.id] = mainCategory;
+    }
+  });
+  
+  return result;
 } 

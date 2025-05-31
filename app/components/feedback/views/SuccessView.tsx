@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Radar, Doughnut } from 'react-chartjs-2';
-import { GeminiPerfumeSuggestion, PerfumeFeedback, PerfumePersona, CategoryDataPoint, TestingGranule } from '@/app/types/perfume';
+import { GeminiPerfumeSuggestion, PerfumeFeedback, PerfumePersona, CategoryDataPoint, TestingGranule, RecipeHistoryItem } from '@/app/types/perfume';
 import { CHARACTERISTIC_NAMES } from '../constants/characteristics';
 import { characteristicToSliderValue } from '../constants/characteristics';
 import { formatScentCode, formatScentDisplay, findScentNameById, findScentIdByName } from '../utils/formatters';
@@ -14,6 +14,7 @@ import GranuleIcon from '../components/GranuleIcon';
 import ScentInfoToggle from '../components/ScentInfoToggle';
 import TestingRecipeSection from '../components/TestingRecipeSection';
 import CategoryChangeRadar from '../components/CategoryChangeRadar';
+import RecipeHistory from '../../RecipeHistory';
 
 interface SuccessViewProps {
   feedback: PerfumeFeedback;
@@ -22,6 +23,8 @@ interface SuccessViewProps {
   customizationLoading: boolean;
   onClose: () => void;
   onResetForm?: () => void;
+  userId?: string;
+  sessionId?: string;
 }
 
 interface ConfirmedRecipeDetail {
@@ -37,11 +40,15 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
   originalPerfume,
   customizationLoading, 
   onClose, 
-  onResetForm
+  onResetForm,
+  userId,
+  sessionId
 }) => {
   const [isRecipeConfirmed, setIsRecipeConfirmed] = useState(false);
   const [confirmedRecipeDetails, setConfirmedRecipeDetails] = useState<ConfirmedRecipeDetail[]>([]);
   const [showCategoryChanges, setShowCategoryChanges] = useState(false);
+  const [showRecipeHistory, setShowRecipeHistory] = useState(false);
+  const [currentRecipe, setCurrentRecipe] = useState<RecipeHistoryItem | undefined>(undefined);
 
   const handleConfirmRecipe = () => {
     if (recipe?.testingRecipe?.granules) {
@@ -90,6 +97,18 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
       borderWidth: 1,
       borderRadius: 5,
     }]
+  };
+
+  // 레시피 선택 핸들러
+  const handleRecipeSelect = (recipe: RecipeHistoryItem) => {
+    console.log('레시피 선택됨:', recipe);
+  };
+
+  // 레시피 활성화 핸들러
+  const handleRecipeActivate = (recipe: RecipeHistoryItem) => {
+    setCurrentRecipe(recipe);
+    setShowRecipeHistory(false);
+    alert(`${recipe.originalPerfumeName || '레시피'}가 활성화되었습니다!`);
   };
 
   if (isRecipeConfirmed) {
@@ -220,6 +239,7 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
   }
 
   return (
+    <>
     <div className="py-5 flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
       <div className="relative flex flex-col items-center mx-auto mb-8">
         <motion.div
@@ -486,6 +506,17 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
             <motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => setShowRecipeHistory(true)}
+              className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl shadow-xl border border-white/20 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 flex items-center justify-center font-medium"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              📚 이전 레시피 보기
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
               onClick={onResetForm}
               className="w-full px-6 py-4 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-2xl shadow-xl border border-white/20 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 flex items-center justify-center font-medium"
             >
@@ -541,5 +572,60 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
         </div>
       )}
     </div>
+
+    {/* 레시피 히스토리 모달 */}
+    {showRecipeHistory && userId && sessionId && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.3 }}
+          className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+        >
+          {/* 모달 헤더 */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+            <h3 className="text-xl font-bold text-gray-800 flex items-center">
+              <span className="text-2xl mr-3">📚</span>
+              이전 레시피 히스토리
+            </h3>
+            <button
+              onClick={() => setShowRecipeHistory(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 모달 내용 */}
+          <div className="p-6 overflow-y-auto max-h-[60vh]">
+            {/* 현재 활성화된 레시피 표시 */}
+            {currentRecipe && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h4 className="font-medium text-green-800 mb-2">🎯 현재 활성화된 레시피</h4>
+                <p className="text-sm text-green-700">
+                  <strong>{currentRecipe.originalPerfumeName || '이전 레시피'}</strong>
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  {currentRecipe.testingRecipe?.granules?.length || 0}개 향료 조합
+                </p>
+              </div>
+            )}
+
+            <RecipeHistory
+              userId={userId!}
+              sessionId={sessionId!}
+              currentRecipe={currentRecipe}
+              onRecipeSelect={handleRecipeSelect}
+              onRecipeActivate={handleRecipeActivate}
+              className="max-h-full"
+            />
+          </div>
+        </motion.div>
+      </div>
+    )}
+    </>
   );
 };

@@ -82,12 +82,12 @@ const perfumePersonas: PerfumePersonaCollection = {
         uniqueness: 6
       },
       categories: {
-        citrus: 3,
+        citrus: 4,
         floral: 6,
-        woody: 1,
-        musky: 2,
-        fruity: 10,
-        spicy: 0
+        woody: 2,
+        musky: 3,
+        fruity: 8,
+        spicy: 1
       },
       keywords: ["애교", "달콤함", "귀여움", "파스텔", "발랄함"],
       imageAssociations: ["핑크 드레스", "달콤한 디저트", "반짝이는 액세서리"],
@@ -112,12 +112,12 @@ const perfumePersonas: PerfumePersonaCollection = {
         uniqueness: 7
       },
       categories: {
-        citrus: 9,
-        floral: 4,
+        citrus: 8,
+        floral: 7,
         woody: 3,
-        musky: 2,
-        fruity: 5,
-        spicy: 3
+        musky: 4,
+        fruity: 6,
+        spicy: 1
       },
       keywords: ["우아함", "품격", "여유", "지중해", "세련됨"],
       imageAssociations: ["샴페인 글라스", "리넨 정장", "요트 위의 석양"],
@@ -143,10 +143,10 @@ const perfumePersonas: PerfumePersonaCollection = {
       },
       categories: {
         citrus: 7,
-        floral: 2,
-        woody: 4,
-        musky: 5,
-        fruity: 6,
+        floral: 3,
+        woody: 6,
+        musky: 3,
+        fruity: 4,
         spicy: 8
       },
       keywords: ["카리스마", "강렬함", "압도적", "마피아 보스", "포스"],
@@ -172,11 +172,11 @@ const perfumePersonas: PerfumePersonaCollection = {
         uniqueness: 7
       },
       categories: {
-        citrus: 6,
-        floral: 4,
+        citrus: 4,
+        floral: 7,
         woody: 2,
-        musky: 1,
-        fruity: 5,
+        musky: 4,
+        fruity: 3,
         spicy: 2
       },
       keywords: ["자연주의", "웰니스", "맑은", "명상", "건강"],
@@ -322,11 +322,11 @@ const perfumePersonas: PerfumePersonaCollection = {
         uniqueness: 8
       },
       categories: {
-        citrus: 8,
-        floral: 3,
+        citrus: 7,
+        floral: 2,
         woody: 4,
         musky: 2,
-        fruity: 7,
+        fruity: 6,
         spicy: 4
       },
       keywords: ["여유로움", "쿨함", "자유", "휴양지", "청량감"],
@@ -354,9 +354,9 @@ const perfumePersonas: PerfumePersonaCollection = {
       categories: {
         citrus: 2,
         floral: 8,
-        woody: 3,
+        woody: 5,
         musky: 6,
-        fruity: 3,
+        fruity: 6,
         spicy: 1
       },
       keywords: ["섬세함", "조용함", "우아함", "예술적", "청초함"],
@@ -385,8 +385,8 @@ const perfumePersonas: PerfumePersonaCollection = {
         citrus: 8,
         floral: 2,
         woody: 3,
-        musky: 3,
-        fruity: 6,
+        musky: 6,
+        fruity: 4,
         spicy: 3
       },
       keywords: ["활기참", "건강", "에너지", "생기", "청량함"],
@@ -417,7 +417,7 @@ const perfumePersonas: PerfumePersonaCollection = {
         woody: 6,
         musky: 3,
         fruity: 4,
-        spicy: 8
+        spicy: 7
       },
       keywords: ["완벽주의", "청량함", "깔끔함", "정리정돈", "상쾌함"],
       imageAssociations: ["미니멀 인테리어", "정돈된 책상", "화이트 시트"],
@@ -472,12 +472,12 @@ const perfumePersonas: PerfumePersonaCollection = {
         uniqueness: 7
       },
       categories: {
-        citrus: 9,
-        floral: 2,
-        woody: 8,
-        musky: 6,
-        fruity: 3,
-        spicy: 4
+        citrus: 1,
+        floral: 1,
+        woody: 9,
+        musky: 3,
+        fruity: 1,
+        spicy: 8
       },
       keywords: ["중후함", "깊이감", "신사적", "지적", "고급스러움"],
       imageAssociations: ["위스키 글라스", "가죽 안락의자", "클래식 시계"],
@@ -504,10 +504,10 @@ const perfumePersonas: PerfumePersonaCollection = {
       categories: {
         citrus: 6,
         floral: 1,
-        woody: 8,
+        woody: 7,
         musky: 3,
         fruity: 1,
-        spicy: 7
+        spicy: 8
       },
       keywords: ["예술적", "자유로움", "독특함", "창의적", "비주류"],
       imageAssociations: ["재즈바", "빈티지 노트북", "예술가의 아틀리에"],
@@ -532,12 +532,12 @@ const perfumePersonas: PerfumePersonaCollection = {
         uniqueness: 7
       },
       categories: {
-        citrus: 3,
-        floral: 4,
-        woody: 8,
-        musky: 7,
+        citrus: 1,
+        floral: 1,
+        woody: 7,
+        musky: 3,
         fruity: 1,
-        spicy: 7
+        spicy: 8
       },
       keywords: ["바쁨", "워커홀릭", "도시적", "효율적", "현대적"],
       imageAssociations: ["스마트폰", "오피스 빌딩", "디지털 플래너"],
@@ -567,7 +567,7 @@ const perfumePersonas: PerfumePersonaCollection = {
         woody: 5,
         musky: 2,
         fruity: 4,
-        spicy: 7
+        spicy: 1
       },
       keywords: ["자유로움", "바다", "청량함", "자연스러움", "모험"],
       imageAssociations: ["해변", "서핑보드", "맨발의 모래"],
@@ -592,12 +592,12 @@ const perfumePersonas: PerfumePersonaCollection = {
         uniqueness: 9
       },
       categories: {
-        citrus: 7,
-        floral: 3,
-        woody: 5,
-        musky: 3,
-        fruity: 4,
-        spicy: 4
+        citrus: 1,
+        floral: 1,
+        woody: 8,
+        musky: 1,
+        fruity: 1,
+        spicy: 7
       },
       keywords: ["균형", "미스터리", "아날로그", "자연", "도시"],
       imageAssociations: ["캠프파이어", "숲속의 노트북", "모던 아웃도어 룩"],
@@ -625,7 +625,7 @@ const perfumePersonas: PerfumePersonaCollection = {
         citrus: 2,
         floral: 3,
         woody: 4,
-        musky: 9,
+        musky: 7,
         fruity: 1,
         spicy: 4
       },
@@ -653,9 +653,9 @@ const perfumePersonas: PerfumePersonaCollection = {
       },
       categories: {
         citrus: 2,
-        floral: 9,
+        floral: 6,
         woody: 2,
-        musky: 6,
+        musky: 8,
         fruity: 2,
         spicy: 2
       },
@@ -745,7 +745,7 @@ const perfumePersonas: PerfumePersonaCollection = {
         citrus: 3,
         floral: 3,
         woody: 8,
-        musky: 9,
+        musky: 8,
         fruity: 1,
         spicy: 7
       },
@@ -834,10 +834,10 @@ const perfumePersonas: PerfumePersonaCollection = {
       categories: {
         citrus: 2,
         floral: 1,
-        woody: 8,
+        woody: 6,
         musky: 7,
         fruity: 5,
-        spicy: 6
+        spicy: 8
       },
       keywords: ["미식가", "컬렉터", "고급취향", "세련됨", "감각적"],
       imageAssociations: ["미슐랭 레스토랑", "빈티지 와인 셀러", "현대미술"],
@@ -863,8 +863,8 @@ const perfumePersonas: PerfumePersonaCollection = {
       },
       categories: {
         citrus: 2,
-        floral: 8,
-        woody: 4,
+        floral: 6,
+        woody: 7,
         musky: 6,
         fruity: 4,
         spicy: 2
@@ -892,11 +892,11 @@ const perfumePersonas: PerfumePersonaCollection = {
         uniqueness: 6
       },
       categories: {
-        citrus: 6,
-        floral: 3,
-        woody: 5,
-        musky: 6,
-        fruity: 8,
+        citrus: 3,
+        floral: 5,
+        woody: 6,
+        musky: 7,
+        fruity: 6,
         spicy: 3
       },
       keywords: ["여유", "품격", "승리자", "와인", "고급"],

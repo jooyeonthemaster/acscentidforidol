@@ -163,7 +163,7 @@ export default function IdolInfoForm() {
   const handleNext = () => {
     if (step === 1) {
       if (!idolInfo.userPhone) {
-        alert('전화번호를 입력해주세요.');
+        alert('비밀번호를 입력해주세요.');
         return;
       }
       if (!idolInfo.name) {
@@ -174,10 +174,10 @@ export default function IdolInfoForm() {
         alert('성별을 선택해주세요.');
         return;
       }
-      // 전화번호 형식 간단 검증 (숫자와 하이픈만 허용)
-      const phoneRegex = /^[0-9-]+$/;
-      if (!phoneRegex.test(idolInfo.userPhone)) {
-        alert('전화번호는 숫자와 하이픈(-)만 입력 가능합니다.');
+      // 비밀번호 형식 검증 (4자리 숫자만 허용)
+      const passwordRegex = /^[0-9]{4}$/;
+      if (!passwordRegex.test(idolInfo.userPhone)) {
+        alert('비밀번호는 4자리 숫자만 입력 가능합니다.');
         return;
       }
     }
@@ -506,19 +506,20 @@ export default function IdolInfoForm() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="userPhone" className="block text-sm font-medium text-gray-700 mb-1">
-                  전화번호 <span className="text-red-500">*</span>
+                  비밀번호 (4자리) <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="tel"
+                  type="password"
                   id="userPhone"
                   name="userPhone"
                   value={idolInfo.userPhone}
                   onChange={handleInputChange}
-                  placeholder="예: 010-1234-5678"
+                  placeholder="4자리 숫자를 입력하세요"
+                  maxLength={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-900 placeholder-gray-500"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">향수 주문 및 연락용으로 사용됩니다</p>
+                <p className="text-xs text-gray-500 mt-1">결과 조회 시 사용되는 비밀번호입니다</p>
               </div>
               
               <div>

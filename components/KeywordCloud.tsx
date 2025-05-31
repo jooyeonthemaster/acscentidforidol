@@ -5,9 +5,20 @@ import React from 'react';
 interface KeywordCloudProps {
   keywords: string[];
   scattered?: boolean; // 자유분방한 배치 옵션
+  minFontSize?: number; // 최소 폰트 크기 (em)
+  maxFontSize?: number; // 최대 폰트 크기 (em)
+  spreadRange?: number; // 분포 범위 (0-100)
+  minDistance?: number; // 키워드 간 최소 거리
 }
 
-const KeywordCloud: React.FC<KeywordCloudProps> = ({ keywords, scattered = false }) => {
+const KeywordCloud: React.FC<KeywordCloudProps> = ({ 
+  keywords, 
+  scattered = false,
+  minFontSize = 0.5,
+  maxFontSize = 0.8,
+  spreadRange = 60,
+  minDistance = 25
+}) => {
   // 키워드 하나의 배경색 랜덤 선택 (높은 투명도)
   const getRandomColor = () => {
     const colors = [
@@ -37,7 +48,7 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({ keywords, scattered = false
     if (!scattered) return [];
     
     const positions: Array<{top: number, left: number, fontSize: number}> = [];
-    const minDistance = 25; // 최소 거리 (%) - 더 넓게 퍼지도록
+    const minDistanceValue = minDistance; // props에서 받은 값 사용
     
     for (let i = 0; i < keywords.length; i++) {
       let attempts = 0;
@@ -45,9 +56,9 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({ keywords, scattered = false
       
       do {
         newPosition = {
-          top: Math.random() * 70 + 20, // 10-80% 범위 (더 넓게 퍼지도록)
-          left: Math.random() * 70 + 15, // 15-85% 범위 (더 넓게 퍼지도록)
-          fontSize: Math.random() * 0.3 + 0.8, // 0.8-1.1em 범위
+          top: Math.random() * spreadRange + (100 - spreadRange) / 2, // 동적 범위
+          left: Math.random() * spreadRange + (100 - spreadRange) / 2, // 동적 범위
+          fontSize: Math.random() * (maxFontSize - minFontSize) + minFontSize, // 동적 크기
         };
         attempts++;
       } while (
@@ -57,7 +68,7 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({ keywords, scattered = false
             Math.pow(pos.top - newPosition.top, 2) + 
             Math.pow(pos.left - newPosition.left, 2)
           );
-          return distance < minDistance;
+          return distance < minDistanceValue;
         })
       );
       
@@ -65,7 +76,7 @@ const KeywordCloud: React.FC<KeywordCloudProps> = ({ keywords, scattered = false
     }
     
     return positions;
-  }, [keywords, scattered]);
+  }, [keywords, scattered, minFontSize, maxFontSize, spreadRange, minDistance]);
   
   if (!keywords || keywords.length === 0) {
     return (

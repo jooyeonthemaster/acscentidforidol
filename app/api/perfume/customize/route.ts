@@ -3,6 +3,7 @@ import { PerfumeFeedback, CustomPerfumeRecipe, PerfumeCategory, CategoryPreferen
 import perfumePersonas from '@/app/data/perfumePersonas';
 import { generateCustomPerfumePrompt, parseGeminiPerfumeSuggestion } from '@/app/utils/promptTemplates/feedbackPrompts';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { saveImprovedRecipe } from '@/lib/firebaseApi';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
@@ -19,10 +20,24 @@ const MAX_RETRIES = 1; // 최대 재시도 횟수 (0으로 설정하면 재시�
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('🚀 /api/perfume/customize API 호출됨');
+    
     const data = await request.json();
-    const clientFeedback: PerfumeFeedback & Partial<Pick<GeminiPerfumeSuggestion, 'overallExplanation' | 'contradictionWarning' | 'impression' | 'notes'> > = data.feedback; // impression, notes 추가
+    console.log('🚀 받은 데이터:', {
+      hasUserId: !!data.userId,
+      hasSessionId: !!data.sessionId,
+      hasFeedback: !!data.feedback,
+      userId: data.userId,
+      sessionId: data.sessionId,
+      feedbackPerfumeId: data.feedback?.perfumeId
+    });
+    
+    const clientFeedback: PerfumeFeedback = data.feedback; // 타입 단순화
+    const userId = data.userId;
+    const sessionId = data.sessionId;
     
     if (!clientFeedback || !clientFeedback.perfumeId) {
+      console.log('❌ 유효하지 않은 피드백 데이터');
       return NextResponse.json({ error: '유효하지 않은 피드백 데이터입니다.' }, { status: 400 });
     }
     
@@ -32,10 +47,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '해당 원본 향수를 찾을 수 없습니다.' }, { status: 404 });
     }
     
-    // clientFeedback.perfumeName은 generateCustomPerfumePrompt에 전달되지 않으므로, 여기서 설정할 필요 없음
-    // if (!clientFeedback.perfumeName && originalPerfume.name) {
-    //   clientFeedback.perfumeName = originalPerfume.name;
-    // }
+    // 원본 향수 정보를 기반으로 피드백에 추가 정보 설정
+    if (originalPerfume.name && !clientFeedback.perfumeName) {
+      clientFeedback.perfumeName = originalPerfume.name;
+    }
+
+    // overallExplanation과 contradictionWarning 제거 (PerfumeFeedback 타입에 없음)
+    // const overallExplanation = clientFeedback.overallExplanation || '';
+    // const contradictionWarning = clientFeedback.contradictionWarning || '';
+
+    console.log('향수 개선 프롬프트 생성 중...');
     
     const categoryKeyToKorean: Record<PerfumeCategory, string> = {
       citrus: '시트러스',
@@ -67,8 +88,8 @@ export async function POST(request: NextRequest) {
       categoryChanges: [], 
       testingRecipe: null, // AI가 채울 필드이므로 null 또는 기본 구조로 초기화
       isFinalRecipe: (clientFeedback.retentionPercentage === 100), // 100%면 최종 레시피로 간주
-      overallExplanation: clientFeedback.overallExplanation || originalPerfume.description, 
-      contradictionWarning: clientFeedback.contradictionWarning || null,
+      overallExplanation: originalPerfume.description, // PerfumeFeedback에 overallExplanation 필드 없음
+      contradictionWarning: null, // PerfumeFeedback에 contradictionWarning 필드 없음
       // PerfumeFeedback에서 직접 전달받는 필드들
       categoryPreferences: clientFeedback.categoryPreferences,
       userCharacteristics: clientFeedback.userCharacteristics,
@@ -88,6 +109,29 @@ export async function POST(request: NextRequest) {
         testingRecipe: null, // 100% 유지 시 테스팅 레시피 없음
         // finalRecipeDetails: { ... } // 여기에 실제 레시피 정보 구성
       };
+      
+      // Firebase에 레시피 저장 (100% 유지 케이스)
+      if (userId && sessionId) {
+        try {
+          const recipeData = {
+            originalPerfumeId: originalPerfume.id,
+            originalPerfumeName: originalPerfume.name,
+            feedbackSummary: {
+              overallRating: clientFeedback.overallRating || 5, // 기본값 5
+              retentionPercentage: clientFeedback.retentionPercentage || 50, // 기본값 50
+              mainConcerns: clientFeedback.additionalComments || '피드백 없음' // 기본값
+            },
+            improvedRecipe: finalData,
+            generatedAt: new Date().toISOString()
+          };
+          await saveImprovedRecipe(userId, sessionId, recipeData);
+          console.log('Firebase에 최종 레시피 저장 완료');
+        } catch (firebaseError) {
+          console.error('Firebase 레시피 저장 오류:', firebaseError);
+          // Firebase 저장 실패해도 레시피는 반환
+        }
+      }
+      
       return NextResponse.json({ success: true, data: finalData });
     }
         
@@ -101,6 +145,28 @@ export async function POST(request: NextRequest) {
     if (!result) { // 혹시 모를 null 반환 케이스 (이론상 발생 안해야 함)
         console.error('callAndValidateWithRetry에서 예외적으로 null 반환됨');
         return NextResponse.json({ error: 'AI 추천 생성 중 알 수 없는 내부 오류가 발생했습니다.' }, { status: 500 });
+    }
+    
+    // Firebase에 레시피 저장 (테스팅 레시피 케이스)
+    if (userId && sessionId) {
+      try {
+        const recipeData = {
+          originalPerfumeId: originalPerfume.id,
+          originalPerfumeName: originalPerfume.name,
+          feedbackSummary: {
+            overallRating: clientFeedback.overallRating || 5, // 기본값 5
+            retentionPercentage: clientFeedback.retentionPercentage || 50, // 기본값 50
+            mainConcerns: clientFeedback.additionalComments || '피드백 없음' // 기본값
+          },
+          improvedRecipe: result,
+          generatedAt: new Date().toISOString()
+        };
+        await saveImprovedRecipe(userId, sessionId, recipeData);
+        console.log('Firebase에 테스팅 레시피 저장 완료');
+      } catch (firebaseError) {
+        console.error('Firebase 레시피 저장 오류:', firebaseError);
+        // Firebase 저장 실패해도 레시피는 반환
+      }
     }
     
     // 성공 응답 반환
@@ -214,16 +280,18 @@ async function callGeminiAPI(prompt: string): Promise<string> {
   }
   // console.log("Attempting to call Gemini API..."); // 로그 간소화
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const safetySettings = [
-      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    ];
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash",
+      safetySettings: [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      ]
+    });
     const generationConfig = { maxOutputTokens: 8192 }; // 필요시 토큰 수 조정
 
-    const result = await model.generateContent(prompt, safetySettings, generationConfig);
+    const result = await model.generateContent(prompt, generationConfig);
     const response = result.response;
     
     if (!response) {

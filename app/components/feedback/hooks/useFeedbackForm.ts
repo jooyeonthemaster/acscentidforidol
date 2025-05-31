@@ -25,7 +25,7 @@ export const INITIAL_FEEDBACK_DATA: PerfumeFeedback = {
   notes: '',
 };
 
-export const useFeedbackForm = (perfumeId: string) => {
+export const useFeedbackForm = (perfumeId: string, userId?: string, sessionId?: string) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -73,7 +73,11 @@ export const useFeedbackForm = (perfumeId: string) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(submissionData),
+        body: JSON.stringify({
+          ...submissionData,
+          userId,
+          sessionId
+        }),
       });
 
       if (!feedbackResponse.ok) {
@@ -90,7 +94,7 @@ export const useFeedbackForm = (perfumeId: string) => {
       setLoading(false);
       setSuccess(true);
       
-      // 2. 커스터마이제이션 API 호출
+      // 2. 커스터마이제이션 API 호출 (userId, sessionId 포함)
       setCustomizationLoading(true);
       setError(null);
       
@@ -101,7 +105,9 @@ export const useFeedbackForm = (perfumeId: string) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            feedback: submissionData
+            feedback: submissionData,
+            userId,
+            sessionId
           }),
         });
         

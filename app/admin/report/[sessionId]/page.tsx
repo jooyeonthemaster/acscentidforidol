@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import KeywordCloud from '../../../../components/KeywordCloud';
 import SimpleRadarChart from '../../../../components/chart/SimpleRadarChart';
@@ -34,18 +34,67 @@ const NOTEBOOK_LAYOUT = {
   elements: {
     image: { x: 30, y: 110, width: 155, height: 185 },
     traitChart: { x: 30, y: 295, width: 155, height: 185 }, // 이미지 바로 아래, 같은 사이즈
-    colorPalette: { x: 30, y: 460, width: 155, height: 80 }, // 레이더 차트 바로 아래
-    name: { x: 200, y: 120, width: 180, height: 25 },
-    gender: { x: 200, y: 140, width: 100, height: 30 },
-    keywords: { x: 200, y: 171, width: 180, height: 100 },
+    colorPalette: { x: 30, y: 462, width: 155, height: 80 }, // 레이더 차트 바로 아래
+    name: { x: 300, y: 130, width: 180, height: 25 },
+    gender: { x: 300, y: 153, width: 100, height: 30 },
+    keywords: { x: 175, y: 205, width: 170, height: 90 },
     radarChart: { x: 40, y: 300, width: 160, height: 160 },
-    features: { x: 190, y: 280, width: 180, height: 90 },
-          colorType: { x: 190, y: 400, width: 180, height: 120 },
+    features: { x: 185, y: 330, width: 180, height: 90 },
+    colorType: { x: 185, y: 460, width: 180, height: 120 },
     // 오른쪽 페이지 (SCENT PROFILE)
-    fragranceNotes: { x: 440, y: 90, width: 320, height: 100 },
+    fragranceNotes: { x: 550, y: 115, width: 320, height: 100 },
     scentChart: { x: 440, y: 220, width: 320, height: 180 },
-          seasonTime: { x: 420, y: 390, width: 340, height: 140 },
+    seasonTime: { x: 427, y: 433, width: 340, height: 200 },
   }
+};
+
+// 자동 크기 조정 텍스트 컴포넌트
+interface AutoResizeTextProps {
+  text: string;
+  maxWidth: number;
+  style?: React.CSSProperties;
+}
+
+const AutoResizeText: React.FC<AutoResizeTextProps> = ({ text, maxWidth, style = {} }) => {
+  const [fontSize, setFontSize] = useState(14);
+  const textRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!textRef.current) return;
+
+    // 텍스트 길이에 따라 폰트 크기 계산
+    const textLength = text.length;
+    let calculatedFontSize = 14;
+
+    if (textLength > 8) {
+      calculatedFontSize = Math.max(8, 14 - (textLength - 8) * 0.8);
+    }
+    if (textLength > 12) {
+      calculatedFontSize = Math.max(6, 14 - (textLength - 8) * 1.2);
+    }
+    if (textLength > 16) {
+      calculatedFontSize = Math.max(4, 14 - (textLength - 8) * 1.5);
+    }
+
+    setFontSize(calculatedFontSize);
+  }, [text]);
+
+  return (
+    <span
+      ref={textRef}
+      style={{
+        fontSize: `${fontSize}px`,
+        maxWidth: `${maxWidth}px`,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        display: 'inline-block',
+        ...style
+      }}
+    >
+      {text}
+    </span>
+  );
 };
 
 // 노트북 요소 컴포넌트
@@ -228,38 +277,85 @@ export default function ReportPage() {
 
   // 계절/시간 아이콘 컴포넌트
   const SeasonTimeIcons = () => {
-    // 실제 데이터에서 주요 카테고리 추출
-    const getMainCategory = () => {
-      const characteristics = sessionData?.analyses?.[0]?.scentCategories || 
-                             sessionData?.analyses?.[0]?.fragranceCharacteristics;
-      if (!characteristics) return 'citrus'; // 기본값
+    // 실제 데이터에서 주요 카테고리와 점수 추출
+    const getCategoryInfo = () => {
+      // 여러 경로에서 향수 카테고리 데이터 찾기
+      const characteristics = sessionData?.session?.imageAnalysis?.matchingPerfumes?.[0]?.persona?.categories ||
+                             sessionData?.analyses?.[0]?.scentCategories || 
+                             sessionData?.analyses?.[0]?.fragranceCharacteristics ||
+                             sessionData?.session?.imageAnalysis?.scentCategories ||
+                             sessionData?.session?.imageAnalysis?.fragranceCharacteristics;
+      
+      if (!characteristics) {
+        console.log('프린트 보고서: 향수 카테고리 데이터를 찾을 수 없습니다.');
+        return { categoryName: 'citrus', score: 5 }; // 기본값
+      }
       
       const entries = Object.entries(characteristics);
       const sorted = entries.sort(([, a], [, b]) => (b as number) - (a as number));
-      return sorted[0]?.[0] || 'citrus';
+      const [categoryName, score] = sorted[0] || ['citrus', 5];
+      
+      console.log('프린트 보고서: 카테고리 정보 추출 완료', { categoryName, score });
+      return { categoryName, score: score as number };
     };
 
-    const mainCategory = getMainCategory();
+    const { categoryName, score } = getCategoryInfo();
 
-    // 계절 추천 로직
+    // 계절 추천 로직 - 점수에 따른 차등 추천 (절대 4개 모두 선택 안 됨)
     const getSeasonRecommendation = () => {
-      if (mainCategory === 'citrus' || mainCategory === 'fruity') {
-        return ['봄', '여름'];
-      } else if (mainCategory === 'woody' || mainCategory === 'spicy') {
-        return ['가을', '겨울'];
-      } else {
-        return ['봄', '여름', '가을', '겨울'];
+      if (categoryName === 'citrus') {
+        if (score >= 8) return ['여름'];           // 매우 강함: 1개
+        if (score >= 6) return ['봄', '여름'];     // 강함: 2개
+        return ['봄', '여름', '가을'];             // 보통: 3개 (겨울 제외)
+      } else if (categoryName === 'fruity') {
+        if (score >= 8) return ['여름'];           
+        if (score >= 6) return ['봄', '여름'];     
+        return ['봄', '여름', '가을'];             
+      } else if (categoryName === 'woody') {
+        if (score >= 8) return ['겨울'];           
+        if (score >= 6) return ['가을', '겨울'];   
+        return ['여름', '가을', '겨울'];           // 봄 제외
+      } else if (categoryName === 'spicy') {
+        if (score >= 8) return ['겨울'];           
+        if (score >= 6) return ['가을', '겨울'];   
+        return ['여름', '가을', '겨울'];           
+      } else if (categoryName === 'floral') {
+        if (score >= 8) return ['봄'];             
+        if (score >= 6) return ['봄', '여름'];     
+        return ['봄', '여름', '가을'];             
+      } else { // musky or unknown
+        if (score >= 8) return ['겨울'];           
+        if (score >= 6) return ['가을', '겨울'];   
+        return ['봄', '가을', '겨울'];             // 여름 제외
       }
     };
 
-    // 시간대 추천 로직
+    // 시간대 추천 로직 - 점수에 따른 차등 추천 (절대 4개 모두 선택 안 됨)
     const getTimeRecommendation = () => {
-      if (mainCategory === 'citrus' || mainCategory === 'fruity') {
-        return ['오전', '오후'];
-      } else if (mainCategory === 'woody' || mainCategory === 'musky') {
-        return ['저녁', '밤'];
-      } else {
-        return ['오전', '오후', '저녁', '밤'];
+      if (categoryName === 'citrus') {
+        if (score >= 8) return ['오전'];           // 매우 상쾌함
+        if (score >= 6) return ['오전', '오후'];   
+        return ['오전', '오후', '저녁'];           // 밤 제외
+      } else if (categoryName === 'fruity') {
+        if (score >= 8) return ['오전'];           
+        if (score >= 6) return ['오전', '오후'];   
+        return ['오전', '오후', '저녁'];           
+      } else if (categoryName === 'woody') {
+        if (score >= 8) return ['밤'];             // 매우 깊음
+        if (score >= 6) return ['저녁', '밤'];     
+        return ['오후', '저녁', '밤'];             // 오전 제외
+      } else if (categoryName === 'musky') {
+        if (score >= 8) return ['밤'];             
+        if (score >= 6) return ['저녁', '밤'];     
+        return ['오후', '저녁', '밤'];             
+      } else if (categoryName === 'floral') {
+        if (score >= 8) return ['오후'];           // 우아한 시간
+        if (score >= 6) return ['오전', '오후'];   
+        return ['오전', '오후', '저녁'];           
+      } else { // spicy or unknown
+        if (score >= 8) return ['저녁'];           // 강렬한 시간
+        if (score >= 6) return ['저녁', '밤'];     
+        return ['오전', '저녁', '밤'];             // 오후 제외
       }
     };
 
@@ -270,22 +366,10 @@ export default function ReportPage() {
       <div style={{ display: 'flex', gap: '16px', marginTop: '0px' }}>
         <div>
           <div style={{ 
-            fontSize: '24px', 
-            fontWeight: '800', 
-            color: 'white', 
-            letterSpacing: '1px',
-            WebkitTextStroke: '2px #374151',
-            whiteSpace: 'nowrap',
-            marginBottom: '4px',
-            textAlign: 'left'
-          } as React.CSSProperties}>
-            BEST SEASON
-          </div>
-          <div style={{ 
             background: 'white', 
+            border: '2px solid #000000',
             borderRadius: '12px', 
-            padding: '8px',
-            border: '2px solid #E5E7EB',
+            padding: '12px 8px',
             display: 'flex',
             gap: '0px',
             justifyContent: 'center'
@@ -316,22 +400,10 @@ export default function ReportPage() {
         
         <div>
           <div style={{ 
-            fontSize: '24px', 
-            fontWeight: '800', 
-            color: 'white', 
-            letterSpacing: '1px',
-            WebkitTextStroke: '2px #374151',
-            whiteSpace: 'nowrap',
-            marginBottom: '4px',
-            textAlign: 'left'
-          } as React.CSSProperties}>
-            BEST TIME
-          </div>
-          <div style={{ 
             background: 'white', 
+            border: '2px solid #000000',
             borderRadius: '12px', 
-            padding: '8px',
-            border: '2px solid #E5E7EB',
+            padding: '12px 8px',
             display: 'flex',
             gap: '0px',
             justifyContent: 'center'
@@ -418,6 +490,8 @@ export default function ReportPage() {
     <>
       {/* 노트북 스타일 프린트 보고서 */}
       <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Pen+Script&display=swap');
+        
         @page {
           size: A4 landscape;
           margin: 0;
@@ -490,8 +564,8 @@ export default function ReportPage() {
         }
         
         .image-area {
-          border: 2px dashed #EF4444 !important;
-          background: rgba(239, 68, 68, 0.1) !important;
+          border: 2px dashed #000000 !important;
+          background: rgba(0, 0, 0, 0.1) !important;
           border-radius: 8px !important;
         }
         
@@ -606,8 +680,8 @@ export default function ReportPage() {
           }
           
           .image-area {
-            border: 2px dashed #EF4444 !important;
-            background: rgba(239, 68, 68, 0.1) !important;
+            border: 2px dashed #000000 !important;
+            background: rgba(0, 0, 0, 0.1) !important;
             border-radius: 8px !important;
           }
         }
@@ -673,8 +747,8 @@ export default function ReportPage() {
           }
           
           .image-area {
-            border: 2px dashed #EF4444 !important;
-            background: rgba(239, 68, 68, 0.1) !important;
+            border: 2px dashed #000000 !important;
+            background: rgba(0, 0, 0, 0.1) !important;
             border-radius: 8px !important;
           }
           
@@ -732,33 +806,21 @@ export default function ReportPage() {
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              height: '50%'
+              height: '50%',
+              width: '100%',
+              overflow: 'hidden'
             }}>
-              {/* NAME 라벨 말풍선 */}
-              <div style={{ 
-                background: 'white', 
-                borderRadius: '20px', 
-                padding: '2px 16px',
-                border: '2px solid #374151',
-                display: 'flex',
-                alignItems: 'center',
-                minWidth: '90px',
-                justifyContent: 'center'
-              }}>
-                <span style={{ 
-                  fontSize: '12px', 
-                  fontWeight: '700', 
-                  color: '#374151'
-                }}>NAME</span>
-              </div>
-              {/* 실제 이름 값 */}
-              <span style={{ 
-                fontSize: '14px', 
-                fontWeight: '600', 
-                color: '#1F2937'
-              }}>
-                {sessionData?.analyses?.[0]?.name || session?.name || '김완빈'}
-              </span>
+              {/* 실제 이름 값 - 강력한 반응형 폰트 크기 */}
+              <AutoResizeText 
+                text={sessionData?.analyses?.[0]?.name || session?.name || '김완빈'}
+                maxWidth={170}
+                style={{
+                  fontWeight: '600', 
+                  color: '#1F2937',
+                  whiteSpace: 'nowrap',
+                  lineHeight: '1.2'
+                }}
+              />
             </div>
           </NotebookElement>
           
@@ -770,23 +832,6 @@ export default function ReportPage() {
               gap: '12px',
               height: '100%'
             }}>
-              {/* GENDER 라벨 말풍선 */}
-              <div style={{ 
-                background: 'white', 
-                borderRadius: '15px', 
-                padding: '2px 43px',
-                border: '2px solid #374151',
-                display: 'flex',
-                alignItems: 'center',
-                minWidth: '60px',
-                justifyContent: 'center'
-              }}>
-                <span style={{ 
-                  fontSize: '12px', 
-                  fontWeight: '700', 
-                  color: '#374151'
-                }}>GENDER</span>
-              </div>
               {/* 실제 성별 값 */}
               <span style={{ 
                 fontSize: '14px', 
@@ -808,31 +853,23 @@ export default function ReportPage() {
               gap: '8px',
               height: '100%'
             }}>
-              {/* KEYWORDS 라벨 말풍선 */}
-              <div style={{ 
-                background: 'white', 
-                borderRadius: '15px', 
-                padding: '2px 10.5px',
-                border: '2px solid #374151',
-                display: 'flex',
-                alignItems: 'center',
-                width: 'fit-content',
-                justifyContent: 'center'
-              }}>
-                <span style={{ 
-                  fontSize: '12px', 
-                  fontWeight: '700', 
-                  color: '#374151'
-                }}>KEYWORDS</span>
-              </div>
               {/* 키워드 클라우드 */}
               <div style={{ 
                 flex: 1,
                 width: '100%',
-                height: '70px',
-                position: 'relative'
+                height: '60px',
+                position: 'relative',
+                overflow: 'hidden',
+                border: '1px solid transparent'
               }}>
-                <KeywordCloud keywords={sessionData?.analyses?.[0]?.matchingKeywords || session?.keywords || ['활발함', '밝음', '청량함']} scattered={true} />
+                <KeywordCloud 
+                  keywords={sessionData?.analyses?.[0]?.matchingKeywords || session?.keywords || ['활발함', '밝음', '청량함']} 
+                  scattered={true}
+                  minFontSize={0.5}
+                  maxFontSize={0.7}
+                  spreadRange={60}
+                  minDistance={15}
+                />
               </div>
             </div>
           </NotebookElement>
@@ -878,20 +915,6 @@ export default function ReportPage() {
               flexDirection: 'column',
               padding: '12px'
             }}>
-              {/* FEATURE 헤더 */}
-              <div style={{
-                marginBottom: '1px',
-                textAlign: 'left'
-              }}>
-                <span style={{
-                  fontSize: '24px',
-                  fontWeight: '800',
-                  color: 'white',
-                  letterSpacing: '1px',
-                  WebkitTextStroke: '2px #374151'
-                } as React.CSSProperties}>FEATURE</span>
-              </div>
-
               {/* 상위 3개 특성 표시 */}
               <div style={{
                 background: 'white',
@@ -934,8 +957,8 @@ export default function ReportPage() {
                       gap: '8px'
                     }}>
                       <div style={{
-                        width: '20px',
-                        height: '20px',
+                        width: '16px',
+                        height: '16px',
                         borderRadius: '50%',
                         background: '#374151',
                         display: 'flex',
@@ -945,12 +968,12 @@ export default function ReportPage() {
                       }}>
                         <span style={{
                           color: 'white',
-                          fontSize: '10px',
+                          fontSize: '8px',
                           fontWeight: '700'
                         }}>{index + 1}</span>
                       </div>
                       <span style={{
-                        fontSize: '13px',
+                        fontSize: '11px',
                         fontWeight: '900',
                         color: '#374151'
                       }}>{trait.name}</span>
@@ -978,29 +1001,14 @@ export default function ReportPage() {
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
-              padding: '12px'
+              padding: '6px'
             }}>
-              {/* COLOR TYPE 헤더 */}
-              <div style={{
-                marginBottom: '1px',
-                textAlign: 'left'
-              }}>
-                <span style={{
-                  fontSize: '24px',
-                  fontWeight: '800',
-                  color: 'white',
-                  letterSpacing: '1px',
-                  WebkitTextStroke: '2px #374151',
-                  whiteSpace: 'nowrap'
-                } as React.CSSProperties}>COLOR TYPE</span>
-              </div>
-
               {/* COLOR TYPE 내용 */}
               <div style={{
                 background: 'white',
                 border: '2px solid #374151',
                 borderRadius: '12px',
-                padding: '8px',
+                padding: '4px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0px'
@@ -1037,7 +1045,7 @@ export default function ReportPage() {
                 {/* 컬러 타입 설명 */}
                 <div style={{
                   textAlign: 'left',
-                  marginTop: '-1px',
+                  marginTop: '0px',
                   fontSize: '9px',
                   color: '#374151',
                   lineHeight: '1.4',
@@ -1079,7 +1087,6 @@ export default function ReportPage() {
                         height: '32px',
                         borderRadius: '50%',
                         backgroundColor: color,
-                        border: '2px solid #374151',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                       }}
                       title={color}
@@ -1094,7 +1101,6 @@ export default function ReportPage() {
                         height: '32px',
                         borderRadius: '50%',
                         backgroundColor: color,
-                        border: '2px solid #374151',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                       }}
                       title={color}
@@ -1130,31 +1136,19 @@ export default function ReportPage() {
                   gap: '12px'
                 }}>
                   <div style={{
-                    background: 'white',
-                    border: '2px solid #374151',
-                    borderRadius: '20px',
-                    padding: '2px 8px',
-                    minWidth: '100px',
-                    textAlign: 'center'
-                  }}>
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color: '#374151'
-                    }}>TOP NOTE</span>
-                </div>
-                  <div style={{
                     padding: '4px 12px',
-                    flex: 1
+                    flex: 1,
+                    textAlign: 'left'
                   }}>
                     <span style={{
-                      fontSize: '22px',
-                      fontWeight: '900',
-                      color: '#fec700'
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      color: '#000000',
+                      fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", sans-serif'
                     }}>
                       {sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.mainScent?.name || 
                        sessionData?.confirmed?.[0]?.mainScent?.name || 
-                       '유자'}
+                       '블랙베리'}
                     </span>
                   </div>
                 </div>
@@ -1165,32 +1159,20 @@ export default function ReportPage() {
                   alignItems: 'center',
                   gap: '12px'
                 }}>
-                  <div style={{
-                    background: 'white',
-                    border: '2px solid #374151',
-                    borderRadius: '20px',
-                    padding: '2px 8px',
-                    minWidth: '100px',
-                    textAlign: 'center'
-                  }}>
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color: '#374151'
-                    }}>MIDDLE NOTE</span>
-                </div>
                 <div style={{ 
                     padding: '4px 12px',
-                    flex: 1
+                    flex: 1,
+                    textAlign: 'left'
                   }}>
                     <span style={{
-                      fontSize: '22px',
-                      fontWeight: '900',
-                      color: '#fec700'
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      color: '#000000',
+                      fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", sans-serif'
                     }}>
                       {sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.subScent1?.name || 
                        sessionData?.confirmed?.[0]?.subScent1?.name || 
-                       '로즈마리'}
+                       '월계수잎'}
                     </span>
                   </div>
                 </div>
@@ -1202,31 +1184,19 @@ export default function ReportPage() {
                   gap: '12px'
                 }}>
                   <div style={{
-                    background: 'white',
-                    border: '2px solid #374151',
-                    borderRadius: '20px',
-                    padding: '2px 8px',
-                    minWidth: '100px',
-                    textAlign: 'center'
-                  }}>
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color: '#374151'
-                    }}>BASE NOTE</span>
-                </div>
-                  <div style={{
                     padding: '4px 12px',
-                    flex: 1
+                    flex: 1,
+                    textAlign: 'left'
                   }}>
                     <span style={{
-                      fontSize: '22px',
-                      fontWeight: '900',
-                      color: '#fec700'
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      color: '#000000',
+                      fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", sans-serif'
                     }}>
                       {sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.subScent2?.name || 
                        sessionData?.confirmed?.[0]?.subScent2?.name || 
-                       '민트'}
+                       '시더우드'}
                     </span>
               </div>
           </div>

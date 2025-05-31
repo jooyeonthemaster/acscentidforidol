@@ -150,7 +150,7 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                검색 (전화번호, 고객명, 최애명)
+                검색 (비밀번호, 고객명, 최애명)
               </label>
               <input
                 type="text"

@@ -872,15 +872,37 @@ export default function ResultPage() {
                                                   <div className="flex justify-between">
                                                     {['봄', '여름', '가을', '겨울'].map((season, idx) => {
                                                       const seasonRecommendation = (() => {
-                                                        const mainCategory = Object.entries(match.persona?.categories || {})
-                                                          .sort(([, a], [, b]) => (b as number) - (a as number))[0][0];
+                                                        const categoryEntries = Object.entries(match.persona?.categories || {})
+                                                          .sort(([, a], [, b]) => (b as number) - (a as number));
                                                         
-                                                        if (mainCategory === 'citrus' || mainCategory === 'fruity') {
-                                                          return ['봄', '여름'];
-                                                        } else if (mainCategory === 'woody' || mainCategory === 'spicy') {
-                                                          return ['가을', '겨울'];
-                                                        } else {
-                                                          return ['봄', '여름', '가을', '겨울'];
+                                                        if (categoryEntries.length === 0) return ['봄', '여름'];
+                                                        
+                                                        const [categoryName, score] = categoryEntries[0];
+                                                        
+                                                        if (categoryName === 'citrus') {
+                                                          if (score >= 8) return ['여름'];           // 매우 강함: 1개
+                                                          if (score >= 6) return ['봄', '여름'];     // 강함: 2개
+                                                          return ['봄', '여름', '가을'];             // 보통: 3개 (겨울 제외)
+                                                        } else if (categoryName === 'fruity') {
+                                                          if (score >= 8) return ['여름'];           
+                                                          if (score >= 6) return ['봄', '여름'];     
+                                                          return ['봄', '여름', '가을'];             
+                                                        } else if (categoryName === 'woody') {
+                                                          if (score >= 8) return ['겨울'];           
+                                                          if (score >= 6) return ['가을', '겨울'];   
+                                                          return ['여름', '가을', '겨울'];           // 봄 제외
+                                                        } else if (categoryName === 'spicy') {
+                                                          if (score >= 8) return ['겨울'];           
+                                                          if (score >= 6) return ['가을', '겨울'];   
+                                                          return ['여름', '가을', '겨울'];           
+                                                        } else if (categoryName === 'floral') {
+                                                          if (score >= 8) return ['봄'];             
+                                                          if (score >= 6) return ['봄', '여름'];     
+                                                          return ['봄', '여름', '가을'];             
+                                                        } else { // musky or unknown
+                                                          if (score >= 8) return ['겨울'];           
+                                                          if (score >= 6) return ['가을', '겨울'];   
+                                                          return ['봄', '가을', '겨울'];             // 여름 제외
                                                         }
                                                       })();
                                                       
@@ -912,15 +934,37 @@ export default function ResultPage() {
                                                   <div className="flex justify-between">
                                                     {['오전', '오후', '저녁', '밤'].map((time, idx) => {
                                                       const timeRecommendation = (() => {
-                                                        const mainCategory = Object.entries(match.persona?.categories || {})
-                                                          .sort(([, a], [, b]) => (b as number) - (a as number))[0][0];
+                                                        const categoryEntries = Object.entries(match.persona?.categories || {})
+                                                          .sort(([, a], [, b]) => (b as number) - (a as number));
                                                         
-                                                        if (mainCategory === 'citrus' || mainCategory === 'fruity') {
-                                                          return ['오전', '오후'];
-                                                        } else if (mainCategory === 'woody' || mainCategory === 'musky') {
-                                                          return ['저녁', '밤'];
-                                                        } else {
-                                                          return ['오전', '오후', '저녁', '밤'];
+                                                        if (categoryEntries.length === 0) return ['오전', '오후'];
+                                                        
+                                                        const [categoryName, score] = categoryEntries[0];
+                                                        
+                                                        if (categoryName === 'citrus') {
+                                                          if (score >= 8) return ['오전'];           // 매우 상쾌함
+                                                          if (score >= 6) return ['오전', '오후'];   
+                                                          return ['오전', '오후', '저녁'];           // 밤 제외
+                                                        } else if (categoryName === 'fruity') {
+                                                          if (score >= 8) return ['오전'];           
+                                                          if (score >= 6) return ['오전', '오후'];   
+                                                          return ['오전', '오후', '저녁'];           
+                                                        } else if (categoryName === 'woody') {
+                                                          if (score >= 8) return ['밤'];             // 매우 깊음
+                                                          if (score >= 6) return ['저녁', '밤'];     
+                                                          return ['오후', '저녁', '밤'];             // 오전 제외
+                                                        } else if (categoryName === 'musky') {
+                                                          if (score >= 8) return ['밤'];             
+                                                          if (score >= 6) return ['저녁', '밤'];     
+                                                          return ['오후', '저녁', '밤'];             
+                                                        } else if (categoryName === 'floral') {
+                                                          if (score >= 8) return ['오후'];           // 우아한 시간
+                                                          if (score >= 6) return ['오전', '오후'];   
+                                                          return ['오전', '오후', '저녁'];           
+                                                        } else { // spicy or unknown
+                                                          if (score >= 8) return ['저녁'];           // 강렬한 시간
+                                                          if (score >= 6) return ['저녁', '밤'];     
+                                                          return ['오전', '저녁', '밤'];             // 오후 제외
                                                         }
                                                       })();
                                                       

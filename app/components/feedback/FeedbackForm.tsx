@@ -47,6 +47,21 @@ export default function FeedbackForm({
   onClose, 
   onSubmit 
 }: FeedbackFormProps) {
+  // 사용자 ID와 세션 ID 가져오기
+  const [userId] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('userId') || 'user_' + Date.now();
+    }
+    return 'user_' + Date.now();
+  });
+  
+  const [sessionId] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('currentSessionId') || 'session_' + Date.now();
+    }
+    return 'session_' + Date.now();
+  });
+
   // 커스텀 훅을 사용하여 폼 상태와 로직을 관리
   const {
     step,
@@ -61,7 +76,7 @@ export default function FeedbackForm({
     handleNextStep,
     handlePrevStep,
     resetForm, // useFeedbackForm으로부터 resetForm 함수를 가져옵니다.
-  } = useFeedbackForm(originalPerfume.id);
+  } = useFeedbackForm(originalPerfume.id, userId, sessionId);
 
   // 현재 단계에 따른 타이틀
   const stepTitle = () => {
@@ -167,6 +182,8 @@ export default function FeedbackForm({
               customizationLoading={customizationLoading} 
               onClose={onClose} 
               onResetForm={resetForm} // resetForm 함수를 SuccessView에 onResetForm prop으로 전달합니다.
+              userId={userId}
+              sessionId={sessionId}
             />
           ) : (
             // 피드백 폼 인터페이스 (성공이 아닐 때)

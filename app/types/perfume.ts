@@ -324,4 +324,75 @@ export interface GeminiPerfumeSuggestion {
 // 기존 CustomPerfumeRecipe는 필요에 따라 유지, 수정 또는 GeminiPerfumeSuggestion에 통합될 수 있습니다.
 // 예: export interface CustomPerfumeRecipe extends Partial<GeminiPerfumeSuggestion> { ... }
 // 또는 GeminiPerfumeSuggestion의 finalRecipeDetails가 CustomPerfumeRecipe의 역할을 대신할 수 있습니다.
-// 현재는 GeminiPerfumeSuggestion을 중심으로 작업합니다. 
+// 현재는 GeminiPerfumeSuggestion을 중심으로 작업합니다.
+
+// 레시피 히스토리 관련 타입들
+export interface RecipeHistoryItem {
+  id: string;
+  sessionId: string;
+  perfumeId?: string;
+  originalPerfumeName?: string;
+  originalPerfumeId?: string;
+  testingRecipe?: TestingRecipeData;
+  improvedRecipe?: GeminiPerfumeSuggestion; // 실제 데이터 구조에 맞게 추가
+  finalRecipeDetails?: {
+    recipe10ml: ScentComponent[];
+    recipe50ml: ScentComponent[];
+    description: string;
+    explanation: {
+      rationale: string;
+      expectedResult: string;
+      recommendation: string;
+    };
+  };
+  createdAt: number;
+  timestamp?: number;
+  generatedAt?: number;
+  isBookmarked?: boolean;
+  bookmarkedAt?: number;
+  selectedFromHistory?: boolean;
+  reactivatedAt?: number;
+  feedbackSnapshot?: PerfumeFeedback;
+  feedbackSummary?: {
+    mainConcerns: string;
+    overallRating: number;
+    retentionPercentage: number;
+  };
+  categoryChanges?: CategoryChangeInfo[];
+  overallExplanation?: string;
+}
+
+export interface RecipeHistoryResponse {
+  success: boolean;
+  recipes: RecipeHistoryItem[];
+  count: number;
+  message: string;
+  error?: string;
+}
+
+export interface RecipeActionResponse {
+  success: boolean;
+  message: string;
+  activatedRecipe?: RecipeHistoryItem;
+  isBookmarked?: boolean;
+  recipe?: RecipeHistoryItem;
+  error?: string;
+}
+
+export interface RecipeComparisonData {
+  current?: RecipeHistoryItem;
+  selected?: RecipeHistoryItem;
+  differences?: {
+    granules: {
+      added: TestingGranule[];
+      removed: TestingGranule[];
+      modified: TestingGranule[];
+    };
+    ratioChanges: {
+      category: string;
+      oldRatio: number;
+      newRatio: number;
+      change: number;
+    }[];
+  };
+} 

@@ -822,5 +822,10 @@ export function getPerfumeById(id: string): Perfume | undefined {
 
 // 카테고리별 향수 가져오기
 export function getPerfumesByCategory(category: string): Perfume[] {
-  return perfumes.filter(perfume => perfume.category === category);
+  // perfumePersonas 데이터를 기반으로 카테고리별 향수 ID를 가져옴
+  const { getPerfumesByPersonaCategory } = require('../utils/perfumeUtils');
+  const perfumeIds = getPerfumesByPersonaCategory(category);
+  
+  // 해당 ID들의 향수 데이터를 반환
+  return perfumes.filter(perfume => perfumeIds.includes(perfume.id));
 }
