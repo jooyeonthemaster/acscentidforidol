@@ -33,7 +33,7 @@ export function generateCustomPerfumePrompt(feedback: GeminiPerfumeSuggestion & 
 
   const personaDataSourceMention = "'@/app/data/perfumePersonas.ts' 파일의 'personas' 배열";
   const granuleCategoryGuidance = `각 추천 향료의 주된 향 계열(mainCategory)은 ${personaDataSourceMention}에 정의된 해당 향료의 'categories' 객체를 참고하여 가장 대표적인 한글 카테고리명으로 명시해주세요.`;
-  const aiName = "ACSCENT ID";
+  const aiName = "Personal Scent";
 
   return `
 당신은 천재적인 조향사 AI '${aiName}'입니다. 사용자의 상세한 피드백을 면밀히 분석하여, 사용자가 직접 시향해볼 수 있는 테스팅 향료 조합 레시피를 제안해야 합니다. 응답은 반드시 아래 명시된 JSON 구조를 따라야 하며, 모든 필드를 포함해야 합니다. UI 화면에는 당신이 제공한 JSON 데이터가 직접 사용됩니다.

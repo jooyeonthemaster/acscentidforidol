@@ -153,12 +153,6 @@ export default function ChatUI() {
         transition={{ duration: 0.6 }}
         className="relative w-[380px] h-[80vh] bg-white rounded-3xl border-4 border-dashed border-gray-300 p-6 pt-12 pb-14 shadow-lg flex flex-col"
       >
-        {/* 상단 인스타그램 아이디 */}
-        <div className="absolute top-6 right-6 text-gray-700 font-semibold flex items-center">
-          <span className="text-xs bg-yellow-200 px-2 py-0.5 rounded-full mr-1">♥</span>
-          @acscent_id
-        </div>
-        
         {/* 왼쪽 위 점 장식들 */}
         <div className="absolute -left-3 top-20 w-6 h-6 bg-amber-50 border-4 border-amber-400 rounded-full"></div>
         <div className="absolute -left-2 top-36 w-4 h-4 bg-pink-200 border-2 border-pink-400 rounded-full"></div>
@@ -223,7 +217,7 @@ export default function ChatUI() {
                   {message.sender === 'bot' && (
                     <div className="w-12 h-12 mr-2 flex-shrink-0">
                       <img
-                        src="/cute.png"
+                        src="/cute2.png"
                         alt="Bot"
                         className="w-full h-full object-contain"
                       />
@@ -298,7 +292,7 @@ export default function ChatUI() {
                 className="w-48 h-48 mb-4"
               >
                 <img 
-                  src="/cute.png" 
+                  src="/cute2.png" 
                   alt="Cute Character" 
                   className="w-full h-full object-contain"
                 />

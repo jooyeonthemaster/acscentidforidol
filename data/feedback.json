@@ -2731,5 +2731,51 @@
     "submittedAt": "2025-05-31T18:50:07.473Z",
     "id": "feedback_1748717407573_24tuqua",
     "timestamp": "2025-05-31T18:50:07.573Z"
+  },
+  {
+    "perfumeId": "LV-2812221",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "maintain",
+      "floral": "increase",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [],
+    "notes": "",
+    "submittedAt": "2025-06-04T16:48:18.209Z",
+    "id": "feedback_1749055698865_92iiigk",
+    "timestamp": "2025-06-04T16:48:18.865Z"
+  },
+  {
+    "perfumeId": "LV-2812221",
+    "retentionPercentage": 80,
+    "categoryPreferences": {
+      "citrus": "maintain",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [],
+    "notes": "",
+    "submittedAt": "2025-06-04T16:57:11.211Z",
+    "id": "feedback_1749056231319_0a5iute",
+    "timestamp": "2025-06-04T16:57:11.319Z"
   }
 ]

@@ -174,8 +174,8 @@ export default function ResultPage() {
   };
 
   // 캐릭터 이미지 경로 (귀여운 캐릭터 이미지로 교체 필요)
-  const characterImagePath = '/cute.png';
-  const sadCharacterImagePath = '/sad.png';
+  const characterImagePath = '/cute2.png';
+  const sadCharacterImagePath = '/cute2.png';
 
   return (
     <div className="min-h-screen bg-amber-50 pt-6 pb-10 px-4">

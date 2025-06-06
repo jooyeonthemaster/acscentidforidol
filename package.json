@@ -1,6 +1,6 @@
 {
-  "name": "idforidol",
-  "version": "0.1.0",
+  "name": "personal-scent",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

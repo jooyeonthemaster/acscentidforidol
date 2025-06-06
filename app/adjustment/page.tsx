@@ -171,7 +171,7 @@ export default function AdjustmentPage() {
         >
           <div className="relative w-full h-full flex items-center justify-center">
             <img 
-              src="/cute.png" 
+              src="/cute2.png" 
               alt="Cute Character" 
               className="w-full h-full object-contain"
               style={{ 

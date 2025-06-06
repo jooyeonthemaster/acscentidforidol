@@ -403,11 +403,6 @@ export default function IdolInfoForm() {
         className="relative w-[380px] h-auto bg-white rounded-3xl border-4 border-dashed border-gray-300 p-6 pt-10 pb-12 shadow-lg"
         style={{ maxHeight: '100vh', overflowY: 'auto', overflowX: 'hidden' }}
       >
-        {/* 상단 인스타그램 아이디 */}
-        <div className="absolute top-6 right-6 text-gray-700 font-semibold">
-          @acscent_id
-        </div>
-        
         {/* 왼쪽 위 점 장식 */}
         <div className="absolute -left-3 top-20 w-6 h-6 bg-amber-50 border-4 border-amber-400 rounded-full"></div>
         
@@ -439,7 +434,7 @@ export default function IdolInfoForm() {
         >
           <div className="relative w-full h-full flex items-center justify-center">
             <img 
-              src="/cute.png" 
+              src="/cute2.png" 
               alt="Cute Character" 
               className="w-full h-full object-contain"
               style={{ 

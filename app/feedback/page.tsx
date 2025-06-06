@@ -224,13 +224,9 @@ export default function FeedbackPage() {
               >
                 <div className="relative w-full h-full flex items-center justify-center">
                   <img 
-                    src="/cute.png" 
+                    src="/cute2.png" 
                     alt="Cute Character" 
-                    className="w-full h-full object-contain"
-                    style={{ 
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
-                      transform: 'scaleX(-1)'
-                    }}
+                    className="w-full h-full object-contain drop-shadow-lg"
                   />
                 </div>
               </motion.div>
