@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { TranslationProvider } from './contexts/TranslationContext';
+import GlobalLanguageSelector from '@/components/GlobalLanguageSelector';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,7 +18,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <TranslationProvider>
+          {/* 전역 언어 선택기 */}
+          <GlobalLanguageSelector />
+          
+          {/* 메인 콘텐츠 */}
+          {children}
+        </TranslationProvider>
+      </body>
     </html>
   );
 }

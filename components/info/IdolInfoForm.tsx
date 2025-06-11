@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import IdolImageUpload from '../IdolImageUpload';
+import { useTranslationContext } from '@/app/contexts/TranslationContext';
 
 // 최애 정보 인터페이스
 interface IdolInfo {
@@ -18,10 +19,11 @@ interface IdolInfo {
 
 export default function IdolInfoForm() {
   const router = useRouter();
+  const { t } = useTranslationContext();
   const [step, setStep] = useState(1);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [analysisStage, setAnalysisStage] = useState<string>('이미지 전송 중...');
+  const [analysisStage, setAnalysisStage] = useState<string>(t('analysis.stage.uploading'));
   const [idolInfo, setIdolInfo] = useState<IdolInfo>({
     userPhone: '',
     name: '',
@@ -38,26 +40,26 @@ export default function IdolInfoForm() {
 
   // 스타일 옵션
   const styleOptions = [
-    { id: 'cute', label: '귀여운' },
-    { id: 'sexy', label: '섹시한' },
-    { id: 'chic', label: '시크한' },
-    { id: 'elegant', label: '우아한' },
-    { id: 'energetic', label: '활발한' },
-    { id: 'fresh', label: '청량한' },
-    { id: 'retro', label: '레트로' },
-    { id: 'casual', label: '캐주얼' },
+    { id: 'cute', label: t('style.cute') },
+    { id: 'sexy', label: t('style.sexy') },
+    { id: 'chic', label: t('style.chic') },
+    { id: 'elegant', label: t('style.elegant') },
+    { id: 'energetic', label: t('style.energetic') },
+    { id: 'fresh', label: t('style.fresh') },
+    { id: 'retro', label: t('style.retro') },
+    { id: 'casual', label: t('style.casual') },
   ];
 
   // 성격 옵션
   const personalityOptions = [
-    { id: 'bright', label: '밝은' },
-    { id: 'calm', label: '차분한' },
-    { id: 'funny', label: '유머러스한' },
-    { id: 'shy', label: '수줍은' },
-    { id: 'confident', label: '자신감 있는' },
-    { id: 'thoughtful', label: '사려 깊은' },
-    { id: 'passionate', label: '열정적인' },
-    { id: 'caring', label: '다정한' },
+    { id: 'bright', label: t('personality.bright') },
+    { id: 'calm', label: t('personality.calm') },
+    { id: 'funny', label: t('personality.funny') },
+    { id: 'shy', label: t('personality.shy') },
+    { id: 'confident', label: t('personality.confident') },
+    { id: 'thoughtful', label: t('personality.thoughtful') },
+    { id: 'passionate', label: t('personality.passionate') },
+    { id: 'caring', label: t('personality.caring') },
   ];
 
   // 입력값 변경 핸들러
@@ -163,39 +165,39 @@ export default function IdolInfoForm() {
   const handleNext = () => {
     if (step === 1) {
       if (!idolInfo.userPhone) {
-        alert('비밀번호를 입력해주세요.');
+        alert(t('validation.password.required'));
         return;
       }
       if (!idolInfo.name) {
-        alert('최애의 이름을 입력해주세요.');
+        alert(t('validation.name.required'));
         return;
       }
       if (!idolInfo.gender) {
-        alert('성별을 선택해주세요.');
+        alert(t('validation.gender.required'));
         return;
       }
       // 비밀번호 형식 검증 (4자리 숫자만 허용)
       const passwordRegex = /^[0-9]{4}$/;
       if (!passwordRegex.test(idolInfo.userPhone)) {
-        alert('비밀번호는 4자리 숫자만 입력 가능합니다.');
+        alert(t('validation.password.format'));
         return;
       }
     }
     
     if (step === 2 && idolInfo.style.length === 0) {
-      alert('최소 하나 이상의 스타일을 선택해주세요.');
+      alert(t('validation.style.required'));
       return;
     }
     
     if (step === 3 && idolInfo.personality.length === 0) {
-      alert('최소 하나 이상의 성격을 선택해주세요.');
+      alert(t('validation.personality.required'));
       return;
     }
     
     if (step === 5) {
       // 이미지 유효성 검사
       if (!idolInfo.image) {
-        alert('이미지를 업로드해주세요.');
+        alert(t('validation.image.required'));
         return;
       }
       
@@ -463,11 +465,11 @@ export default function IdolInfoForm() {
             <h2 className="text-xs font-bold text-gray-700 mb-1 tracking-wider">AC'SCENT IDENTITY</h2>
             <h1 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">
               <span className="bg-yellow-300 px-1 py-1 inline-block">
-                {step === 1 && '최애 기본 정보'}
-                {step === 2 && '최애 스타일'}
-                {step === 3 && '최애 성격'}
-                {step === 4 && '최애 매력 포인트'}
-                {step === 5 && '최애 이미지'}
+                {step === 1 && t('info.title')}
+                {step === 2 && t('info.style.title')}
+                {step === 3 && t('info.personality.title')}
+                {step === 4 && t('info.charm.title')}
+                {step === 5 && t('info.image.title')}
               </span>
             </h1>
           </motion.div>
@@ -478,7 +480,7 @@ export default function IdolInfoForm() {
             transition={{ duration: 0.5, delay: 0.5 }}
             className="text-gray-700 text-base text-center mt-1"
           >
-            최애에 대한 정보를 입력해주세요 ({step}/5)
+{t('info.subtitle', '최애에 대한 정보를 입력해주세요')} ({step}/5)
           </motion.p>
           
           {/* 진행 상태 바 */}
@@ -501,7 +503,7 @@ export default function IdolInfoForm() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="userPhone" className="block text-sm font-medium text-gray-700 mb-1">
-                  비밀번호 (4자리) <span className="text-red-500">*</span>
+                  {t('info.password.label')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="password"
@@ -509,7 +511,7 @@ export default function IdolInfoForm() {
                   name="userPhone"
                   value={idolInfo.userPhone}
                   onChange={handleInputChange}
-                  placeholder="4자리 숫자를 입력하세요"
+                  placeholder={t('info.password.placeholder')}
                   maxLength={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-900 placeholder-gray-500"
                   required
@@ -519,7 +521,7 @@ export default function IdolInfoForm() {
               
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  최애 이름 <span className="text-red-500">*</span>
+                  {t('info.name.label')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -527,7 +529,7 @@ export default function IdolInfoForm() {
                   name="name"
                   value={idolInfo.name}
                   onChange={handleInputChange}
-                  placeholder="예: 지수, 정국, 윈터..."
+                  placeholder={t('info.name.placeholder')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-900 placeholder-gray-500"
                   required
                 />
@@ -535,7 +537,7 @@ export default function IdolInfoForm() {
 
               <div>
                 <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
-                  성별 <span className="text-red-500">*</span>
+                  {t('info.gender.label')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="gender"
@@ -545,9 +547,9 @@ export default function IdolInfoForm() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-900"
                   required
                 >
-                  <option value="">성별을 선택해주세요</option>
-                  <option value="남성">남성</option>
-                  <option value="여성">여성</option>
+                  <option value="">{t('info.gender.placeholder', '성별을 선택해주세요')}</option>
+                  <option value="남성">{t('info.gender.male')}</option>
+                  <option value="여성">{t('info.gender.female')}</option>
                 </select>
               </div>
               
@@ -558,7 +560,7 @@ export default function IdolInfoForm() {
           {step === 2 && (
             <div>
               <p className="text-sm text-gray-600 mb-4">
-                최애의 스타일을 선택해주세요. (여러 개 선택 가능)
+                {t('info.style.subtitle')}
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {styleOptions.map((style) => (
@@ -590,7 +592,7 @@ export default function IdolInfoForm() {
           {step === 3 && (
             <div>
               <p className="text-sm text-gray-600 mb-4">
-                최애의 성격을 선택해주세요. (여러 개 선택 가능)
+                {t('info.personality.subtitle')}
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {personalityOptions.map((personality) => (
@@ -622,14 +624,14 @@ export default function IdolInfoForm() {
           {step === 4 && (
             <div>
               <p className="text-sm text-gray-600 mb-4">
-                최애의 매력 포인트를 자유롭게 작성해주세요.
+                {t('info.charm.subtitle', '최애의 매력 포인트를 자유롭게 작성해주세요.')}
               </p>
               <textarea
                 id="charms"
                 name="charms"
                 value={idolInfo.charms}
                 onChange={handleInputChange}
-                placeholder="예: 눈웃음이 예쁘고, 춤을 잘 추며, 팬들을 항상 생각하는 다정한 모습이 매력적이에요."
+                placeholder={t('info.charm.placeholder')}
                 className="w-full h-32 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 resize-none"
               />
             </div>
@@ -639,7 +641,7 @@ export default function IdolInfoForm() {
           {step === 5 && (
             <div>
               <p className="text-sm text-gray-600 mb-4">
-                최애의 이미지를 업로드해주세요. 향수 추천에 활용됩니다.
+                {t('info.image.subtitle')}
               </p>
               <IdolImageUpload 
                 onImageUpload={(file) => {
@@ -670,7 +672,7 @@ export default function IdolInfoForm() {
             className="bg-white border-2 border-gray-800 text-gray-800 font-bold py-2 px-6 rounded-full shadow-sm flex items-center"
             disabled={isSubmitting}
           >
-            {step === 1 ? '처음으로' : '이전'}
+{step === 1 ? t('common.home', '처음으로') : t('common.back')}
           </motion.button>
           
           <motion.button
@@ -687,10 +689,10 @@ export default function IdolInfoForm() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {analysisStage || '이미지 분석 중...'}
+                  {analysisStage || t('analysis.stage.analyzing')}
                 </span>
-              ) : '완료'
-            ) : '다음'}
+              ) : t('common.complete')
+            ) : t('common.next')}
             {!isSubmitting && <span className="ml-1 text-lg">»</span>}
           </motion.button>
         </motion.div>

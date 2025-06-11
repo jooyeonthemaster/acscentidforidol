@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useTranslationContext } from '@/app/contexts/TranslationContext';
 
 interface RetentionSliderProps {
   value: number;
@@ -8,6 +9,7 @@ interface RetentionSliderProps {
 }
 
 export const RetentionSlider: React.FC<RetentionSliderProps> = ({ value, onChange }) => {
+  const { t } = useTranslationContext();
   // 20% 단위로 선택할 수 있는 옵션 배열
   const percentageOptions = [0, 20, 40, 60, 80, 100];
   
@@ -15,7 +17,7 @@ export const RetentionSlider: React.FC<RetentionSliderProps> = ({ value, onChang
     <div className="mt-4">
       <div className="text-center">
         <p className="text-sm text-gray-600 mb-2">
-          원래 향을 얼마나 유지하고 싶으신가요?
+          {t('feedback.retention.question', '원래 향을 얼마나 유지하고 싶으신가요?')}
         </p>
       </div>
       
@@ -45,8 +47,8 @@ export const RetentionSlider: React.FC<RetentionSliderProps> = ({ value, onChang
       </div>
       
       <div className="flex justify-between mt-1 text-xs text-gray-500">
-        <span>완전히 변경</span>
-        <span>완전히 유지</span>
+        <span>{t('feedback.retention.changeCompletely', '완전히 변경')}</span>
+        <span>{t('feedback.retention.keepCompletely', '완전히 유지')}</span>
       </div>
       
       <div className="text-center mt-4">

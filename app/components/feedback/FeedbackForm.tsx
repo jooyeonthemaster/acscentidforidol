@@ -12,6 +12,7 @@ import {
   Legend,
   ArcElement
 } from 'chart.js';
+import { useTranslationContext } from '@/app/contexts/TranslationContext';
 
 // Views
 import { Step1View } from './views/Step1View';
@@ -47,6 +48,7 @@ export default function FeedbackForm({
   onClose, 
   onSubmit 
 }: FeedbackFormProps) {
+  const { t } = useTranslationContext();
   // 사용자 ID와 세션 ID 가져오기
   const [userId] = React.useState(() => {
     if (typeof window !== 'undefined') {
@@ -81,9 +83,9 @@ export default function FeedbackForm({
   // 현재 단계에 따른 타이틀
   const stepTitle = () => {
     switch(step) {
-      case 1: return '향의 유지 비율 선택';
-      case 2: return '향 카테고리 선호도 설정';
-      case 3: return '특정 향료 추가';
+      case 1: return t('feedback.step1.title', '향의 유지 비율 선택');
+      case 2: return t('feedback.step2.title', '향 카테고리 선호도 설정');
+      case 3: return t('feedback.step3.title', '특정 향료 추가');
       default: return '';
     }
   };
@@ -92,15 +94,19 @@ export default function FeedbackForm({
   const totalSteps = 3;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-amber-50">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-lg max-h-[90vh] overflow-y-auto relative">
-        {/* 상단 닫기 버튼 */}
-        <div className="absolute top-4 right-4 z-10">
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors"
-            disabled={loading}
-          >
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.6 }}
+      className="bg-white rounded-2xl shadow-lg overflow-y-auto relative"
+    >
+      {/* 상단 닫기 버튼 */}
+      <div className="absolute top-4 right-4 z-10">
+        <button
+          onClick={onClose}
+          className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors"
+          disabled={loading}
+        >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 text-gray-600">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -108,38 +114,36 @@ export default function FeedbackForm({
         </div>
         
         {/* 헤더 영역 */}
-        <div className="px-2 pt-6 pb-2">
-          <div className="flex items-center mb-2">
+        <div className="px-4 pt-6 pb-2">
+          <div className="flex items-center mb-3">
             <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center mr-3 text-xl text-white">
               ✨
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">AC'SCENT ID</h2>
-              <p className="text-xs text-gray-500">당신만의 맞춤 향수</p>
+              <p className="text-xs text-gray-500">{t('feedback.subtitle', '당신만의 맞춤 향수')}</p>
             </div>
           </div>
 
           {/* 추천된 향수 정보 표시 */}
-          <div className="mt-4 mb-4 p-4 bg-amber-50 rounded-xl border border-amber-100">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mr-3 text-xl">
-                🧪
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">맞춤 향수</p>
-                <h3 className="text-base font-medium text-gray-800">{originalPerfume.name}</h3>
-                <p className="text-xs text-orange-600 mt-1">{originalPerfume.id}</p>
-              </div>
+          <div className="mt-3 flex items-center bg-amber-50 rounded-lg p-3">
+            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3 text-lg">
+              🧪
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-gray-500">{t('feedback.customPerfume', '맞춤 향수')}</p>
+              <h3 className="text-sm font-medium text-gray-800">{originalPerfume.name}</h3>
+              <p className="text-xs text-orange-600">{originalPerfume.id}</p>
             </div>
           </div>
         </div>
 
         {/* 진행 상태 표시 (성공 상태가 아닐 때만) */}
         {!success && (
-          <div className="px-2 pb-4">
+          <div className="px-4 pb-4">
             <div className="flex justify-between mb-2 items-center">
               <span className="text-xs font-medium bg-orange-500 text-white py-1 px-2 rounded-full">
-                단계 {step}/{totalSteps}
+                {t('feedback.step', '단계')} {step}/{totalSteps}
               </span>
               <span className="text-xs font-medium text-gray-600">
                 {stepTitle()}
@@ -172,7 +176,7 @@ export default function FeedbackForm({
         )}
 
         {/* 폼 내용 영역 */}
-        <div className="px-2 pb-6">
+        <div className="px-4 pb-6">
           {/* 성공 메시지 & 커스터마이제이션 결과 */}
           {success ? (
             <SuccessView 
@@ -227,13 +231,13 @@ export default function FeedbackForm({
               </AnimatePresence>
               
               {/* 버튼 영역 */}
-              <div className="flex justify-between mt-8">
+              <div className="flex justify-between mt-6 gap-3">
                 <button
                   onClick={handlePrevStep}
                   className="px-5 py-2.5 bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 transition-colors"
                   disabled={loading}
                 >
-                  {step === 1 ? '닫기' : '이전으로'}
+                  {step === 1 ? t('common.close', '닫기') : t('common.back', '이전으로')}
                 </button>
                 
                 <button
@@ -248,19 +252,18 @@ export default function FeedbackForm({
                   {loading ? (
                     <div className="flex items-center">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      처리 중...
+                      {t('feedback.processing', '처리 중...')}
                     </div>
                   ) : step < totalSteps ? (
-                    '다음으로'
+                    t('feedback.next', '다음으로')
                   ) : (
-                    '제출하기'
+                    t('feedback.submit', '제출하기')
                   )}
                 </button>
               </div>
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { TraitScores } from '@/app/types/perfume';
+import { useTranslationContext } from '@/app/contexts/TranslationContext';
 
 interface TraitRadarChartProps {
   traits: TraitScores;
@@ -12,9 +13,15 @@ interface TraitRadarChartProps {
 
 const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
   traits,
-  title = '특성 프로필',
+  title,
   showAnimation = true
 }) => {
+  const { t, currentLanguage } = useTranslationContext();
+  const displayTitle = title || t('result.traitProfile');
+  
+  // 번역된 메시지 상태
+  const [translatedMessages, setTranslatedMessages] = useState<Record<string, string[]>>({});
+  
   const centerX = 150;
   const centerY = 150;
   const radius = 100;
@@ -29,6 +36,115 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
   
   // 가장 높은 점수를 가진 특성 찾기
   const highestTrait = [...characteristics].sort((a, b) => b.value - a.value)[0];
+  
+  // 원본 한국어 메시지들
+  const originalMessages: Record<string, string[]> = {
+    sexy: [
+      "오마이갓! 이 섹시함은 뭐죠? 화면이 녹아내려요! 🔥💋",
+      "세상에... 이 농염한 매력에 심장이 두근두근! 너무 섹시해요! 😍✨",
+      "아니 이게 뭐야! 이런 치명적인 섹시함은 처음 봐요! 완전 킬링포인트! 💋🔥",
+      "허걱! 이 섹시한 오라에 현기증이... 정말 매혹적이에요! 😱💕"
+    ],
+    cute: [
+      "와아악! 이 귀여움 뭐야뭐야? 심장이 사르르 녹아요! 🥺💕",
+      "큐큐큐큐! 이런 큐트함은 반칙이야! 너무너무 사랑스러워요! 🌸✨",
+      "아이고야! 이 순수한 큐트함에 눈물까지... 천사가 따로 없어요! 🥰💖",
+      "헉! 이 사랑스러운 매력에 완전 홀렸어요! 큐티뽀짝! 🌸🦋"
+    ],
+    charisma: [
+      "오오오! 이 카리스마 뭐예요? 완전 압도적인데요! 👑✨",
+      "와! 이런 강력한 카리스마는 처음 봐요! 포스가 장난 아니에요! 🔥⚡",
+      "헉! 이 카리스마에 완전 압도당했어요! 진짜 레전드급! 👑🌟",
+      "세상에! 이런 임팩트 있는 카리스마... 정말 대단해요! 🔥👑"
+    ],
+    darkness: [
+      "어머머! 이 다크한 매력... 너무 신비로워요! 🌙🖤",
+      "오마이갓! 이 깊고 어두운 눈빛에 완전 빠져버렸어요! 🌑✨",
+      "허걱! 이런 미스테리어스한 분위기... 정말 매혹적이에요! 🖤🌙",
+      "세상에! 이 다크 카리스마에 심장이 쿵쾅쿵쾅! 너무 멋져요! 🌑💫"
+    ],
+    freshness: [
+      "와아! 이 상큼함 뭐예요? 완전 프레시해요! 🌊💙",
+      "헉! 이런 청량한 매력에 기분까지 상쾌해져요! 🌿✨",
+      "오마이! 이 프레시한 에너지에 완전 힐링받아요! 🌊🌸",
+      "와우! 이런 상큼발랄함... 정말 싱그러워요! 🌿💚"
+    ],
+    elegance: [
+      "오! 이 우아함 보세요! 완전 고급스러워요! 🦢✨",
+      "와아! 이런 엘레간트한 매력... 정말 품격 있어요! 💎👑",
+      "헉! 이 세련된 분위기에 완전 매료됐어요! 🦢💫",
+      "세상에! 이런 클래시한 우아함... 진짜 멋져요! ✨👑"
+    ],
+    freedom: [
+      "와우! 이 자유로운 에너지 느껴져요! 너무 멋져요! 🕊️🌈",
+      "오마이! 이런 자유분방한 매력... 정말 시원해요! 🌊🦋",
+      "헉! 이 무구속한 분위기에 완전 해방감 느껴져요! 🕊️✨",
+      "세상에! 이런 자유로운 영혼... 너무 아름다워요! 🌈💫"
+    ],
+    luxury: [
+      "오마이갓! 이 럭셔리함 뭐예요? 완전 고급져요! 💎👑",
+      "와아! 이런 사치스러운 매력... 진짜 프리미엄이에요! ✨💰",
+      "헉! 이 고급스러운 분위기에 완전 압도됐어요! 💎🌟",
+      "세상에! 이런 럭셔리한 오라... 정말 화려해요! 👑💫"
+    ],
+    purity: [
+      "와아! 이 순수함 보세요! 완전 천사 같아요! 🤍✨",
+      "오마이! 이런 청순한 매력... 너무 맑고 깨끗해요! 🕊️💙",
+      "헉! 이 순결한 분위기에 마음이 정화돼요! 🤍🌸",
+      "세상에! 이런 순수한 영혼... 정말 아름다워요! ✨🦋"
+    ],
+    uniqueness: [
+      "와우! 이 독특함 뭐예요? 완전 개성 넘쳐요! 🌈✨",
+      "오마이갓! 이런 유니크한 매력... 진짜 특별해요! 🦄💫",
+      "헉! 이 독창적인 분위기에 완전 매료됐어요! 🌟🎨",
+      "세상에! 이런 오리지널한 개성... 너무 멋져요! 🌈🔥"
+    ]
+  };
+  
+  // 동적 콘텐츠 번역 함수
+  const translateDynamicContent = async (messages: Record<string, string[]>) => {
+    if (currentLanguage === 'ko') {
+      setTranslatedMessages(messages);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'translateMessages',
+          messages,
+          targetLanguage: currentLanguage
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTranslatedMessages(data.translatedMessages || messages);
+      } else {
+        console.error('번역 실패');
+        setTranslatedMessages(messages);
+      }
+    } catch (error) {
+      console.error('번역 오류:', error);
+      setTranslatedMessages(messages);
+    }
+  };
+
+  // 언어 변경 시 번역 수행
+  useEffect(() => {
+    translateDynamicContent(originalMessages);
+  }, [currentLanguage]);
+
+  // 초기 로드 시 번역 수행
+  useEffect(() => {
+    if (Object.keys(translatedMessages).length === 0) {
+      translateDynamicContent(originalMessages);
+    }
+  }, []);
   
   // 각 특성의 각도 계산
   const angleStep = (Math.PI * 2) / characteristics.length;
@@ -126,42 +242,25 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
     'uniqueness': '🌈'
   };
   
-  // 특성 레이블 가져오기
+  // 특성 레이블 가져오기 (번역 적용)
   function getTraitLabel(trait: keyof TraitScores): string {
-    const traitNames: Record<keyof TraitScores, string> = {
-      sexy: '섹시함',
-      cute: '귀여움',
-      charisma: '카리스마',
-      darkness: '다크함',
-      freshness: '청량함',
-      elegance: '우아함',
-      freedom: '자유로움',
-      luxury: '럭셔리함',
-      purity: '순수함',
-      uniqueness: '독특함'
-    };
-    
-    return traitNames[trait];
+    return t(`trait.${trait}`);
   }
   
   const WrapperComponent = showAnimation ? motion.div : 'div';
   
-  // AI 감탄 문구 생성
+  // AI 감탄 문구 생성 (번역된 메시지 사용)
   const getAiMessage = (trait: string, value: number) => {
-    const messages = {
-      sexy: '어머머! 이런 섹시함은 불법이야!! 보는 사람 심장 떨어지겠네요! 🔥🔥',
-      cute: '헐랭! 귀여움 폭격기 등장! 세상에 이런 큐티뽀짝이 또 있을까요?! 😍',
-      charisma: '와우! 당신의 최애는 진짜 카리스마 폭발! 눈빛만으로 세상 정복가능해요! 👑',
-      darkness: '오마이갓! 이 다크한 매력은 뭐죠? 심쿵사 당할 뻔했어요! 🖤',
-      freshness: '우와아! 이 청량감은 실화냐?! 민트초코처럼 중독적이에요! 🌊',
-      elegance: '어멋! 당신의 최애는 너무 골~~~져스!!!! 지져스! 당신 최애만큼 여왕이라는 단어에 어울릴 사람은 없네요! 👑',
-      freedom: '헉! 이런 자유로움은 처음 봐요! 구속할 수 없는 영혼의 소유자네요! 🕊️',
-      luxury: '엄마야! 럭셔리한 오라가 폭발해서 제 핸드폰이 명품으로 바뀔 뻔! 💎',
-      purity: '에구머니! 이런 순수함은 국가에서 보호해야해요! 천사가 따로 없네요! 😇',
-      uniqueness: '이런 독특함은 특허내야 해요! 진짜 세상에 하나밖에 없는 매력이에요! 🦄'
-    };
-    
-    return messages[trait as keyof typeof messages] || '와우! 이런 매력은 처음 봐요! 정말 놀라워요! ✨';
+    const traitMessages = translatedMessages[trait] || originalMessages[trait] || [
+      "와우! 이런 매력은 처음 봐요! 정말 놀라워요! ✨",
+      "오마이갓! 완전 대박이에요! 너무 멋져요! 🔥",
+      "헉! 이런 특별함... 정말 독특해요! 💫",
+      "세상에! 이런 개성... 진짜 인상적이에요! 🌟"
+    ];
+
+    // 점수에 따라 다른 메시지 선택 (높을수록 더 극찬)
+    const messageIndex = Math.min(Math.floor(value / 3), traitMessages.length - 1);
+    return traitMessages[messageIndex];
   };
   
   return (
@@ -173,7 +272,7 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
       } : {})}
       className="flex flex-col items-center my-4 p-5 bg-gradient-to-br from-yellow-50 to-pink-50 rounded-xl border border-pink-200 w-full relative z-10"
     >
-      <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
+      <h3 className="text-lg font-bold text-gray-800 mb-2">{displayTitle}</h3>
       
       {/* 가장 높은 점수 특성에 대한 AI 주접 멘트 */}
       {highestTrait && (
@@ -187,7 +286,7 @@ const TraitRadarChart: React.FC<TraitRadarChartProps> = ({
             </p>
           </div>
           <div className="absolute right-2 bottom-1">
-            <span className="text-xs font-bold text-pink-500">AI 주접봇</span>
+            <span className="text-xs font-bold text-pink-500">{t('chart.aiBot')}</span>
           </div>
         </div>
       )}

@@ -6,6 +6,8 @@ import { PerfumePersona, RecipeHistoryItem } from '@/app/types/perfume';
 import { motion } from 'framer-motion';
 import FeedbackForm from '@/app/components/feedback/FeedbackForm';
 import RecipeHistory from '@/app/components/RecipeHistory';
+import { useTranslationContext } from '@/app/contexts/TranslationContext';
+import GlobalLanguageSelector from '@/components/GlobalLanguageSelector';
 
 // 피드백 데이터 인터페이스
 interface PerfumeFeedback {
@@ -21,6 +23,7 @@ interface PerfumeFeedback {
 
 export default function FeedbackPage() {
   const router = useRouter();
+  const { t, currentLanguage, setLanguage, isTranslating } = useTranslationContext();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [perfume, setPerfume] = useState<PerfumePersona | null>(null);
@@ -28,7 +31,8 @@ export default function FeedbackPage() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [showRecipeHistory, setShowRecipeHistory] = useState(false);
   const [currentRecipe, setCurrentRecipe] = useState<RecipeHistoryItem | undefined>(undefined);
-  
+    const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+
   // 사용자 ID와 세션 ID (실제로는 인증 시스템에서 가져와야 함)
   const [userId] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -44,13 +48,33 @@ export default function FeedbackPage() {
     return 'session_' + Date.now();
   });
 
+  // 언어 목록 정의
+  const LANGUAGES = [
+    { code: 'ko', name: '한국어', flag: '🇰🇷' },
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'ja', name: '日本語', flag: '🇯🇵' },
+    { code: 'zh-cn', name: '中文', flag: '🇨🇳' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' }
+  ];
+
+  const selectedLanguage = LANGUAGES.find(lang => lang.code === currentLanguage) || LANGUAGES[0];
+
+  // 언어 선택 핸들러
+  const handleLanguageSelect = async (languageCode: string) => {
+    setShowLanguageSelector(false);
+    if (languageCode !== currentLanguage) {
+      await setLanguage(languageCode);
+    }
+  };
+
   useEffect(() => {
     try {
       // 로컬 스토리지에서 분석 결과 불러오기
       const storedResult = localStorage.getItem('analysisResult');
       
       if (!storedResult) {
-        setError('분석 결과를 찾을 수 없습니다.');
+        setError(t('error.result.not.found'));
         setLoading(false);
         return;
       }
@@ -60,7 +84,7 @@ export default function FeedbackPage() {
       const topMatch = parsedResult.matchingPerfumes?.find((p: any) => p.persona);
       
       if (!topMatch || !topMatch.persona) {
-        setError('추천된 향수 정보를 찾을 수 없습니다.');
+        setError(t('feedback.error.noPerfume'));
         setLoading(false);
         return;
       }
@@ -76,10 +100,10 @@ export default function FeedbackPage() {
       }
     } catch (err) {
       console.error('결과 로딩 오류:', err);
-      setError('향수 정보를 불러오는 중 오류가 발생했습니다.');
+      setError(t('error.result.loading'));
       setLoading(false);
     }
-  }, [userId, sessionId]);
+  }, [userId, sessionId, t]);
 
   // 피드백 제출 처리
   const handleFeedbackSubmit = () => {
@@ -113,7 +137,7 @@ export default function FeedbackPage() {
   const handleRecipeActivate = (recipe: RecipeHistoryItem) => {
     setCurrentRecipe(recipe);
     setShowRecipeHistory(false);
-    alert(`${recipe.originalPerfumeName || '레시피'}가 활성화되었습니다!`);
+    alert(`${recipe.originalPerfumeName || t('feedback.recipe')}${t('feedback.recipeActivated')}`);
   };
 
   if (loading) {
@@ -124,7 +148,7 @@ export default function FeedbackPage() {
           <div className="animate-bounce bg-yellow-300 rounded-full h-4 w-4 mr-1" style={{ animationDelay: '0.2s' }}></div>
           <div className="animate-bounce bg-yellow-200 rounded-full h-4 w-4" style={{ animationDelay: '0.4s' }}></div>
         </div>
-        <p className="text-yellow-800 font-medium">향수 정보를 불러오는 중...</p>
+        <p className="text-yellow-800 font-medium">{t('feedback.loading')}</p>
       </div>
     );
   }
@@ -133,13 +157,13 @@ export default function FeedbackPage() {
     return (
       <div className="min-h-screen bg-amber-50 flex items-center justify-center flex-col p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md">
-          <h2 className="text-xl font-bold text-red-500 mb-4">오류 발생</h2>
-          <p className="text-gray-700 mb-6">{error || '향수 정보를 불러올 수 없습니다. 다시 시도해주세요.'}</p>
+          <h2 className="text-xl font-bold text-red-500 mb-4">{t('error.general')}</h2>
+          <p className="text-gray-700 mb-6">{error || t('feedback.error.perfumeInfo')}</p>
           <button
             onClick={() => router.push('/result')}
             className="w-full bg-yellow-400 text-gray-800 font-bold py-3 px-6 rounded-full shadow-md hover:bg-yellow-500 transition-colors"
           >
-            결과 페이지로 돌아가기
+            {t('feedback.backToResult')}
           </button>
         </div>
       </div>
@@ -147,10 +171,88 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-amber-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* 모바일용 레시피 히스토리 버튼 (상단) */}
-        <div className="lg:hidden mb-6">
+    <div className="min-h-screen bg-amber-50 py-4 px-4 sm:px-6">
+      {/* 고정된 상단 언어 선택기 */}
+      <div className="fixed top-4 right-4 z-[60]">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative"
+        >
+          <button
+            onClick={() => setShowLanguageSelector(!showLanguageSelector)}
+            disabled={isTranslating}
+            className="flex items-center space-x-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+          >
+            <span className="text-lg">{selectedLanguage.flag}</span>
+            <span className="text-sm font-medium text-gray-700">
+              {selectedLanguage.name}
+            </span>
+            {isTranslating ? (
+              <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className={`w-4 h-4 text-gray-400 transition-transform ${showLanguageSelector ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            )}
+          </button>
+
+          {showLanguageSelector && (
+            <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-xl overflow-hidden z-[70]">
+              <div className="py-1">
+                {LANGUAGES.map((language) => (
+                  <button
+                    key={language.code}
+                    onClick={() => handleLanguageSelect(language.code)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors ${
+                      currentLanguage === language.code ? 'bg-yellow-50 text-yellow-700' : 'text-gray-700'
+                    }`}
+                  >
+                    <span className="text-base">{language.flag}</span>
+                    <span className="font-medium flex-1">{language.name}</span>
+                    {currentLanguage === language.code && (
+                      <span className="text-yellow-500">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              
+              {isTranslating && (
+                <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-xs text-gray-600">{t('translating') || '번역 중...'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {showLanguageSelector && (
+            <div 
+              className="fixed inset-0 z-[59]" 
+              onClick={() => setShowLanguageSelector(false)}
+            />
+          )}
+        </motion.div>
+      </div>
+
+      {/* 페이지 제목 헤더 - 모바일에서만 표시 */}
+      <div className="mb-6 lg:hidden">
+        <motion.h1 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-3xl font-bold text-gray-800 text-center"
+        >
+          {t('feedback.title')}
+        </motion.h1>
+      </div>
+
+      <div className="max-w-lg mx-auto lg:max-w-7xl">
+
+
+        {/* 레시피 히스토리 버튼 */}
+        <div className="mb-6">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -163,7 +265,7 @@ export default function FeedbackPage() {
                 className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-lg shadow-sm border hover:bg-gray-50 transition-colors"
               >
                 <span className="font-medium text-gray-700">
-                  📚 이전 레시피 보기
+                  📚 {t('feedback.recipeHistory')}
                 </span>
                 <span className={`transform transition-transform ${showRecipeHistory ? 'rotate-180' : ''}`}>
                   ⌄
@@ -193,10 +295,9 @@ export default function FeedbackPage() {
             {/* 모바일용 도움말 카드 */}
             {!showRecipeHistory && (
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-4">
-                <h4 className="font-medium text-blue-900 mb-2">💡 팁</h4>
+                <h4 className="font-medium text-blue-900 mb-2">💡 {t('feedback.tip')}</h4>
                 <p className="text-sm text-blue-800">
-                  이전에 생성된 레시피들을 다시 확인하고 비교할 수 있습니다. 
-                  마음에 들었던 이전 레시피가 있다면 다시 활성화해보세요!
+                  {t('feedback.tipDescription')}
                 </p>
               </div>
             )}
@@ -206,65 +307,14 @@ export default function FeedbackPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 메인 피드백 폼 */}
           <div className="lg:col-span-2">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: isLoaded ? 1 : 0, scale: isLoaded ? 1 : 0.95 }}
-              transition={{ duration: 0.6 }}
-              className="relative bg-white rounded-3xl border-4 border-dashed border-gray-300 p-6 shadow-lg"
-            >
-              {/* 왼쪽 위 점 장식 */}
-              <div className="absolute -left-3 top-20 w-6 h-6 bg-amber-50 border-4 border-amber-400 rounded-full"></div>
-              
-              {/* 오른쪽 아래 캐릭터 */}
-              <motion.div 
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.8, duration: 0.8, type: "spring" }}
-                className="absolute -right-4 bottom-32 w-24 h-24"
-              >
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <img 
-                    src="/cute2.png" 
-                    alt="Cute Character" 
-                    className="w-full h-full object-contain drop-shadow-lg"
-                  />
-                </div>
-              </motion.div>
-              
-              {/* 왼쪽 하단 장식 */}
-              <div className="absolute -left-3 bottom-28 w-6 h-6 bg-amber-50 border-4 border-amber-400 rounded-full"></div>
-              
-              {/* 헤더 영역 */}
-              <div className="text-center mb-6 pt-4">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                  <span className="bg-yellow-300 px-2 py-1">향수 피드백</span>
-                </h1>
-                <p className="text-gray-600 text-sm">
-                  추천된 향수에 대한 피드백을 입력해주세요.
-                </p>
-                
-                {/* 현재 활성화된 레시피 표시 */}
-                {currentRecipe && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-800">
-                      🎯 <strong>활성화된 레시피:</strong> {currentRecipe.originalPerfumeName || '이전 레시피'}
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">
-                      {currentRecipe.testingRecipe?.granules?.length || 0}개 향료 조합
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* FeedbackForm 컴포넌트 사용 */}
-              {perfume && (
-                <FeedbackForm 
-                  originalPerfume={perfume}
-                  onClose={handleClose}
-                  onSubmit={handleFeedbackSubmit}
-                />
-              )}
-            </motion.div>
+            {/* FeedbackForm 컴포넌트 사용 */}
+            {perfume && (
+              <FeedbackForm 
+                originalPerfume={perfume}
+                onClose={handleClose}
+                onSubmit={handleFeedbackSubmit}
+              />
+            )}
           </div>
 
           {/* 데스크톱용 레시피 히스토리 사이드바 */}
@@ -282,7 +332,7 @@ export default function FeedbackPage() {
                   className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-lg shadow-sm border hover:bg-gray-50 transition-colors"
                 >
                   <span className="font-medium text-gray-700">
-                    📚 이전 레시피 보기
+                    📚 {t('feedback.recipeHistory')}
                   </span>
                   <span className={`transform transition-transform ${showRecipeHistory ? 'rotate-180' : ''}`}>
                     ⌄
@@ -312,10 +362,9 @@ export default function FeedbackPage() {
               {/* 도움말 카드 */}
               {!showRecipeHistory && (
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                  <h4 className="font-medium text-blue-900 mb-2">💡 팁</h4>
+                  <h4 className="font-medium text-blue-900 mb-2">💡 {t('feedback.tip')}</h4>
                   <p className="text-sm text-blue-800">
-                    이전에 생성된 레시피들을 다시 확인하고 비교할 수 있습니다. 
-                    마음에 들었던 이전 레시피가 있다면 다시 활성화해보세요!
+                    {t('feedback.tipDescription')}
                   </p>
                 </div>
               )}

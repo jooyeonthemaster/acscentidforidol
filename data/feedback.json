@@ -2777,5 +2777,111 @@
     "submittedAt": "2025-06-04T16:57:11.211Z",
     "id": "feedback_1749056231319_0a5iute",
     "timestamp": "2025-06-04T16:57:11.319Z"
+  },
+  {
+    "perfumeId": "LV-2225161",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "maintain",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [],
+    "notes": "",
+    "submittedAt": "2025-06-11T10:16:57.207Z",
+    "id": "feedback_1749637017829_50mge3m",
+    "timestamp": "2025-06-11T10:16:57.829Z"
+  },
+  {
+    "perfumeId": "LV-2225161",
+    "retentionPercentage": 80,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "increase"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [],
+    "notes": "",
+    "submittedAt": "2025-06-11T10:18:12.503Z",
+    "id": "feedback_1749637092677_cj4as2q",
+    "timestamp": "2025-06-11T10:18:12.677Z"
+  },
+  {
+    "perfumeId": "IC-3126171",
+    "retentionPercentage": 80,
+    "categoryPreferences": {
+      "citrus": "maintain",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "MD-8602341",
+        "name": "만다린 오렌지",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-06-11T16:41:17.550Z",
+    "id": "feedback_1749660078123_xh349av",
+    "timestamp": "2025-06-11T16:41:18.123Z"
+  },
+  {
+    "perfumeId": "TM-2320461",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "maintain",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "maintain",
+      "spicy": "maintain"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "SS-8219241",
+        "name": "바다소금",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-06-11T16:43:33.146Z",
+    "id": "feedback_1749660213272_l2ly51i",
+    "timestamp": "2025-06-11T16:43:33.272Z"
   }
 ]

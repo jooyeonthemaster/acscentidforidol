@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useTranslationContext } from '@/app/contexts/TranslationContext';
 
 export default function LandingPage() {
   const router = useRouter();
   const [isLoaded, setIsLoaded] = useState(false);
+  const { t } = useTranslationContext();
   
   useEffect(() => {
     setIsLoaded(true);
@@ -65,9 +67,13 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="text-center"
           >
-            <h2 className="text-xs font-bold text-gray-900 mb-1 tracking-wider">AC'SCENT IDENTITY</h2>
+            <h2 className="text-xs font-bold text-gray-900 mb-1 tracking-wider">
+              {t('service.title')}
+            </h2>
             <h1 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">
-              <span className="bg-yellow-300 px-1 py-1 inline-block">뿌리는 덕질</span>
+              <span className="bg-yellow-300 px-1 py-1 inline-block">
+                {t('service.subtitle')}
+              </span>
             </h1>
           </motion.div>
           
@@ -77,8 +83,12 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.5 }}
             className="text-gray-900 text-base text-center mt-1"
           >
-            언제 어디서든 최애를 떠올릴 수 있도록 <br />
-            향으로 뿌리는 덕질, 뿌덕뿌덕~ 💕
+            {t('service.description').split('<br />').map((line, index) => (
+              <React.Fragment key={index}>
+                {line}
+                {index < t('service.description').split('<br />').length - 1 && <br />}
+              </React.Fragment>
+            ))}
           </motion.p>
         </div>
         
@@ -92,20 +102,20 @@ export default function LandingPage() {
           <div className="bg-yellow-50 rounded-xl border-2 border-yellow-100 p-3 mb-4">
             <h3 className="font-bold text-gray-800 mb-2 flex items-center text-sm">
               <span className="text-base mr-2">💖</span>
-              이런 덕후들에게 추천해요!
+              {t('landing.target.title')}
             </h3>
             <ul className="space-y-1">
               <li className="flex items-start">
                 <span className="mr-2 text-yellow-500 font-bold">•</span>
-                <span className="text-gray-900 text-sm">덕질할 때마다 나만의 향을 뿌리고 싶은 분</span>
+                <span className="text-gray-900 text-sm">{t('landing.target.1')}</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-yellow-500 font-bold">•</span>
-                <span className="text-gray-900 text-sm">최애의 매력을 향으로 표현하고 싶은 분</span>
+                <span className="text-gray-900 text-sm">{t('landing.target.2')}</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-yellow-500 font-bold">•</span>
-                <span className="text-gray-900 text-sm">최애와 나를 연결하는 시그니처 향이 필요한 분</span>
+                <span className="text-gray-900 text-sm">{t('landing.target.3')}</span>
               </li>
             </ul>
           </div>
@@ -113,20 +123,20 @@ export default function LandingPage() {
           <div className="bg-yellow-50 rounded-xl border-2 border-yellow-100 p-3">
             <h3 className="font-bold text-gray-800 mb-2 flex items-center text-sm">
               <span className="text-base mr-2">🎯</span>
-              덕질 향수 뿌리는 방법
+              {t('landing.howto.title')}
             </h3>
             <ol className="space-y-1">
               <li className="flex items-center">
                 <div className="bg-yellow-300 w-6 h-6 rounded-full flex items-center justify-center text-gray-900 font-bold mr-2 text-[11px]">1</div>
-                <span className="text-gray-900 text-sm">최애 정보와 나의 덕질 스타일 입력하기</span>
+                <span className="text-gray-900 text-sm">{t('landing.howto.step1')}</span>
               </li>
               <li className="flex items-center">
                 <div className="bg-yellow-300 w-6 h-6 rounded-full flex items-center justify-center text-gray-900 font-bold mr-2 text-[11px]">2</div>
-                <span className="text-gray-900 text-sm">최애 사진으로 뿌덕 추천 받기</span>
+                <span className="text-gray-900 text-sm">{t('landing.howto.step2')}</span>
               </li>
               <li className="flex items-center">
                 <div className="bg-yellow-300 w-6 h-6 rounded-full flex items-center justify-center text-gray-900 font-bold mr-2 text-[11px]">3</div>
-                <span className="text-gray-900 text-sm">나만의 커스텀으로 뿌덕 레시피 완성하기</span>
+                <span className="text-gray-900 text-sm">{t('landing.howto.step3')}</span>
               </li>
             </ol>
           </div>
@@ -145,7 +155,7 @@ export default function LandingPage() {
             whileTap={{ scale: 0.98 }}
             className="bg-white border-2 border-gray-800 text-gray-800 font-bold py-2 px-8 rounded-full shadow-sm flex items-center"
           >
-            덕질 향수 뿌리러 가기
+            {t('landing.cta')}
             <span className="ml-1 text-lg">»</span>
           </motion.button>
         </motion.div>
