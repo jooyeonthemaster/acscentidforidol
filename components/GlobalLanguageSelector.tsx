@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslationContext } from '@/app/contexts/TranslationContext';
 
 const LANGUAGES = [
@@ -15,8 +15,32 @@ const LANGUAGES = [
 const GlobalLanguageSelector: React.FC = () => {
   const { currentLanguage, setLanguage, isTranslating } = useTranslationContext();
   const [isOpen, setIsOpen] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const selectedLanguage = LANGUAGES.find(lang => lang.code === currentLanguage) || LANGUAGES[0];
+
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      setIsPrinting(true);
+    };
+
+    const handleAfterPrint = () => {
+      setIsPrinting(false);
+    };
+
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, []);
+
+  // 프린트 중이면 아예 렌더링하지 않음
+  if (isPrinting) {
+    return null;
+  }
 
   const handleLanguageSelect = async (languageCode: string) => {
     setIsOpen(false);
@@ -26,7 +50,7 @@ const GlobalLanguageSelector: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-4 right-4 z-50 print:hidden global-language-selector">
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}

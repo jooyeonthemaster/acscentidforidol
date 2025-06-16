@@ -33,6 +33,7 @@ export default function IdolInfoForm() {
     charms: '',
   });
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -62,9 +63,30 @@ export default function IdolInfoForm() {
     { id: 'caring', label: t('personality.caring') },
   ];
 
+  // 이름 길이 검증 함수 (한글 5글자, 영어 10글자 제한)
+  const validateNameLength = (name: string): boolean => {
+    let totalWidth = 0;
+    for (let char of name) {
+      // 한글, 한자, 일본어 등 2바이트 문자는 2의 가중치
+      if (/[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]/.test(char)) {
+        totalWidth += 2;
+      } else {
+        // 영어, 숫자 등 1바이트 문자는 1의 가중치
+        totalWidth += 1;
+      }
+    }
+    return totalWidth <= 10; // 한글 5글자(10 가중치) 제한
+  };
+
   // 입력값 변경 핸들러
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // 이름 필드의 경우 길이 검증
+    if (name === 'name' && !validateNameLength(value)) {
+      return; // 제한을 초과하면 입력 무시
+    }
+    
     setIdolInfo(prev => ({ ...prev, [name]: value }));
   };
 
@@ -204,7 +226,11 @@ export default function IdolInfoForm() {
       // 분석 시작
       handleAnalyzeImage();
     } else {
-      setStep(step + 1);
+      const nextStep = step + 1;
+      setStep(nextStep);
+      if (nextStep === 5) {
+        setShowImageModal(false); // 이미지 단계에서 모달 초기화
+      }
     }
   };
 
@@ -533,6 +559,7 @@ export default function IdolInfoForm() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300 text-gray-900 placeholder-gray-500"
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">한글 5글자, 영어 10글자 이내로 입력해주세요</p>
               </div>
 
               <div>
@@ -640,20 +667,73 @@ export default function IdolInfoForm() {
           {/* 단계 5: 이미지 업로드 */}
           {step === 5 && (
             <div>
-              <p className="text-sm text-gray-600 mb-4">
-                {t('info.image.subtitle')}
-              </p>
-              <IdolImageUpload 
-                onImageUpload={(file) => {
-                  handleImageUpload(file);
-                  const preview = URL.createObjectURL(file);
-                  setImagePreview(preview);
-                }}
-                previewUrl={imagePreview}
-              />
-              <p className="mt-3 text-xs text-gray-500 text-center">
-                * 최애가 잘 보이는 사진을 선택하면 더 정확한 추천을 받을 수 있어요!
-              </p>
+              {!showImageModal ? (
+                /* 이미지 업로드 안내 모달 */
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-6">
+                    <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    최애 이미지 업로드
+                  </h3>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p className="text-sm text-blue-800 font-medium mb-2">
+                      📸 이미지 비율 안내
+                    </p>
+                    <p className="text-sm text-blue-700 leading-relaxed">
+                      <strong>5:6 비율</strong>의 세로로 조금 긴 이미지를<br/>
+                      업로드해주시면 가장 좋은 결과를 얻을 수 있어요!
+                    </p>
+                    <p className="text-xs text-blue-600 mt-2">
+                      (예: 500×600px, 400×480px 등)
+                    </p>
+                  </div>
+                  
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <p className="text-sm text-yellow-800">
+                      ✨ <strong>팁:</strong> 최애가 잘 보이는 고화질 사진을<br/>
+                      선택하시면 더 정확한 분석이 가능해요!
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowImageModal(true)}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200 shadow-md"
+                  >
+                    이미지 업로드하기
+                  </button>
+                </div>
+              ) : (
+                /* 실제 이미지 업로드 컴포넌트 */
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm text-gray-600">
+                      {t('info.image.subtitle')}
+                    </p>
+                    <button
+                      onClick={() => setShowImageModal(false)}
+                      className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    >
+                      다시 안내보기
+                    </button>
+                  </div>
+                  <IdolImageUpload 
+                    onImageUpload={(file) => {
+                      handleImageUpload(file);
+                      const preview = URL.createObjectURL(file);
+                      setImagePreview(preview);
+                    }}
+                    previewUrl={imagePreview}
+                  />
+                  <p className="mt-3 text-xs text-gray-500 text-center">
+                    * 5:6 비율의 세로 이미지를 권장해요!
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </motion.div>

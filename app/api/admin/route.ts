@@ -50,8 +50,8 @@ export async function GET() {
           if (session.imageAnalysis?.matchingPerfumes?.[0]?.name) {
             idolName = session.imageAnalysis.matchingPerfumes[0].name;
           } else if (session.imageAnalysis?.analysis) {
-            // analysis가 객체인 경우 안전하게 처리
-            idolName = safeStringify(session.imageAnalysis.analysis).substring(0, 50) + '...';
+            // 복잡한 분석 데이터는 간단히 표시
+            idolName = '분석 완료';
           }
           
           // createdAt이 없으면 updatedAt 사용, 둘 다 없으면 현재 시간 사용

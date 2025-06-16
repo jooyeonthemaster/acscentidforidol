@@ -77,3 +77,55 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* 프린트 시 불필요한 UI 요소 숨기기 */
+@media print {
+  /* 언어 선택기 완전히 숨기기 - 모든 방법 동원 */
+  .global-language-selector,
+  .global-language-selector *,
+  .print-hidden,
+  .fixed,
+  div[class*="fixed top-4 right-4"],
+  div[class*="z-50"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -99999px !important;
+    top: -99999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    -webkit-clip-path: inset(50%) !important;
+    clip-path: inset(50%) !important;
+  }
+  
+  /* 모든 fixed 요소 숨기기 */
+  [class*="fixed"] {
+    display: none !important;
+  }
+  
+  /* z-index가 높은 요소들 숨기기 */
+  [class*="z-50"],
+  [class*="z-40"],
+  [class*="z-60"] {
+    display: none !important;
+  }
+  
+  /* 언어 토글 버튼 특별히 타겟팅 */
+  button[class*="flex items-center space-x-2"] {
+    display: none !important;
+  }
+  
+  /* 프린트 시 페이지 여백 최소화 */
+  @page {
+    margin: 0.5in;
+  }
+  
+  /* 프린트 시 배경색 제거 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}

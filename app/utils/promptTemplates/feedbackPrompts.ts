@@ -27,13 +27,74 @@ export function generateCustomPerfumePrompt(feedback: GeminiPerfumeSuggestion & 
       .join('\n')
     : '제공되지 않음';
 
-  const retentionPercentage = feedback.retentionPercentage || 50;
+  const retentionPercentage = feedback.retentionPercentage ?? 50;
   const perfumeName = feedback.originalPerfumeName || '미지정 향수';
   const perfumeId = feedback.perfumeId;
 
   const personaDataSourceMention = "'@/app/data/perfumePersonas.ts' 파일의 'personas' 배열";
   const granuleCategoryGuidance = `각 추천 향료의 주된 향 계열(mainCategory)은 ${personaDataSourceMention}에 정의된 해당 향료의 'categories' 객체를 참고하여 가장 대표적인 한글 카테고리명으로 명시해주세요.`;
   const aiName = "Personal Scent";
+
+  // 0% 유지 시와 그 외의 경우를 구분하는 로직
+  const isZeroRetention = retentionPercentage === 0;
+  
+  const originalPerfumeRules = isZeroRetention 
+    ? `
+    **중요: 0% 유지 선택 시 특별 규칙**
+    사용자가 0% 유지를 선택했으므로, 원본 향수(${perfumeName}, ID: ${perfumeId})는 granules 배열에 절대 포함하지 마십시오.
+    대신 사용자의 카테고리 선호도, 특성 선호도, 특정 향료 요청을 바탕으로 완전히 새로운 2~3개의 향료 조합을 제안하세요.
+    모든 추천 향료의 ratio 총합은 100%가 되어야 합니다.
+    `
+    : `
+    **원본 향수 포함 규칙 (${retentionPercentage}% 유지)**
+    *   규칙 1 (원본 향수 포함 및 비율 고정): 추천되는 향료 중 첫 번째는 반드시 원본 추천 향수 (ID: '${perfumeId}', 이름: '${perfumeName}')여야 합니다. 이 첫 번째 향료의 ratio (비율) 값은 사용자가 설정한 기존 향 유지 비율인 정확히 ${retentionPercentage}% 여야 합니다. drops는 이 비율과 다른 향료들과의 관계를 고려하여 AI가 자율적으로 1-10 사이로 설정하되, 전체 방울 합이 5-15개가 되도록 합니다.
+    *   규칙 3 (나머지 향료 비율): 원본 향수를 제외한 나머지 모든 추천 향료들의 ratio 값의 총합은 (100 - ${retentionPercentage})%가 되어야 합니다. (AI가 이 계산을 정확히 수행해야 합니다). 각 추가 향료의 ratio는 AI가 결정하되, 이 총합을 준수해야 합니다.
+    `;
+
+  const exampleGranules = isZeroRetention
+    ? `
+      // 0% 유지 예시 - 원본 향수 완전 제외, 새로운 조합만 제안
+      // {
+      //   "id": "YJ-8213431",      // perfumePersonas.ts에 있는 실제 ID
+      //   "name": "유자",          // perfumePersonas.ts에 있는 실제 이름
+      //   "mainCategory": "시트러스",
+      //   "drops": 5,
+      //   "ratio": 50,               // 새로운 조합의 일부
+      //   "reason": "사용자님의 시트러스 선호도를 반영하여 상큼하고 활기찬 느낌을 제공하기 위해 유자를 50% 비율로 추가했습니다."
+      // },
+      // {
+      //   "id": "BK-2201281",      // perfumePersonas.ts에 있는 실제 ID
+      //   "name": "블랙베리",      // perfumePersonas.ts에 있는 실제 이름
+      //   "mainCategory": "프루티",
+      //   "drops": 5,
+      //   "ratio": 50,               // 새로운 조합의 나머지
+      //   "reason": "달콤하고 풍부한 과일의 느낌을 더하고, 사용자의 프루티 계열 선호도를 반영하기 위해 블랙베리를 50% 비율로 포함했습니다."
+      // }
+      // 0% 유지 시에는 원본 향수(${perfumeId}, ${perfumeName})를 granules에 포함하지 않고,
+      // 사용자의 피드백을 바탕으로 완전히 새로운 향료들만으로 100% 구성합니다.
+    `
+    : `
+      // ${retentionPercentage}% 유지 예시 - 원본 향수 포함
+      // {
+      //   "id": "${perfumeId}",      // 실제 원본 향수 ID (예: TL-2810221)
+      //   "name": "${perfumeName}",    // 실제 원본 향수 이름 (예: 튤립)
+      //   "mainCategory": "플로럴",   // 원본 향수의 대표 카테고리
+      //   "drops": 2,                // 예시 방울 수 (AI가 결정)
+      //   "ratio": ${retentionPercentage},               // retentionPercentage 값과 동일해야 함
+      //   "reason": "기존 '${perfumeName}' 향수의 특징을 사용자의 요청에 따라 ${retentionPercentage}% 유지하기 위해 핵심 베이스로 포함되었습니다."
+      // },
+      // {
+      //   "id": "YJ-8213431",      // perfumePersonas.ts에 있는 실제 ID
+      //   "name": "유자",          // perfumePersonas.ts에 있는 실제 이름
+      //   "mainCategory": "시트러스",
+      //   "drops": 4,
+      //   "ratio": 40,               // (100 - ${retentionPercentage})의 일부
+      //   "reason": "사용자님의 시트러스 선호도 증가 요청을 반영하고, '${perfumeName}'의 플로럴 노트와 조화를 이루며 상큼함을 더하기 위해 유자를 40% 비율로 추가했습니다."
+      // }
+      // AI는 위 규칙과 예시에 따라, granules 배열의 첫 번째 요소로 원본 향수(${perfumeId}, ${perfumeName})를 포함하고, 
+      // 해당 향료의 ratio는 반드시 ${retentionPercentage} (사용자가 입력한 실제 값)으로 설정해야 합니다.
+      // 나머지 향료들의 ratio 합은 (100 - ${retentionPercentage})가 되어야 합니다.
+    `;
 
   return `
 당신은 천재적인 조향사 AI '${aiName}'입니다. 사용자의 상세한 피드백을 면밀히 분석하여, 사용자가 직접 시향해볼 수 있는 테스팅 향료 조합 레시피를 제안해야 합니다. 응답은 반드시 아래 명시된 JSON 구조를 따라야 하며, 모든 필드를 포함해야 합니다. UI 화면에는 당신이 제공한 JSON 데이터가 직접 사용됩니다.
@@ -87,7 +148,7 @@ export function generateCustomPerfumePrompt(feedback: GeminiPerfumeSuggestion & 
 ${feedback.initialCategoryGraphData?.map((data: CategoryDataPoint) => `  - ${data.axis}: ${data.value}`).join('\n') || '  초기 그래프 데이터 없음'}
 
 사용자 피드백 상세
-- 기존 향 유지 비율 (매우 중요): ${retentionPercentage}% (이 비율만큼 원본 향수(${perfumeName}, ID: ${perfumeId})의 특징이 유지되어야 합니다)
+- 기존 향 유지 비율 (매우 중요): ${retentionPercentage}% ${isZeroRetention ? '(완전히 새로운 향수 요청)' : `(이 비율만큼 원본 향수(${perfumeName}, ID: ${perfumeId})의 특징이 유지되어야 합니다)`}
 - 첫인상 (선택 사항): ${feedback.impression || '제공되지 않음'}
 - 향 카테고리 선호도 (증가/감소/유지):
 ${categoryPreferences}
@@ -102,18 +163,17 @@ ${specificScents}
 
 1.  피드백 분석 및 테스팅 레시피 생성:
     *   사용자의 모든 피드백(향 유지 비율, 카테고리/특성 선호도, 특정 향료 요청 등)을 종합적으로 고려합니다.
-    *   유지 비율 절대 준수: '${retentionPercentage}%'의 기존 향 유지 비율을 반드시 반영하여, 원본 향(${perfumeName})의 느낌과 주요 특징이 해당 비율만큼 새로운 조합에서도 느껴지도록 해야 합니다. 이것은 테스팅 레시피 구성에서 가장 중요한 규칙 중 하나입니다.
+    *   유지 비율 절대 준수: ${isZeroRetention ? '0% 유지이므로 원본 향수는 완전히 제외하고 새로운 조합만 제안합니다.' : `'${retentionPercentage}%'의 기존 향 유지 비율을 반드시 반영하여, 원본 향(${perfumeName})의 느낌과 주요 특징이 해당 비율만큼 새로운 조합에서도 느껴지도록 해야 합니다.`} 이것은 테스팅 레시피 구성에서 가장 중요한 규칙 중 하나입니다.
     *   향료 추천 (매우 중요 규칙 필독): 2~3개의 테스팅용 향료(granules)를 추천합니다. 다시 한번 강조합니다: 추천되는 각 향료는 반드시 위에 나열된 목록에서 선택해야 하며, ${personaDataSourceMention}에 정의된 기존 향수 페르소나 중 하나여야 합니다.
-        *   규칙 1 (원본 향수 포함 및 비율 고정): 추천되는 향료 중 첫 번째는 반드시 원본 추천 향수 (ID: '${perfumeId}', 이름: '${perfumeName}')여야 합니다. 이 첫 번째 향료의 ratio (비율) 값은 사용자가 설정한 기존 향 유지 비율인 정확히 ${retentionPercentage}% 여야 합니다. drops는 이 비율과 다른 향료들과의 관계를 고려하여 AI가 자율적으로 1-10 사이로 설정하되, 전체 방울 합이 5-15개가 되도록 합니다.
-        *   규칙 2 (ID 및 이름 정확성): 나머지 추천 향료 및 원본 향료를 포함한 모든 향료의 id와 name은 반드시 위에 나열된 목록과 ${personaDataSourceMention}에 정의된 기존 향수 페르소나의 것과 정확히 일치해야 합니다. 절대로 임의의 ID나 이름을 생성/수정하지 마십시오.
-        *   규칙 3 (나머지 향료 비율): 원본 향수를 제외한 나머지 모든 추천 향료들의 ratio 값의 총합은 (100 - ${retentionPercentage})%가 되어야 합니다. (AI가 이 계산을 정확히 수행해야 합니다). 각 추가 향료의 ratio는 AI가 결정하되, 이 총합을 준수해야 합니다.
+        ${originalPerfumeRules}
+        *   규칙 2 (ID 및 이름 정확성): ${isZeroRetention ? '모든' : '나머지'} 추천 향료의 id와 name은 반드시 위에 나열된 목록과 ${personaDataSourceMention}에 정의된 기존 향수 페르소나의 것과 정확히 일치해야 합니다. 절대로 임의의 ID나 이름을 생성/수정하지 마십시오.
         *   각 향료는 다음 정보를 포함해야 합니다:
             *   id: (규칙 1, 2 준수)
             *   name: (규칙 1, 2 준수)
             *   mainCategory: ${granuleCategoryGuidance}
-            *   drops: (규칙 1 준수 하에 AI가 자율 결정, 각 향료 1-10 방울, 총합 5-15 방울)
-            *   ratio: (규칙 1, 3 준수, 정수값)
-            *   reason: 해당 향료를 해당 방울 수와 비율로 추천한 구체적인 이유. 원본 향수의 경우, "기존 '${perfumeName}' 향수의 특징을 사용자의 요청에 따라 ${retentionPercentage}% 유지하기 위해 핵심 베이스로 포함되었습니다." 와 같이 명확한 이유가 포함되어야 합니다. 다른 향료들은 사용자의 어떤 피드백을 반영하는지, 원본 향과 어떻게 조화를 이루는지 등을 설명합니다.
+            *   drops: (${isZeroRetention ? 'AI가 자율 결정' : '규칙 1 준수 하에 AI가 자율 결정'}, 각 향료 1-10 방울, 총합 5-15 방울)
+            *   ratio: (${isZeroRetention ? '모든 향료의 총합이 100%' : '규칙 1, 3 준수'}, 정수값)
+            *   reason: 해당 향료를 해당 방울 수와 비율로 추천한 구체적인 이유. ${isZeroRetention ? '사용자의 어떤 피드백을 반영하는지, 왜 이 향료가 적합한지 등을 설명합니다.' : `원본 향수의 경우, "기존 '${perfumeName}' 향수의 특징을 사용자의 요청에 따라 ${retentionPercentage}% 유지하기 위해 핵심 베이스로 포함되었습니다." 와 같이 명확한 이유가 포함되어야 합니다. 다른 향료들은 사용자의 어떤 피드백을 반영하는지, 원본 향과 어떻게 조화를 이루는지 등을 설명합니다.`}
     *   모순점 및 존재하지 않는 향료 요청 처리: 사용자의 피드백 간에 명백한 모순이 발견될 경우, 또는 사용자가 추가를 요청한 특정 향료가 ${personaDataSourceMention}에 없어 추천 목록에 포함할 수 없는 경우, 이를 'contradictionWarning' 객체에 해당 내용을 명확히 포함시켜야 합니다. 추천 불가능한 향료는 'granules' 배열에 절대 포함시키지 마십시오.
 
 2.  그래프 데이터 생성:
@@ -150,36 +210,8 @@ ${specificScents}
   "testingRecipe": {
     "purpose": "(AI가 작성한 테스팅 레시피의 목적)",
     "granules": [
-      // 중요: 아래 예시는 perfumePersonas.ts에 실제 존재하는 데이터를 기반으로, retentionPercentage가 20%라고 가정한 예시입니다.
-      // 당신의 응답도 반드시 이와 같이 실제 데이터만을 사용하고, 첫 번째 granule은 원본 향수여야 하며, 그 ratio는 retentionPercentage 값과 정확히 일치해야 합니다.
-      // 예시 (retentionPercentage가 20%라고 가정 시):
-      // {
-      //   "id": "${perfumeId}",      // 실제 원본 향수 ID (예: TL-2810221)
-      //   "name": "${perfumeName}",    // 실제 원본 향수 이름 (예: 튤립)
-      //   "mainCategory": "플로럴",   // 원본 향수의 대표 카테고리
-      //   "drops": 2,                // 예시 방울 수 (AI가 결정)
-      //   "ratio": 20,               // retentionPercentage 값과 동일해야 함
-      //   "reason": "기존 '${perfumeName}' 향수의 특징을 사용자의 요청에 따라 20% 유지하기 위해 핵심 베이스로 포함되었습니다."
-      // },
-      // {
-      //   "id": "YJ-8213431",      // perfumePersonas.ts에 있는 실제 ID
-      //   "name": "유자",          // perfumePersonas.ts에 있는 실제 이름
-      //   "mainCategory": "시트러스",
-      //   "drops": 4,
-      //   "ratio": 40,               // (100 - 20)의 일부
-      //   "reason": "사용자님의 시트러스 선호도 증가 요청을 반영하고, '${perfumeName}'의 플로럴 노트와 조화를 이루며 상큼함을 더하기 위해 유자를 40% 비율로 추가했습니다."
-      // },
-      // {
-      //   "id": "BK-2201281",      // perfumePersonas.ts에 있는 실제 ID
-      //   "name": "블랙베리",      // perfumePersonas.ts에 있는 실제 이름
-      //   "mainCategory": "프루티",
-      //   "drops": 4,
-      //   "ratio": 40,               // (100 - 20)의 나머지 부분
-      //   "reason": "전체적인 향에 달콤함과 풍부한 과일의 느낌을 더하고, 사용자의 프루티 계열 선호도를 반영하기 위해 블랙베리를 40% 비율로 포함했습니다."
-      // }
-      // AI는 위 규칙과 예시에 따라, granules 배열의 첫 번째 요소로 원본 향수(${perfumeId}, ${perfumeName})를 포함하고, 
-      // 해당 향료의 ratio는 반드시 ${retentionPercentage} (사용자가 입력한 실제 값)으로 설정해야 합니다.
-      // 나머지 향료들의 ratio 합은 (100 - ${retentionPercentage})가 되어야 합니다.
+      // 중요: 아래 예시는 perfumePersonas.ts에 실제 존재하는 데이터를 기반으로 한 예시입니다.
+      ${exampleGranules}
       // 모든 향료의 ID와 이름은 ${personaDataSourceMention}의 것을 그대로 사용해야 합니다.
     ],
     "instructions": {
@@ -206,7 +238,7 @@ ${specificScents}
 }
 \`\`\`
 
-참고: 응답은 위에 명시된 JSON 구조만을 포함해야 하며, 다른 설명이나 마크다운 포맷팅 없이 순수 JSON 텍스트로 제공되어야 합니다. 모든 키와 값 타입을 정확히 지켜주세요. 특히, 향료의 id와 name은 반드시 위에 나열된 목록과 '@/app/data/perfumePersonas.ts' 파일의 'personas' 배열에 명시된 실제 값이어야 하며, 첫 번째 향료의 ratio는 사용자가 설정한 retentionPercentage와 정확히 일치해야 합니다. 이를 어길 시 응답은 사용될 수 없습니다.
+참고: 응답은 위에 명시된 JSON 구조만을 포함해야 하며, 다른 설명이나 마크다운 포맷팅 없이 순수 JSON 텍스트로 제공되어야 합니다. 모든 키와 값 타입을 정확히 지켜주세요. 특히, 향료의 id와 name은 반드시 위에 나열된 목록과 '@/app/data/perfumePersonas.ts' 파일의 'personas' 배열에 명시된 실제 값이어야 합니다. ${isZeroRetention ? '0% 유지 시에는 원본 향수를 granules에 포함하지 않습니다.' : `첫 번째 향료의 ratio는 사용자가 설정한 retentionPercentage와 정확히 일치해야 합니다.`} 이를 어길 시 응답은 사용될 수 없습니다.
 `;
 }
 

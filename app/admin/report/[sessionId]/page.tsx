@@ -35,8 +35,8 @@ const NOTEBOOK_LAYOUT = {
     image: { x: 30, y: 110, width: 155, height: 185 },
     traitChart: { x: 30, y: 295, width: 155, height: 185 }, // 이미지 바로 아래, 같은 사이즈
     colorPalette: { x: 30, y: 462, width: 155, height: 80 }, // 레이더 차트 바로 아래
-    name: { x: 300, y: 130, width: 180, height: 25 },
-    gender: { x: 300, y: 153, width: 100, height: 30 },
+    name: { x: 290, y: 120, width: 120, height: 35 }, // 위로 15px 이동, width 180->120으로 축소, height 증가
+    gender: { x: 310, y: 155, width: 100, height: 30 }, // name 이동에 맞춰 10px 아래로 조정
     keywords: { x: 175, y: 205, width: 170, height: 90 },
     radarChart: { x: 40, y: 300, width: 160, height: 160 },
     features: { x: 185, y: 330, width: 180, height: 90 },
@@ -62,22 +62,34 @@ const AutoResizeText: React.FC<AutoResizeTextProps> = ({ text, maxWidth, style =
   useEffect(() => {
     if (!textRef.current) return;
 
-    // 텍스트 길이에 따라 폰트 크기 계산
+    // 더 정교한 폰트 크기 계산 로직
     const textLength = text.length;
     let calculatedFontSize = 14;
 
-    if (textLength > 8) {
-      calculatedFontSize = Math.max(8, 14 - (textLength - 8) * 0.8);
-    }
-    if (textLength > 12) {
-      calculatedFontSize = Math.max(6, 14 - (textLength - 8) * 1.2);
-    }
-    if (textLength > 16) {
-      calculatedFontSize = Math.max(4, 14 - (textLength - 8) * 1.5);
+    // 다양한 경우의 수를 고려한 반응형 폰트 크기 조정
+    if (textLength <= 3) {
+      calculatedFontSize = 14; // 매우 짧은 이름 (예: 김완빈)
+    } else if (textLength <= 5) {
+      calculatedFontSize = 13; // 짧은 이름 (예: 김완빈이)
+    } else if (textLength <= 7) {
+      calculatedFontSize = 12; // 보통 이름 (예: 김완빈입니다)
+    } else if (textLength <= 9) {
+      calculatedFontSize = 10; // 긴 이름
+    } else if (textLength <= 12) {
+      calculatedFontSize = 8; // 매우 긴 이름
+    } else if (textLength <= 15) {
+      calculatedFontSize = 7; // 극도로 긴 이름
+    } else if (textLength <= 18) {
+      calculatedFontSize = 6; // 초과 긴 이름
+    } else {
+      calculatedFontSize = 5; // 최소 폰트 크기
     }
 
+    // 최소/최대 폰트 크기 제한
+    calculatedFontSize = Math.max(5, Math.min(14, calculatedFontSize));
+
     setFontSize(calculatedFontSize);
-  }, [text]);
+  }, [text, maxWidth]);
 
   return (
     <span
@@ -806,21 +818,24 @@ export default function ReportPage() {
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              height: '50%',
-              width: '100%',
+              height: '100%',
+              width: '80%',
               overflow: 'hidden'
             }}>
-              {/* 실제 이름 값 - 강력한 반응형 폰트 크기 */}
-              <AutoResizeText 
-                text={sessionData?.analyses?.[0]?.name || session?.name || '김완빈'}
-                maxWidth={170}
-                style={{
-                  fontWeight: '600', 
-                  color: '#1F2937',
-                  whiteSpace: 'nowrap',
-                  lineHeight: '1.2'
-                }}
-              />
+              {/* 실제 이름 값 - 고정 폰트 크기 */}
+              <span style={{
+                fontSize: '14px',
+                maxWidth: '150px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                display: 'inline-block',
+                fontWeight: '600', 
+                color: '#1F2937',
+                lineHeight: '1.2'
+              }}>
+                {sessionData?.analyses?.[0]?.name || session?.name || '김완빈'}
+              </span>
             </div>
           </NotebookElement>
           
@@ -1136,7 +1151,7 @@ export default function ReportPage() {
                   gap: '12px'
                 }}>
                   <div style={{
-                    padding: '4px 12px',
+                    padding: '6px 12px 4px 12px',
                     flex: 1,
                     textAlign: 'left'
                   }}>
@@ -1160,7 +1175,7 @@ export default function ReportPage() {
                   gap: '12px'
                 }}>
                 <div style={{ 
-                    padding: '4px 12px',
+                    padding: '3px 12px 4px 12px',
                     flex: 1,
                     textAlign: 'left'
                   }}>

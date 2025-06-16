@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     } = {
       perfumeId: originalPerfume.id,
       originalPerfumeName: originalPerfume.name,
-      retentionPercentage: clientFeedback.retentionPercentage || 50,
+      retentionPercentage: clientFeedback.retentionPercentage ?? 50,
       initialCategoryGraphData: initialCategoryGraphData,
       // 아래 필드들은 AI가 채우거나, feedbackForPrompt 구성 시 기본값/플레이스홀더로 초기화
       adjustedCategoryGraphData: [], 
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
             originalPerfumeName: originalPerfume.name,
             feedbackSummary: {
               overallRating: clientFeedback.overallRating || 5, // 기본값 5
-              retentionPercentage: clientFeedback.retentionPercentage || 50, // 기본값 50
+              retentionPercentage: clientFeedback.retentionPercentage ?? 50, // 기본값 50
               mainConcerns: clientFeedback.additionalComments || '피드백 없음' // 기본값
             },
             improvedRecipe: finalData,
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
           originalPerfumeName: originalPerfume.name,
           feedbackSummary: {
             overallRating: clientFeedback.overallRating || 5, // 기본값 5
-            retentionPercentage: clientFeedback.retentionPercentage || 50, // 기본값 50
+            retentionPercentage: clientFeedback.retentionPercentage ?? 50, // 기본값 50
             mainConcerns: clientFeedback.additionalComments || '피드백 없음' // 기본값
           },
           improvedRecipe: result,
