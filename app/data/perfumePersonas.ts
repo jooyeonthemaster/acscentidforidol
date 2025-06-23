@@ -744,7 +744,7 @@ const perfumePersonas: PerfumePersonaCollection = {
       categories: {
         citrus: 3,
         floral: 3,
-        woody: 8,
+        woody: 7,
         musky: 8,
         fruity: 1,
         spicy: 7

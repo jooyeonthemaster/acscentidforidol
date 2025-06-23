@@ -30,8 +30,8 @@ interface SuccessViewProps {
 interface ConfirmedRecipeDetail {
   name: string;
   id: string;
-  amount10ml: number; // 1g 기준
-  amount50ml: number; // 5g 기준
+  amount10ml: number; // 2g 기준
+  amount50ml: number; // 10g 기준
 }
 
 export const SuccessView: React.FC<SuccessViewProps> = ({ 
@@ -57,8 +57,8 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
         return {
           name: granule.name,
           id: granule.id,
-          amount10ml: parseFloat((ratio * 1).toFixed(3)), // 소수점 3자리까지
-          amount50ml: parseFloat((ratio * 5).toFixed(3)), // 소수점 3자리까지
+          amount10ml: parseFloat((ratio * 2).toFixed(3)), // 소수점 3자리까지
+          amount50ml: parseFloat((ratio * 10).toFixed(3)), // 소수점 3자리까지
         };
       });
       setConfirmedRecipeDetails(details);
@@ -131,7 +131,7 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-3xl"></div>
             <div className="relative">
               <h4 className="text-lg font-semibold text-emerald-700 mb-4 flex items-center">
-                <span className="text-2xl mr-3 drop-shadow-sm">💧</span>10ml 향수 만들기 (총 향료: 1g)
+                <span className="text-2xl mr-3 drop-shadow-sm">💧</span>10ml 향수 만들기 (총 향료: 2g)
               </h4>
               <ul className="space-y-3 text-left">
                 {confirmedRecipeDetails.map((item, index) => (
@@ -149,7 +149,7 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-green-400/10 to-teal-400/10 rounded-3xl"></div>
             <div className="relative">
               <h4 className="text-lg font-semibold text-emerald-700 mb-4 flex items-center">
-                <span className="text-2xl mr-3 drop-shadow-sm">🧪</span>50ml 향수 만들기 (총 향료: 5g)
+                <span className="text-2xl mr-3 drop-shadow-sm">🧪</span>50ml 향수 만들기 (총 향료: 10g)
               </h4>
               <ul className="space-y-3 text-left">
                 {confirmedRecipeDetails.map((item, index) => (

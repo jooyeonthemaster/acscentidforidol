@@ -7,7 +7,7 @@ import GlobalLanguageSelector from '@/components/GlobalLanguageSelector';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "퍼스널 센트 | Personal Scent",
+  title: "최애 이미지 향 추천 | 뿌덕",
   description: "당신의 개성과 취향을 AI가 분석하여 완벽한 향수를 추천해드립니다.",
 };
 

@@ -384,7 +384,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
       {/* 레시피 상세 모달 */}
       {showDetailModal && detailRecipe && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* 모달 헤더 */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
               <h3 className="text-xl font-bold text-gray-800 flex items-center">
@@ -404,30 +404,71 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
               {/* 향료 조합 */}
               {detailRecipe.improvedRecipe?.testingRecipe?.granules && detailRecipe.improvedRecipe.testingRecipe.granules.length > 0 ? (
                 <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4">🧪 향료 조합</h4>
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="grid gap-3">
-                      {detailRecipe.improvedRecipe.testingRecipe.granules.map((granule: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm">
-                          <div>
-                            <p className="font-semibold text-gray-800 text-lg">{granule.name}</p>
-                            <p className="text-sm text-gray-600">({granule.id})</p>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-6 text-center">🧪 향료 레시피</h4>
+                  
+                  {/* 10ml과 50ml 레시피를 나란히 배치 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* 10ml 레시피 */}
+                    <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-5 border border-emerald-200 shadow-lg">
+                      <h5 className="text-lg font-semibold text-emerald-700 mb-4 flex items-center">
+                        <span className="text-xl mr-2">💧</span>
+                        10ml 향수 만들기 (총 향료: 2g)
+                      </h5>
+                      <div className="space-y-3">
+                        {detailRecipe.improvedRecipe.testingRecipe.granules.map((granule: any, index: number) => (
+                          <div key={`10ml-${index}`} className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm border border-emerald-100">
+                            <div>
+                              <p className="font-semibold text-gray-800">{granule.name}</p>
+                              <p className="text-xs text-gray-600">({granule.id})</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-emerald-600">{(granule.drops * 0.2).toFixed(1)}g</p>
+                              <p className="text-xs text-gray-600">{granule.drops}방울</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-blue-600">{(granule.drops * 0.1).toFixed(1)}g</p>
-                            <p className="text-sm text-gray-600">{granule.drops}방울</p>
+                        ))}
+                        
+                        {/* 10ml 총 무게 */}
+                        <div className="mt-4 pt-3 border-t border-emerald-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-gray-800">총 무게:</span>
+                            <span className="text-xl font-bold text-emerald-600">
+                              {(detailRecipe.improvedRecipe.testingRecipe.granules.reduce((sum: number, g: any) => sum + g.drops, 0) * 0.2).toFixed(1)}g
+                            </span>
                           </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
-                    
-                    {/* 총 무게 */}
-                    <div className="mt-4 pt-3 border-t border-blue-200">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-800 text-lg">총 무게:</span>
-                        <span className="text-2xl font-bold text-blue-600">
-                          {(detailRecipe.improvedRecipe.testingRecipe.granules.reduce((sum: number, g: any) => sum + g.drops, 0) * 0.1).toFixed(1)}g
-                        </span>
+
+                    {/* 50ml 레시피 */}
+                    <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-5 border border-purple-200 shadow-lg">
+                      <h5 className="text-lg font-semibold text-purple-700 mb-4 flex items-center">
+                        <span className="text-xl mr-2">🧴</span>
+                        50ml 향수 만들기 (총 향료: 10g)
+                      </h5>
+                      <div className="space-y-3">
+                        {detailRecipe.improvedRecipe.testingRecipe.granules.map((granule: any, index: number) => (
+                          <div key={`50ml-${index}`} className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm border border-purple-100">
+                            <div>
+                              <p className="font-semibold text-gray-800">{granule.name}</p>
+                              <p className="text-xs text-gray-600">({granule.id})</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-purple-600">{(granule.drops * 1.0).toFixed(1)}g</p>
+                              <p className="text-xs text-gray-600">{(granule.drops * 5)}방울</p>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {/* 50ml 총 무게 */}
+                        <div className="mt-4 pt-3 border-t border-purple-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-gray-800">총 무게:</span>
+                            <span className="text-xl font-bold text-purple-600">
+                              {(detailRecipe.improvedRecipe.testingRecipe.granules.reduce((sum: number, g: any) => sum + g.drops, 0) * 1.0).toFixed(1)}g
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

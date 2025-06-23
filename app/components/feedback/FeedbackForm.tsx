@@ -52,14 +52,22 @@ export default function FeedbackForm({
   // 사용자 ID와 세션 ID 가져오기
   const [userId] = React.useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('userId') || 'user_' + Date.now();
+      const storedUserId = localStorage.getItem('userId');
+      if (!storedUserId) {
+        console.error('❌ 세션이 시작되지 않았습니다. 홈페이지에서 새로 시작해주세요.');
+      }
+      return storedUserId || 'user_' + Date.now();
     }
     return 'user_' + Date.now();
   });
   
   const [sessionId] = React.useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('currentSessionId') || 'session_' + Date.now();
+      const storedSessionId = localStorage.getItem('currentSessionId');
+      if (!storedSessionId) {
+        console.error('❌ 현재 세션을 찾을 수 없습니다. 홈페이지에서 새로 시작해주세요.');
+      }
+      return storedSessionId || 'session_' + Date.now();
     }
     return 'session_' + Date.now();
   });

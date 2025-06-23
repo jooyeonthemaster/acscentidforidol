@@ -36,14 +36,22 @@ export default function FeedbackPage() {
   // 사용자 ID와 세션 ID (실제로는 인증 시스템에서 가져와야 함)
   const [userId] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('userId') || 'user_' + Date.now();
+      const storedUserId = localStorage.getItem('userId');
+      if (!storedUserId) {
+        console.error('❌ 세션이 시작되지 않았습니다. 홈페이지에서 새로 시작해주세요.');
+      }
+      return storedUserId || 'user_' + Date.now();
     }
     return 'user_' + Date.now();
   });
   
   const [sessionId] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('currentSessionId') || 'session_' + Date.now();
+      const storedSessionId = localStorage.getItem('currentSessionId');
+      if (!storedSessionId) {
+        console.error('❌ 현재 세션을 찾을 수 없습니다. 홈페이지에서 새로 시작해주세요.');
+      }
+      return storedSessionId || 'session_' + Date.now();
     }
     return 'session_' + Date.now();
   });

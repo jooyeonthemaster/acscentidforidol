@@ -243,6 +243,12 @@ export default function IdolInfoForm() {
       // 사용자 및 세션 정보 추가 (Firebase 저장을 위해)
       const userId = idolInfo.userPhone.replace(/-/g, ''); // 하이픈 제거해서 userId로 사용
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      
+      // 🔥 새로운 세션 시작 - localStorage에 즉시 저장
+      localStorage.setItem('currentSessionId', sessionId);
+      localStorage.setItem('userId', userId);
+      console.log('🆕 새로운 세션 시작:', { userId, sessionId });
+      
       formData.append('userId', userId);
       formData.append('sessionId', sessionId);
       
