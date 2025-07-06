@@ -36,7 +36,7 @@ const NOTEBOOK_LAYOUT = {
     traitChart: { x: 30, y: 295, width: 155, height: 185 }, // 이미지 바로 아래, 같은 사이즈
     colorPalette: { x: 30, y: 462, width: 155, height: 80 }, // 레이더 차트 바로 아래
     name: { x: 290, y: 120, width: 120, height: 35 }, // 위로 15px 이동, width 180->120으로 축소, height 증가
-    gender: { x: 310, y: 155, width: 100, height: 30 }, // name 이동에 맞춰 10px 아래로 조정
+    gender: { x: 290, y: 155, width: 100, height: 30 }, // 왼쪽으로 20px 이동 (310 -> 290)
     keywords: { x: 175, y: 205, width: 170, height: 90 },
     radarChart: { x: 40, y: 300, width: 160, height: 160 },
     features: { x: 185, y: 330, width: 180, height: 90 },
@@ -844,8 +844,10 @@ export default function ReportPage() {
             <div style={{ 
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              height: '100%'
+              justifyContent: 'flex-start',  // 왼쪽 정렬 추가
+              gap: '0px',
+              height: '100%',
+              paddingLeft: '0px'  // 패딩 제거
             }}>
               {/* 실제 성별 값 */}
               <span style={{ 
@@ -853,7 +855,10 @@ export default function ReportPage() {
                 fontWeight: '600', 
                 color: '#1F2937',
                 whiteSpace: 'nowrap',
-                display: 'inline-block'
+                display: 'inline-block',
+                marginLeft: '0px',  // 마진 제거
+                paddingLeft: '0px', // 패딩 제거
+                textAlign: 'left'   // 텍스트 왼쪽 정렬
               }}>
                 {sessionData?.analyses?.[0]?.gender || session?.gender || '남성'}
               </span>
