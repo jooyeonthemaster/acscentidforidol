@@ -1,102 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllUserData, getSessionFullData } from '../../../lib/firebaseApi';
+import { getAllUserData, getAllUserDataPaginated, getSessionsOptimized, getSessionFullData } from '../../../lib/firebaseApi';
 
 /**
  * 관리자용 API 엔드포인트
  * 
- * GET: 모든 사용자 데이터 조회 (분석 내역 목록)
+ * GET: 모든 사용자 데이터 조회 (분석 내역 목록) - 페이지네이션 지원, 캐싱 추가
  * POST: 특정 세션의 상세 데이터 조회 (보고서용)
  */
 
-// 모든 사용자 분석 세션 목록 조회 (관리자용)
-export async function GET() {
+// 간단한 메모리 캐시 (5분간 유지)
+const cache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5분
+
+function getCacheKey(page: number, pageSize: number) {
+  return `admin_sessions_${page}_${pageSize}`;
+}
+
+function isValidCache(cacheEntry: any) {
+  return cacheEntry && (Date.now() - cacheEntry.timestamp) < CACHE_DURATION;
+}
+
+// 모든 사용자 분석 세션 목록 조회 (관리자용) - 페이지네이션 지원, 캐싱 추가
+export async function GET(request: NextRequest) {
   try {
-    console.log('관리자 API: 모든 사용자 데이터 조회 시작');
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '10');
+    const useOptimized = searchParams.get('optimized') === 'true';
     
-    const allData = await getAllUserData();
-    const sessionsList: any[] = [];
+    console.log(`관리자 API: 데이터 조회 시작 - 페이지: ${page}, 사이즈: ${pageSize}, 최적화: ${useOptimized}`);
     
-    // 안전한 문자열 변환 함수
-    const safeStringify = (value: any): string => {
-      if (typeof value === 'string') return value;
-      if (typeof value === 'object' && value !== null) {
-        return JSON.stringify(value);
-      }
-      return String(value || '');
-    };
+    // 캐시 확인
+    const cacheKey = getCacheKey(page, pageSize);
+    const cached = cache.get(cacheKey);
     
-    // 모든 사용자의 세션 데이터를 수집
-    Object.keys(allData).forEach(userId => {
-      const userData = allData[userId];
-      if (userData.perfumeSessions) {
-        Object.keys(userData.perfumeSessions).forEach(sessionId => {
-          const session = userData.perfumeSessions[sessionId];
-          
-          // 타임스탬프 디버깅
-          console.log(`세션 ${sessionId} 타임스탬프 디버깅:`, {
-            createdAt: session.createdAt,
-            createdAtType: typeof session.createdAt,
-            updatedAt: session.updatedAt,
-            updatedAtType: typeof session.updatedAt
-          });
-          
-          // 비밀번호 포맷팅 (4자리 숫자)
-          const formatPassword = (password: string): string => {
-            return password || ''; // 관리자 페이지에서는 비밀번호를 그대로 표시
-          };
-          
-          // 안전한 최애 이름 추출
-          let idolName = '분석 중';
-          if (session.imageAnalysis?.matchingPerfumes?.[0]?.name) {
-            idolName = session.imageAnalysis.matchingPerfumes[0].name;
-          } else if (session.imageAnalysis?.analysis) {
-            // 복잡한 분석 데이터는 간단히 표시
-            idolName = '분석 완료';
-          }
-          
-          // createdAt이 없으면 updatedAt 사용, 둘 다 없으면 현재 시간 사용
-          const effectiveCreatedAt = session.createdAt || session.updatedAt || Date.now();
-          
-          sessionsList.push({
-            userId: userId,
-            sessionId: sessionId,
-            phoneNumber: formatPassword(userId),
-            createdAt: effectiveCreatedAt,
-            updatedAt: session.updatedAt || effectiveCreatedAt,
-            status: session.status || 'unknown',
-            customerName: session.customerName || '알 수 없음',
-            idolName: idolName,
-            hasImageAnalysis: !!session.imageAnalysis,
-            hasFeedback: !!session.feedback,
-            hasRecipe: !!session.improvedRecipe,
-            hasConfirmation: !!session.confirmation,
-            
-            // 분석 단계별 상태 표시
-            completionStatus: (() => {
-              if (session.confirmation) return '완료';
-              if (session.improvedRecipe) return '레시피 생성';
-              if (session.feedback) return '피드백 완료';
-              if (session.imageAnalysis) return '분석 완료';
-              return '진행 중';
-            })()
-          });
-        });
-      }
+    if (isValidCache(cached)) {
+      console.log('관리자 API: 캐시에서 데이터 반환');
+      return NextResponse.json({
+        success: true,
+        cached: true,
+        ...cached.data
+      });
+    }
+    
+    // 최적화된 함수 사용 여부 선택
+    const paginatedData = useOptimized 
+      ? await getSessionsOptimized(page, pageSize)
+      : await getAllUserDataPaginated(page, pageSize);
+    
+    // 캐시에 저장
+    cache.set(cacheKey, {
+      data: paginatedData,
+      timestamp: Date.now()
     });
     
-    // 최신순으로 정렬
-    sessionsList.sort((a, b) => {
-      const timeA = a.updatedAt || a.createdAt || 0;
-      const timeB = b.updatedAt || b.createdAt || 0;
-      return timeB - timeA;
-    });
-    
-    console.log(`관리자 API: 총 ${sessionsList.length}개 세션 조회 완료`);
+    console.log(`관리자 API: 조회 완료 - ${paginatedData.sessions.length}개/${paginatedData.totalSessions}개 세션`);
     
     return NextResponse.json({
       success: true,
-      totalSessions: sessionsList.length,
-      sessions: sessionsList
+      cached: false,
+      ...paginatedData
     });
     
   } catch (error) {
