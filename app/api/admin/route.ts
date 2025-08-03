@@ -8,9 +8,9 @@ import { getAllUserData, getAllUserDataPaginated, getSessionsOptimized, getSessi
  * POST: 특정 세션의 상세 데이터 조회 (보고서용)
  */
 
-// 간단한 메모리 캐시 (5분간 유지)
+// 간단한 메모리 캐시 (5초간 유지) - 실시간 업데이트를 위해 단축
 const cache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5분
+const CACHE_DURATION = 5 * 1000; // 5초
 
 function getCacheKey(page: number, pageSize: number) {
   return `admin_sessions_${page}_${pageSize}`;
