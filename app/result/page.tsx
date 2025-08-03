@@ -340,6 +340,13 @@ export default function ResultPage() {
               throw new Error(t('error.result.missing.traits'));
             }
             
+            // 🔍 DEBUG: 분석 결과 확인
+            console.log('🔍 Result 페이지 - 파싱된 분석 결과:', parsedResult);
+            console.log('🔍 analysis 필드:', parsedResult.analysis);
+            console.log('🔍 style 필드:', parsedResult.analysis?.style);
+            console.log('🔍 expression 필드:', parsedResult.analysis?.expression);
+            console.log('🔍 concept 필드:', parsedResult.analysis?.concept);
+            
             // 분석 결과 저장
             setAnalysisResult(parsedResult);
             
@@ -643,7 +650,7 @@ export default function ResultPage() {
                                   <div>
                                     <h4 className="text-xs font-bold text-pink-800 mb-1">{t('result.analysis.style')}</h4>
                                     <p className="text-gray-800 text-sm italic">
-                                      {t('result.analysis.styleDescription', displayedAnalysis.analysis.style)}
+                                      {displayedAnalysis.analysis?.style || t('result.analysis.styleDescription')}
                                     </p>
                                   </div>
                                 </div>
@@ -663,7 +670,7 @@ export default function ResultPage() {
                                   <div>
                                     <h4 className="text-xs font-bold text-purple-800 mb-1">{t('result.analysis.expression')}</h4>
                                     <p className="text-gray-800 text-sm italic">
-                                      {t('result.analysis.expressionDescription', displayedAnalysis.analysis.expression)}
+                                      {displayedAnalysis.analysis?.expression || t('result.analysis.expressionDescription')}
                                     </p>
                                   </div>
                                 </div>
@@ -681,7 +688,7 @@ export default function ResultPage() {
                                   <div>
                                     <h4 className="text-xs font-bold text-indigo-800 mb-1">{t('result.analysis.concept')}</h4>
                                     <p className="text-gray-800 text-sm italic">
-                                      {t('result.analysis.conceptDescription', displayedAnalysis.analysis.concept)}
+                                      {displayedAnalysis.analysis?.concept || t('result.analysis.conceptDescription')}
                                     </p>
                                   </div>
                                 </div>

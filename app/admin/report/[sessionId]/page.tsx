@@ -170,7 +170,7 @@ export default function ReportPage() {
       
       console.log('파싱된 데이터:', { userId, sessionId, fullSessionId });
 
-      const response = await fetch('/api/admin', {
+      const response = await fetch('/api/admin-firestore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, sessionId }),
@@ -834,7 +834,7 @@ export default function ReportPage() {
                 color: '#1F2937',
                 lineHeight: '1.2'
               }}>
-                {sessionData?.analyses?.[0]?.name || session?.name || '김완빈'}
+                {sessionData?.analyses?.[0]?.idolInfo?.name || sessionData?.analyses?.[0]?.name || session?.idolName || session?.name || '김완빈'}
               </span>
             </div>
           </NotebookElement>
@@ -860,7 +860,7 @@ export default function ReportPage() {
                 paddingLeft: '0px', // 패딩 제거
                 textAlign: 'left'   // 텍스트 왼쪽 정렬
               }}>
-                {sessionData?.analyses?.[0]?.gender || session?.gender || '남성'}
+                {sessionData?.analyses?.[0]?.idolInfo?.gender || sessionData?.analyses?.[0]?.gender || session?.gender || '남성'}
               </span>
             </div>
           </NotebookElement>
@@ -1166,7 +1166,8 @@ export default function ReportPage() {
                       color: '#000000',
                       fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", sans-serif'
                     }}>
-                      {sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.mainScent?.name || 
+                      {sessionData?.matchingPerfumes?.[0]?.persona?.mainScent?.name || 
+                       sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.mainScent?.name || 
                        sessionData?.confirmed?.[0]?.mainScent?.name || 
                        '블랙베리'}
                     </span>
@@ -1190,7 +1191,8 @@ export default function ReportPage() {
                       color: '#000000',
                       fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", sans-serif'
                     }}>
-                      {sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.subScent1?.name || 
+                      {sessionData?.matchingPerfumes?.[0]?.persona?.subScent1?.name || 
+                       sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.subScent1?.name || 
                        sessionData?.confirmed?.[0]?.subScent1?.name || 
                        '월계수잎'}
                     </span>
@@ -1214,7 +1216,8 @@ export default function ReportPage() {
                       color: '#000000',
                       fontFamily: '"Noto Sans KR", "Nanum Gothic", "Malgun Gothic", sans-serif'
                     }}>
-                      {sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.subScent2?.name || 
+                      {sessionData?.matchingPerfumes?.[0]?.persona?.subScent2?.name || 
+                       sessionData?.analyses?.[0]?.matchingPerfumes?.[0]?.persona?.subScent2?.name || 
                        sessionData?.confirmed?.[0]?.subScent2?.name || 
                        '시더우드'}
                     </span>

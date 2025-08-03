@@ -308,7 +308,7 @@ export default function IdolInfoForm() {
       console.log('분석 API 호출 시작');
       
       // 추가 디버깅 로그
-      console.log('API 요청 경로:', '/api/analyze');
+      console.log('API 요청 경로:', '/api/analyze-firestore');
       console.log('FormData 내용:', {
         userPhone: idolInfo.userPhone,
         userId: userId,
@@ -321,7 +321,7 @@ export default function IdolInfoForm() {
       });
 
       try {
-        const response = await fetch('/api/analyze', {
+        const response = await fetch('/api/analyze-firestore', {
           method: 'POST',
           body: formData,
           signal: controller.signal,

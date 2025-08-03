@@ -40,7 +40,7 @@ export default function TestPage() {
       formData.append('idolCharms', '테스트용 최애 매력 포인트');
 
       // API 호출
-      const response = await fetch('/api/analyze', {
+      const response = await fetch('/api/analyze-firestore', {
         method: 'POST',
         body: formData,
       });
