@@ -3,7 +3,7 @@ import { PerfumeFeedback, CustomPerfumeRecipe, PerfumeCategory, CategoryPreferen
 import perfumePersonas from '@/app/data/perfumePersonas';
 import { generateCustomPerfumePrompt, parseGeminiPerfumeSuggestion } from '@/app/utils/promptTemplates/feedbackPrompts';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { saveImprovedRecipe } from '@/lib/firebaseApi';
+import { saveImprovedRecipe } from '@/lib/firestoreApi';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {

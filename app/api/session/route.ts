@@ -6,7 +6,7 @@ import {
   saveImageAnalysisWithLink,
   saveSessionFeedback,
   saveImprovedRecipe
-} from '../../../lib/firebaseApi';
+} from '../../../lib/firestoreApi';
 
 /**
  * 향수 세션 관리 API 엔드포인트

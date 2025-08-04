@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PerfumePersona, PerfumeFeedback, PerfumeCategory, CategoryPreference, FragranceCharacteristic, CharacteristicValue, SpecificScent } from '@/app/types/perfume';
 import perfumePersonas from '@/app/data/perfumePersonas';
-import { saveSessionFeedback } from '../../../lib/firebaseApi';
+import { saveSessionFeedback } from '../../../lib/firestoreApi';
 import * as z from 'zod';
 import fs from 'fs';
 import path from 'path';

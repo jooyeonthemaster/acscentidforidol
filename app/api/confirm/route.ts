@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { confirmPerfume } from '../../../lib/firebaseApi';
+import { confirmPerfume } from '../../../lib/firestoreApi';
 
 /**
  * 향수 확정 API 엔드포인트

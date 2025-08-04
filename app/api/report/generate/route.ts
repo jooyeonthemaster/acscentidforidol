@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionFullData } from '../../../../lib/firebaseApi';
+import { getSessionFullData } from '../../../../lib/firestoreApi';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**

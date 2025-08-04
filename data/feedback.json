@@ -3102,5 +3102,35 @@
     "submittedAt": "2025-06-23T09:34:59.475Z",
     "id": "feedback_1750671299984_wzg7c3k",
     "timestamp": "2025-06-23T09:34:59.984Z"
+  },
+  {
+    "perfumeId": "IM-4324311",
+    "retentionPercentage": 60,
+    "categoryPreferences": {
+      "citrus": "increase",
+      "floral": "maintain",
+      "woody": "maintain",
+      "musky": "maintain",
+      "fruity": "increase",
+      "spicy": "maintain"
+    },
+    "userCharacteristics": {
+      "weight": "medium",
+      "sweetness": "medium",
+      "freshness": "medium",
+      "uniqueness": "medium"
+    },
+    "specificScents": [
+      {
+        "id": "BG-8704231",
+        "name": "베르가못",
+        "ratio": 50,
+        "action": "add"
+      }
+    ],
+    "notes": "",
+    "submittedAt": "2025-08-04T12:37:12.303Z",
+    "id": "feedback_1754311032970_0q265ca",
+    "timestamp": "2025-08-04T12:37:12.970Z"
   }
 ]

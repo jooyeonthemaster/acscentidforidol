@@ -45,7 +45,7 @@ export function getCategoryKoreanName(category: PerfumeCategory): string {
  */
 export function findMatchingPerfumes(
   analysisResult: ImageAnalysisResult, 
-  topN: number = 3,
+  topN: number = 1,
   options: {
     weights?: Partial<Record<keyof TraitScores, number>>;
     thresholds?: Partial<Record<keyof TraitScores, number>>;

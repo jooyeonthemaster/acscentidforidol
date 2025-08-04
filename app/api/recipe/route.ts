@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { askGemini } from '../../utils/gemini';
-import { saveImprovedRecipe } from '../../../lib/firebaseApi';
+import { saveImprovedRecipe } from '../../../lib/firestoreApi';
 
 /**
  * 개선된 향수 레시피 추천 API 엔드포인트
