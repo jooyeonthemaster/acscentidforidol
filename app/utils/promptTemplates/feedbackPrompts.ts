@@ -55,7 +55,7 @@ export function generateCustomPerfumePrompt(feedback: GeminiPerfumeSuggestion & 
     ? `
       // 0% 유지 예시 - 원본 향수 완전 제외, 새로운 조합만 제안
       // {
-      //   "id": "YJ-8213431",      // perfumePersonas.ts에 있는 실제 ID
+      //   "id": "AC'SCENT 13",      // perfumePersonas.ts에 있는 실제 ID
       //   "name": "유자",          // perfumePersonas.ts에 있는 실제 이름
       //   "mainCategory": "시트러스",
       //   "drops": 5,
@@ -63,7 +63,7 @@ export function generateCustomPerfumePrompt(feedback: GeminiPerfumeSuggestion & 
       //   "reason": "사용자님의 시트러스 선호도를 반영하여 상큼하고 활기찬 느낌을 제공하기 위해 유자를 50% 비율로 추가했습니다."
       // },
       // {
-      //   "id": "BK-2201281",      // perfumePersonas.ts에 있는 실제 ID
+      //   "id": "AC'SCENT 01",      // perfumePersonas.ts에 있는 실제 ID
       //   "name": "블랙베리",      // perfumePersonas.ts에 있는 실제 이름
       //   "mainCategory": "프루티",
       //   "drops": 5,
@@ -76,7 +76,7 @@ export function generateCustomPerfumePrompt(feedback: GeminiPerfumeSuggestion & 
     : `
       // ${retentionPercentage}% 유지 예시 - 원본 향수 포함
       // {
-      //   "id": "${perfumeId}",      // 실제 원본 향수 ID (예: TL-2810221)
+      //   "id": "${perfumeId}",      // 실제 원본 향수 ID (예: AC'SCENT 10)
       //   "name": "${perfumeName}",    // 실제 원본 향수 이름 (예: 튤립)
       //   "mainCategory": "플로럴",   // 원본 향수의 대표 카테고리
       //   "drops": 2,                // 예시 방울 수 (AI가 결정)
@@ -84,7 +84,7 @@ export function generateCustomPerfumePrompt(feedback: GeminiPerfumeSuggestion & 
       //   "reason": "기존 '${perfumeName}' 향수의 특징을 사용자의 요청에 따라 ${retentionPercentage}% 유지하기 위해 핵심 베이스로 포함되었습니다."
       // },
       // {
-      //   "id": "YJ-8213431",      // perfumePersonas.ts에 있는 실제 ID
+      //   "id": "AC'SCENT 13",      // perfumePersonas.ts에 있는 실제 ID
       //   "name": "유자",          // perfumePersonas.ts에 있는 실제 이름
       //   "mainCategory": "시트러스",
       //   "drops": 4,
@@ -105,36 +105,36 @@ export function generateCustomPerfumePrompt(feedback: GeminiPerfumeSuggestion & 
 이 규칙을 위반하면 전체 응답이 무효화됩니다.
 
 사용 가능한 향료 목록 (절대로 이 목록 외의 ID나 이름을 사용하지 마세요):
-- ID: "BK-2201281", 이름: "블랙베리"
-- ID: "MD-8602341", 이름: "만다린 오렌지"
-- ID: "ST-3503281", 이름: "스트로베리"
-- ID: "BG-8704231", 이름: "베르가못"
-- ID: "BO-6305221", 이름: "비터 오렌지"
-- ID: "CR-3706221", 이름: "캐럿"
-- ID: "RS-2807221", 이름: "로즈"
-- ID: "TB-2808221", 이름: "튜베로즈"
-- ID: "OB-6809221", 이름: "오렌지 블라썸"
-- ID: "TL-2810221", 이름: "튤립"
-- ID: "LM-7211441", 이름: "라임"
-- ID: "LV-2812221", 이름: "은방울꽃"
-- ID: "YJ-8213431", 이름: "유자"
-- ID: "MT-8614231", 이름: "민트"
-- ID: "PT-8415331", 이름: "페티그레인"
-- ID: "SD-2216141", 이름: "샌달우드"
-- ID: "LP-6317181", 이름: "레몬페퍼"
-- ID: "PP-3218181", 이름: "핑크페퍼"
-- ID: "SS-8219241", 이름: "바다소금"
-- ID: "TM-2320461", 이름: "타임"
-- ID: "MS-2621712", 이름: "머스크"
-- ID: "WR-2622131", 이름: "화이트로즈"
-- ID: "SW-2623121", 이름: "스웨이드"
-- ID: "IM-4324311", 이름: "이탈리안만다린"
-- ID: "LV-2225161", 이름: "라벤더"
-- ID: "IC-3126171", 이름: "이탈리안사이프러스"
-- ID: "SW-1227171", 이름: "스모키 블렌드 우드"
-- ID: "LD-2128524", 이름: "레더"
-- ID: "VL-2129241", 이름: "바이올렛"
-- ID: "FG-3430721", 이름: "무화과"
+- ID: "AC'SCENT 01", 이름: "블랙베리"
+- ID: "AC'SCENT 02", 이름: "만다린 오렌지"
+- ID: "AC'SCENT 03", 이름: "스트로베리"
+- ID: "AC'SCENT 04", 이름: "베르가못"
+- ID: "AC'SCENT 05", 이름: "비터 오렌지"
+- ID: "AC'SCENT 06", 이름: "캐럿"
+- ID: "AC'SCENT 07", 이름: "로즈"
+- ID: "AC'SCENT 08", 이름: "튜베로즈"
+- ID: "AC'SCENT 09", 이름: "오렌지 블라썸"
+- ID: "AC'SCENT 10", 이름: "튤립"
+- ID: "AC'SCENT 11", 이름: "라임"
+- ID: "AC'SCENT 12", 이름: "은방울꽃"
+- ID: "AC'SCENT 13", 이름: "유자"
+- ID: "AC'SCENT 14", 이름: "민트"
+- ID: "AC'SCENT 15", 이름: "페티그레인"
+- ID: "AC'SCENT 16", 이름: "샌달우드"
+- ID: "AC'SCENT 17", 이름: "레몬페퍼"
+- ID: "AC'SCENT 18", 이름: "핑크페퍼"
+- ID: "AC'SCENT 19", 이름: "바다소금"
+- ID: "AC'SCENT 20", 이름: "타임"
+- ID: "AC'SCENT 21", 이름: "머스크"
+- ID: "AC'SCENT 22", 이름: "화이트로즈"
+- ID: "AC'SCENT 23", 이름: "스웨이드"
+- ID: "AC'SCENT 24", 이름: "이탈리안만다린"
+- ID: "AC'SCENT 25", 이름: "라벤더"
+- ID: "AC'SCENT 26", 이름: "이탈리안사이프러스"
+- ID: "AC'SCENT 27", 이름: "스모키 블렌드 우드"
+- ID: "AC'SCENT 28", 이름: "레더"
+- ID: "AC'SCENT 29", 이름: "바이올렛"
+- ID: "AC'SCENT 30", 이름: "무화과"
 
 위 목록에 있는 ID와 이름만 사용하세요. 다른 ID나 이름을 만들거나 수정하지 마세요. 위 목록은 ${personaDataSourceMention}에서 가져온 실제 데이터입니다.
 

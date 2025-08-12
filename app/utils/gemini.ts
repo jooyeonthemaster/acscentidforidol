@@ -31,4 +31,4 @@ export {
 } from './gemini/index';
 
 // 기본 export (기존 코드 호환성)
-export { default } from './gemini/index';
+export { default } from './gemini/index';       

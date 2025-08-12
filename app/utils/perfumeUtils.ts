@@ -646,14 +646,14 @@ export async function getPerfumeById(id: string): Promise<Perfume | null> {
 
 /**
  * 향수 ID 추출하기
- * 예: "추천 향수: BK-2201281 블랙베리"에서 "BK-2201281" 추출
+ * 예: "추천 향수: AC'SCENT 01 블랙베리"에서 "AC'SCENT 01" 추출
  */
 export function extractPerfumeId(recommendation: string): string | null {
   // 다양한 형식 처리를 위한 정규식 패턴
   const patterns = [
-    /추천 향수:\s*([A-Z]{2}-\d{7})/i, // "추천 향수: BK-2201281"
-    /향수 ID:\s*([A-Z]{2}-\d{7})/i,   // "향수 ID: BK-2201281"
-    /([A-Z]{2}-\d{7})\s*\(/i,         // "BK-2201281 (블랙베리)"
+    /추천 향수:\s*([A-Z]{2}-\d{7})/i, // "추천 향수: AC'SCENT 01"
+    /향수 ID:\s*([A-Z]{2}-\d{7})/i,   // "향수 ID: AC'SCENT 01"
+    /([A-Z]{2}-\d{7})\s*\(/i,         // "AC'SCENT 01 (블랙베리)"
     /([A-Z]{2}-\d{7})/i               // 그냥 ID만 있는 경우
   ];
   

@@ -258,7 +258,7 @@ export interface CategoryChangeInfo {
 }
 
 export interface TestingGranule {
-  id: string;         // 향료 ID (예: "FL-149040", "LV-2812221-MOD")
+  id: string;         // 향료 ID (예: "FL-149040", "AC'SCENT 12-MOD")
   name: string;       // 향료 이름
   mainCategory: PerfumeCategory | string; // category -> mainCategory로 변경, 프롬프트와 일치
   drops: number;      // 추천 방울 수 (1-10 사이 정수)

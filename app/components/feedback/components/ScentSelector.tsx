@@ -1,8 +1,7 @@
 "use client";
 
 import React from 'react';
-import { PerfumeCategory, SpecificScent } from '@/app/types/perfume';
-import { CATEGORY_NAMES } from '../constants/categories';
+import { SpecificScent } from '@/app/types/perfume';
 import { formatScentCode } from '../utils/formatters';
 
 interface ScentSelectorProps {
@@ -11,8 +10,6 @@ interface ScentSelectorProps {
   setSelectedScent: (scent: SpecificScent | null) => void;
   scentSearchTerm: string;
   setScentSearchTerm: (term: string) => void;
-  selectedCategory: PerfumeCategory;
-  setSelectedCategory: (category: PerfumeCategory) => void;
   onAddScent: () => void;
 }
 
@@ -22,18 +19,14 @@ export const ScentSelector: React.FC<ScentSelectorProps> = ({
   setSelectedScent,
   scentSearchTerm,
   setScentSearchTerm,
-  selectedCategory,
-  setSelectedCategory,
   onAddScent
 }) => {
-  // 사용 가능한 모든 카테고리
-  const categoryOptions: PerfumeCategory[] = ['citrus', 'floral', 'woody', 'musky', 'fruity', 'spicy'];
 
   return (
     <div>
       <div className="mb-4">
         <div className="flex items-center mb-3">
-          <div className="flex-1 mr-2">
+          <div className="flex-1">
             <input
               type="text"
               placeholder="향료 이름으로 검색하세요..."
@@ -42,27 +35,13 @@ export const ScentSelector: React.FC<ScentSelectorProps> = ({
               className="w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 bg-gray-50 text-gray-900 placeholder-gray-600"
             />
           </div>
-          
-          <div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value as PerfumeCategory)}
-              className="p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 bg-gray-50"
-            >
-              {categoryOptions.map((category) => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg bg-white">
           {availableScents
             .filter(scent => 
-              (scentSearchTerm === '' || scent.name.toLowerCase().includes(scentSearchTerm.toLowerCase())) &&
-              (scent.category === selectedCategory)
+              scentSearchTerm === '' || scent.name.toLowerCase().includes(scentSearchTerm.toLowerCase())
             )
-            .slice(0, 8) // 최대 8개까지만 표시
             .map((scent) => (
               <div
                 key={scent.id}

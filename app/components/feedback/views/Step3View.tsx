@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ScentSelector, SelectedScents } from '../components/ScentSelector';
-import { PerfumeCategory, PerfumeFeedback, SpecificScent } from '@/app/types/perfume';
+import { PerfumeFeedback, SpecificScent } from '@/app/types/perfume';
 import { generateAvailableScents } from '../utils/formatters';
 
 interface Step3ViewProps {
@@ -18,7 +18,6 @@ export const Step3View: React.FC<Step3ViewProps> = ({
 }) => {
   const [selectedScent, setSelectedScent] = useState<SpecificScent | null>(null);
   const [scentSearchTerm, setScentSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<PerfumeCategory>('citrus');
   
   // 향료 데이터
   const availableScents = generateAvailableScents();
@@ -100,8 +99,6 @@ export const Step3View: React.FC<Step3ViewProps> = ({
           setSelectedScent={setSelectedScent}
           scentSearchTerm={scentSearchTerm}
           setScentSearchTerm={setScentSearchTerm}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
           onAddScent={handleAddScent}
         />
 
