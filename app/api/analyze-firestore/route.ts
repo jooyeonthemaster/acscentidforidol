@@ -95,6 +95,15 @@ export async function POST(request: NextRequest) {
         console.log('💾 Firestore 저장 시작...');
         await saveImageAnalysisWithLink(userId, sessionId, sessionData, imageUrl);
         console.log('✅ Firestore에 이미지 분석 결과 저장 완료');
+        
+        // 🔄 새로운 분석 데이터 저장 후 관리자 캐시 무효화
+        try {
+          const { invalidateAdminCache } = await import('../../../lib/cacheManager');
+          const invalidatedCount = invalidateAdminCache();
+          console.log(`🗑️ 관리자 캐시 무효화 완료: ${invalidatedCount}개 항목`);
+        } catch (cacheError) {
+          console.warn('⚠️ 캐시 무효화 중 오류 (데이터 저장은 성공):', cacheError);
+        }
       } catch (firestoreError) {
         console.error('❌ Firestore 저장 오류:', firestoreError);
         // Firestore 저장 실패해도 분석 결과는 반환

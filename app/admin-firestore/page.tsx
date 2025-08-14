@@ -66,8 +66,14 @@ export default function AdminFirestorePage() {
       const startTime = Date.now();
       
       const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
-      const response = await fetch(`/api/admin-firestore?page=${page}&pageSize=${pageSize}${statusParam}`);
-      const data = await response.json();
+      
+      // 🚀 성능 최적화: 병렬로 데이터와 캐시 상태 조회
+      const [sessionResponse, cacheResponse] = await Promise.all([
+        fetch(`/api/admin-firestore?page=${page}&pageSize=${pageSize}${statusParam}`),
+        fetch('/api/cache-invalidate', { method: 'GET' }).catch(() => null)
+      ]);
+      
+      const data = await sessionResponse.json();
       
       const endTime = Date.now();
       setLoadTime(endTime - startTime);
@@ -87,12 +93,43 @@ export default function AdminFirestorePage() {
         }
         
         setIsCached(data.cached || false);
+        
+        // 캐시 상태 정보 로깅
+        if (cacheResponse?.ok) {
+          const cacheData = await cacheResponse.json();
+          console.log(`📊 캐시 상태: ${cacheData.stats?.totalEntries || 0}개 항목`);
+        }
+        
+        console.log(`✅ 세션 로딩 완료 - ${data.sessions?.length || 0}개, 캐시: ${data.cached}, 로딩시간: ${endTime - startTime}ms`);
       } else {
         setError(data.error || 'Firestore 데이터 로드 실패');
       }
     } catch (err) {
       setError('Firestore 서버 연결 오류');
       console.error('Firestore Admin 데이터 로드 오류:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔄 캐시 수동 무효화 함수
+  const invalidateCache = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/cache-invalidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'invalidate-admin' })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        console.log(`🗑️ 캐시 무효화 완료: ${result.invalidatedCount}개 항목`);
+        // 캐시 무효화 후 데이터 다시 로딩
+        await loadSessions(paginationData.currentPage, paginationData.pageSize);
+      }
+    } catch (error) {
+      console.error('❌ 캐시 무효화 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -187,11 +224,31 @@ export default function AdminFirestorePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">🔥 AC'SCENT 관리자 (Firestore)</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  🔥 AC'SCENT 관리자 (Firestore)
+                  {!loading && isCached && (
+                    <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
+                      캐시됨
+                    </span>
+                  )}
+                </h1>
                 <p className="text-gray-600">새로운 Firestore 기반 관리 시스템</p>
               </div>
-              <div className="text-sm text-gray-500">
-                로딩 중...
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-500">
+                  {loading ? '로딩 중...' : `로딩 시간: ${loadTime}ms`}
+                </div>
+                {!loading && (
+                  <motion.button
+                    onClick={invalidateCache}
+                    disabled={loading}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
+                  >
+                    🗑️ 캐시 무효화
+                  </motion.button>
+                )}
               </div>
             </div>
           </div>

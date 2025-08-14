@@ -163,6 +163,15 @@ export async function POST(request: NextRequest) {
         };
         await saveImprovedRecipe(userId, sessionId, recipeData);
         console.log('Firebase에 테스팅 레시피 저장 완료');
+        
+        // 🔄 새로운 레시피 저장 후 관리자 캐시 무효화
+        try {
+          const { invalidateSessionCache } = await import('../../../lib/cacheManager');
+          const invalidatedCount = invalidateSessionCache(userId, sessionId);
+          console.log(`🗑️ 레시피 저장 후 관리자 캐시 무효화: ${invalidatedCount}개 항목`);
+        } catch (cacheError) {
+          console.warn('⚠️ 캐시 무효화 중 오류 (레시피 저장은 성공):', cacheError);
+        }
       } catch (firebaseError) {
         console.error('Firebase 레시피 저장 오류:', firebaseError);
         // Firebase 저장 실패해도 레시피는 반환
