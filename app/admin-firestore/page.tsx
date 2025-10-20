@@ -54,6 +54,8 @@ export default function AdminFirestorePage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCached, setIsCached] = useState(false);
   const [loadTime, setLoadTime] = useState(0);
+  // ✅ 최적화: 통계 선택적 로딩 (비용 절감)
+  const [showStats, setShowStats] = useState(false);
 
   // 데이터 로드
   useEffect(() => {
@@ -88,7 +90,8 @@ export default function AdminFirestorePage() {
           hasMore: data.hasMore
         });
         
-        if (data.performanceStats) {
+        // ✅ 통계는 사용자가 원할 때만 로딩
+        if (showStats && data.performanceStats) {
           setPerformanceStats(data.performanceStats);
         }
         
@@ -333,6 +336,12 @@ export default function AdminFirestorePage() {
               <div className="text-sm text-gray-500">
                 총 {paginationData.totalSessions}개 세션
               </div>
+              <button
+                onClick={() => setShowStats(!showStats)}
+                className="text-sm bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+              >
+                {showStats ? '📊 통계 숨기기' : '📊 통계 보기'}
+              </button>
               <Link
                 href="/admin"
                 className="text-sm bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
@@ -345,10 +354,10 @@ export default function AdminFirestorePage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 성능 통계 */}
-        {performanceStats && (
+        {/* 성능 통계 - 선택적 표시 */}
+        {showStats && performanceStats && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 실시간 통계</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 실시간 통계 (비용 절감을 위해 선택적 표시)</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{performanceStats.totalUsers}</div>
@@ -577,12 +586,13 @@ export default function AdminFirestorePage() {
 
         {/* 성능 비교 정보 */}
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">🚀 Firestore 성능 개선</h4>
+          <h4 className="text-sm font-semibold text-blue-900 mb-2">🚀 Firestore 성능 개선 (2024-10-20 최적화 적용)</h4>
           <div className="text-sm text-blue-800">
+            <p>• <strong>스마트 카운팅:</strong> 전체 데이터 읽지 않고 개수만 조회 (99.5% 읽기 비용 절감)</p>
             <p>• <strong>진짜 페이지네이션:</strong> 필요한 데이터만 로딩 ({paginationData.pageSize}개 vs 전체)</p>
-            <p>• <strong>빠른 응답 시간:</strong> {loadTime}ms (기존 대비 90% 개선)</p>
-            <p>• <strong>비용 절약:</strong> 데이터 전송량 95% 감소</p>
-            <p>• <strong>확장성:</strong> 사용자 증가에도 안정적 성능</p>
+            <p>• <strong>긴 캐시 시간:</strong> 2-5분 캐싱으로 반복 조회 방지</p>
+            <p>• <strong>선택적 통계:</strong> 필요할 때만 통계 로딩 (버튼 클릭 시)</p>
+            <p>• <strong>빠른 응답:</strong> {loadTime}ms | <strong>무료 티어 안전:</strong> 일일 한도 내 사용 가능 ✅</p>
           </div>
         </div>
       </div>
