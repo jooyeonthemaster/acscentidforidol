@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
         
         // 🔄 새로운 레시피 저장 후 관리자 캐시 무효화
         try {
-          const { invalidateSessionCache } = await import('../../../lib/cacheManager');
+          const { invalidateSessionCache } = await import('@/lib/cacheManager');
           const invalidatedCount = invalidateSessionCache(userId, sessionId);
           console.log(`🗑️ 레시피 저장 후 관리자 캐시 무효화: ${invalidatedCount}개 항목`);
         } catch (cacheError) {
